@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\TagFinderAgent;
 use App\Http\Controllers\AcceptInvitationController;
 use App\Http\Controllers\GlmController;
 use App\Http\Controllers\LinkShareController;
@@ -56,9 +57,14 @@ Route::get('/test', function () {
 
     // echo $fullText;
 
+    $agent = new TagFinderAgent();
+    $agentReponse  = $agent->prompt('trouve les tags pour une description', provider:'nvidia', model:'minimaxai/minimax-m2.7', );
+
     dump($output, $data);
 
-    return view('welcome');
+    dd($agentReponse->text);
+
+    // return view('welcome');
     // return $agent->then(function (StreamedAgentResponse $response) {
     //         // $response->text, $response->events, $response->usage...
 

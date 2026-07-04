@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Links\Schemas;
 
 use Alaouy\Youtube\Youtube;
 use App\Ai\Agents\LinkDescriptionAgent;
+use App\Ai\Agents\TagFinderAgent;
 use App\Ai\Agents\YoutubeTranscriptSummary;
 use App\Enums\ContentType;
 use App\Models\Category;
@@ -142,6 +143,20 @@ class LinkForm
 
                                 $response = $agent->text;
 
+
+
+                                $tagsAgent = (new TagFinderAgent())->prompt(
+                                    "Génère des tags basés sur ces informations:\n\n{$context}",
+                                    model: 'openai/gpt-oss-120b',
+                                    provider: Lab::Groq
+                                );
+
+                                $response = $tagsAgent->text;
+
+                                Log::info('Description générée', ['description' => $response]);
+                               
+
+
                                 // Parser la réponse de l'agent
                                 $description = '';
                                 $tags = [];
@@ -238,7 +253,7 @@ class LinkForm
                 ]),
             TagsInput::make('tags')
                 ->label(__('Tags'))
-                ->default('[]'),
+                ->default(["fzrf",'fzezrge']),
             Grid::make(2)
                 ->components([
                     Toggle::make('is_favorite')

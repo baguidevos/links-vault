@@ -129,6 +129,16 @@ return [
             'key' => env('XAI_API_KEY'),
             'url' => env('XAI_URL', 'https://api.x.ai/v1'),
         ],
+        'nvidia' => [
+            'driver' => 'nvidia',
+            'key' => env('NVIDIA_API_KEY'),
+            'url' => env('NVIDIA_URL', 'https://integrate.api.nvidia.com/v1'),
+        ],
+        'glm' => [
+            'driver' => 'glm',
+            'key' => env('GLM_API_KEY'),
+            'url' => env('GLM_URL', 'https://open.bigmodel.cn/api/paas/v4'),
+        ],
     ],
 
 ];

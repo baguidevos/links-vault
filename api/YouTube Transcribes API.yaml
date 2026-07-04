@@ -1,0 +1,896 @@
+openapi: 3.0.3
+info:
+  title: YouTube Transcribes API
+  version: 2.0.0
+  description: "\n## Overview\nYouTube Transcribes API allows you to extract transcripts
+    from YouTube videos programmatically.\n\n## Authentication\nAll authenticated
+    endpoints require an API key. Include your API key in the request headers:\n\n```\nAuthorization:
+    Api-Key YOUR_API_KEY\n```\n\nOr alternatively:\n\n```\nX-API-Key: YOUR_API_KEY\n```\n\n##
+    Rate Limiting\n- Default: 30 requests per minute per API key\n- Rate limit resets
+    every minute\n\n## Credits\n- Most operations consume credits\n- Check your balance:
+    GET /api/v2/credits/\n- Transcript creation: 1 credit (cached transcripts may
+    be free)\n- AI transcription: Credits based on video duration\n\n## API Versions\n-
+    **v2** (current): Django REST Framework implementation with OpenAPI documentation\n-
+    **v1** (deprecated): Legacy implementation, will be removed in future versions\n
+    \   "
+paths:
+  /api/v2/:
+    get:
+      operationId: root_retrieve
+      description: Get information about available API v2 endpoints.
+      summary: API Root
+      tags:
+      - Info
+      security:
+      - ApiKeyAuth: []
+      - XApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIRootResponse'
+              examples:
+                APIRoot:
+                  value:
+                    name: YouTube Transcribes API
+                    version: v2
+                    description: Extract transcripts and captions from YouTube videos
+                    documentation_url: https://youtubetranscribes.com/api/docs/
+                    endpoints:
+                      health:
+                        url: /api/v2/health/
+                        method: GET
+                        description: Check API health status
+                        auth_required: false
+                      validate:
+                        url: /api/v2/validate/
+                        method: POST
+                        description: Validate a YouTube URL and get video metadata
+                        auth_required: true
+                      transcripts:
+                        url: /api/v2/transcripts/
+                        method: POST
+                        description: Create a transcript extraction job
+                        auth_required: true
+                      credits:
+                        url: /api/v2/credits/
+                        method: GET
+                        description: Get current credit balance
+                        auth_required: true
+                  summary: API Root
+          description: ''
+  /api/v2/credits/:
+    get:
+      operationId: credits_retrieve
+      description: Retrieve the current credit balance for the authenticated user.
+      summary: Get Credit Balance
+      tags:
+      - Account
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyAuth: []
+      - XApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditsResponse'
+              examples:
+                CreditBalanceWithFreeCredits:
+                  value:
+                    total_credits: 100
+                    available_credits: 75
+                    used_credits: 25
+                    free_credits_this_month: 10
+                    last_updated: '2026-02-01T10:30:00Z'
+                  summary: Credit balance with free credits
+                FreeTierUser:
+                  value:
+                    total_credits: 0
+                    available_credits: 45
+                    used_credits: 5
+                    free_credits_this_month: 45
+                    last_updated: '2026-02-01T08:00:00Z'
+                  summary: Free tier user
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: ''
+  /api/v2/health/:
+    get:
+      operationId: health_retrieve
+      description: Check if the API service is running and healthy. No authentication
+        required.
+      summary: Health Check
+      tags:
+      - Health
+      security:
+      - ApiKeyAuth: []
+      - XApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+              examples:
+                HealthyService:
+                  value:
+                    status: healthy
+                    service: YouTube Transcribes API
+                    version: v2
+                    timestamp: '2026-02-01T10:30:00Z'
+                  summary: Healthy service
+                DegradedService:
+                  value:
+                    status: degraded
+                    service: YouTube Transcribes API
+                    version: v2
+                    timestamp: '2026-02-01T10:30:00Z'
+                  summary: Degraded service
+          description: ''
+  /api/v2/transcripts/:
+    post:
+      operationId: transcripts_create
+      description: Extract or generate a transcript from a YouTube video. This endpoint
+        consumes credits.
+      summary: Create Transcript
+      tags:
+      - Transcripts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranscriptCreateRequestRequest'
+            examples:
+              BasicRequest:
+                value:
+                  url: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+                summary: Basic request
+              FullRequestWithAllOptions:
+                value:
+                  url: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+                  language: en
+                  caption_type: subtitles
+                  download_format: json
+                summary: Full request with all options
+              AITranscriptionRequest:
+                value:
+                  url: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+                  language: en
+                  caption_type: ai_transcribe
+                  download_format: srt
+                summary: AI transcription request
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TranscriptCreateRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TranscriptCreateRequestRequest'
+        required: true
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyAuth: []
+      - XApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscriptResponse'
+              examples:
+                CompletedTranscript(JSONFormat):
+                  value:
+                    job_id: 550e8400-e29b-41d4-a716-446655440000
+                    created_at: '2026-02-01T10:30:00Z'
+                    status: completed
+                    video_id: dQw4w9WgXcQ
+                    type: video
+                    title: Rick Astley - Never Gonna Give You Up
+                    url: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+                    language: en
+                    caption_type: subtitles
+                    used_credits: 1
+                    available_credits: 49
+                    download_format: json
+                    transcripts:
+                    - start: 0.0
+                      end: 3.5
+                      text: We're no strangers to love
+                    - start: 3.5
+                      end: 7.0
+                      text: You know the rules and so do I
+                    - start: 7.0
+                      end: 11.5
+                      text: A full commitment's what I'm thinking of
+                  summary: Completed transcript (JSON format)
+                AITranscriptionCompleted:
+                  value:
+                    job_id: 660e8400-e29b-41d4-a716-446655440001
+                    created_at: '2026-02-01T11:00:00Z'
+                    status: completed
+                    video_id: xyz789abc
+                    type: video
+                    title: Conference Talk
+                    url: https://www.youtube.com/watch?v=xyz789abc
+                    language: en
+                    caption_type: ai_transcribe
+                    used_credits: 15
+                    available_credits: 35
+                    download_format: json
+                    transcripts:
+                    - start: 0.0
+                      end: 5.2
+                      text: Welcome everyone to this presentation.
+                  summary: AI transcription completed
+                ProcessingStatus:
+                  value:
+                    job_id: 770e8400-e29b-41d4-a716-446655440002
+                    created_at: '2026-02-01T11:30:00Z'
+                    status: processing
+                    video_id: processing123
+                    type: video
+                    title: Long Video Being Processed
+                    language: en
+                    caption_type: ai_transcribe
+                    used_credits: 0
+                    available_credits: 50
+                  summary: Processing status
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: ''
+        '402':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Insufficient credits
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: ''
+  /api/v2/validate/:
+    post:
+      operationId: validate_create
+      description: Validate a YouTube URL and retrieve video metadata including available
+        captions.
+      summary: Validate YouTube URL
+      tags:
+      - Videos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoValidationRequestRequest'
+            examples:
+              ValidYouTubeURL:
+                value:
+                  url: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+                summary: Valid YouTube URL
+              VideoIDOnly:
+                value:
+                  url: dQw4w9WgXcQ
+                summary: Video ID only
+              YouTubeShortURL:
+                value:
+                  url: https://www.youtube.com/shorts/abc123xyz
+                summary: YouTube Short URL
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VideoValidationRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VideoValidationRequestRequest'
+        required: true
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyAuth: []
+      - XApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoValidationResponse'
+              examples:
+                FullVideoInformation:
+                  value:
+                    video_id: dQw4w9WgXcQ
+                    type: video
+                    title: Rick Astley - Never Gonna Give You Up
+                    duration: 212
+                    author: Rick Astley
+                    view_count: 1400000000
+                    upload_date: '2009-10-25'
+                    description: The official video for "Never Gonna Give You Up"
+                      by Rick Astley...
+                    thumbnail: https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg
+                    like_count: 15000000
+                    categories:
+                    - Music
+                    tags:
+                    - rick astley
+                    - never gonna give you up
+                    - 80s
+                    language: en
+                    subtitles:
+                    - en
+                    - es
+                    - fr
+                    - de
+                    automatic_captions:
+                    - en
+                    - es
+                    - de
+                    - fr
+                    - it
+                    - pt
+                    - ja
+                    - ko
+                  summary: Full video information
+                YouTubeShort:
+                  value:
+                    video_id: abc123xyz
+                    type: short
+                    title: 'Quick Tutorial #shorts'
+                    duration: 58
+                    author: Tutorial Channel
+                    view_count: 50000
+                    subtitles: []
+                    automatic_captions:
+                    - en
+                  summary: YouTube Short
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: ''
+components:
+  schemas:
+    APIRootResponse:
+      type: object
+      description: Response for API root endpoint listing all available endpoints.
+      properties:
+        name:
+          type: string
+          description: API name
+        version:
+          type: string
+          description: API version
+        description:
+          type: string
+          description: API description
+        documentation_url:
+          type: string
+          format: uri
+          description: URL to full API documentation
+        endpoints:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/EndpointInfo'
+          description: Available API endpoints
+      required:
+      - description
+      - documentation_url
+      - endpoints
+      - name
+      - version
+    BlogPostCreateRequest:
+      type: object
+      description: Serializer for creating a blog post from an external source (e.g.
+        Blogify).
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 200
+          pattern: ^[-a-zA-Z0-9_]+$
+        content_markdown:
+          type: string
+          minLength: 1
+          description: Markdown content
+        excerpt:
+          type: string
+          default: ''
+          maxLength: 300
+        meta_description:
+          type: string
+          default: ''
+          maxLength: 160
+        meta_keywords:
+          type: string
+          default: ''
+          description: Comma-separated keywords
+          maxLength: 500
+        category:
+          type: string
+          minLength: 1
+          default: guide
+          maxLength: 20
+        canonical_url:
+          type: string
+          format: uri
+          default: ''
+        og_image:
+          type: string
+          default: ''
+          maxLength: 500
+        is_published:
+          type: boolean
+          default: true
+        featured:
+          type: boolean
+          default: false
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - content_markdown
+      - title
+    BlogPostResponse:
+      type: object
+      description: Response serializer for created blog posts.
+      properties:
+        slug:
+          type: string
+          pattern: ^[-a-zA-Z0-9_]+$
+        title:
+          type: string
+        url:
+          type: string
+          description: Absolute URL path for the blog post
+        is_published:
+          type: boolean
+        published_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - is_published
+      - published_at
+      - slug
+      - title
+      - url
+    CreditsResponse:
+      type: object
+      description: Response serializer for credits endpoint.
+      properties:
+        total_credits:
+          type: integer
+          description: Total purchased credits in account
+        available_credits:
+          type: integer
+          description: Total credits available to use (purchased + free)
+        used_credits:
+          type: integer
+          description: Total credits used (lifetime)
+        free_credits_this_month:
+          type: integer
+          description: Free monthly credits remaining
+        last_updated:
+          type: string
+          format: date-time
+          description: Last credit balance update timestamp
+      required:
+      - available_credits
+      - free_credits_this_month
+      - last_updated
+      - total_credits
+      - used_credits
+    EndpointInfo:
+      type: object
+      description: Information about a single API endpoint.
+      properties:
+        url:
+          type: string
+          description: Endpoint URL path
+        method:
+          type: string
+          description: HTTP method (GET, POST, etc.)
+        description:
+          type: string
+          description: Brief description of endpoint functionality
+        auth_required:
+          type: boolean
+          description: Whether authentication is required
+      required:
+      - auth_required
+      - description
+      - method
+      - url
+    ErrorDetail:
+      type: object
+      description: Nested error detail structure.
+      properties:
+        code:
+          type: string
+          description: Error code for programmatic handling (e.g., INVALID_URL, INSUFFICIENT_CREDITS)
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: Additional error details as key-value pairs
+      required:
+      - code
+      - message
+    ErrorResponse:
+      type: object
+      description: Standard error response format for all API errors.
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+      required:
+      - error
+    HealthCheckResponse:
+      type: object
+      description: Response serializer for health check endpoint.
+      properties:
+        status:
+          enum:
+          - healthy
+          - degraded
+          - unhealthy
+          type: string
+          x-spec-enum-id: 9507e5e79f12b230
+          description: |-
+            Service health status
+
+            * `healthy` - All systems operational
+            * `degraded` - Partial service degradation
+            * `unhealthy` - Service unavailable
+        service:
+          type: string
+          description: Service name
+        version:
+          type: string
+          description: API version
+        timestamp:
+          type: string
+          format: date-time
+          description: Current server timestamp (ISO 8601 format)
+      required:
+      - service
+      - status
+      - timestamp
+      - version
+    PatchedBlogPostUpdateRequest:
+      type: object
+      description: Request serializer for updating blog post markdown content.
+      properties:
+        content_markdown:
+          type: string
+          description: Markdown content for the blog post
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        meta_description:
+          type: string
+          maxLength: 160
+        meta_keywords:
+          type: string
+          maxLength: 500
+        category:
+          type: string
+          minLength: 1
+          maxLength: 20
+        excerpt:
+          type: string
+          maxLength: 300
+        canonical_url:
+          type: string
+          format: uri
+        og_image:
+          type: string
+          maxLength: 500
+        is_published:
+          type: boolean
+        featured:
+          type: boolean
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        touch_updated_at:
+          type: boolean
+          default: true
+    SlugCheckResponse:
+      type: object
+      description: Response for slug existence check.
+      properties:
+        slug:
+          type: string
+          pattern: ^[-a-zA-Z0-9_]+$
+        exists:
+          type: boolean
+        suggested_slug:
+          type: string
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - exists
+      - slug
+    TranscriptCreateRequestRequest:
+      type: object
+      description: Request serializer for transcript creation endpoint.
+      properties:
+        url:
+          type: string
+          minLength: 1
+          description: YouTube URL or video ID
+          maxLength: 500
+        language:
+          type: string
+          minLength: 1
+          default: auto
+          description: Language code (e.g., "en", "es", "fr") or "auto" for auto-detect
+          maxLength: 10
+        caption_type:
+          enum:
+          - auto
+          - subtitles
+          - automatic_captions
+          - ai_transcribe
+          type: string
+          x-spec-enum-id: 51885e3dcc9fc1b0
+          default: auto
+          description: |-
+            Type of captions to retrieve
+
+            * `auto` - Auto-detect best available
+            * `subtitles` - Manual subtitles
+            * `automatic_captions` - Auto-generated captions
+            * `ai_transcribe` - AI transcription (uses more credits)
+        download_format:
+          enum:
+          - json
+          - srt
+          - vtt
+          - txt
+          type: string
+          x-spec-enum-id: ed24ffaab8915558
+          default: json
+          description: |-
+            Format for the transcript output
+
+            * `json` - JSON format with timestamps
+            * `srt` - SubRip subtitle format
+            * `vtt` - WebVTT format
+            * `txt` - Plain text without timestamps
+      required:
+      - url
+    TranscriptResponse:
+      type: object
+      description: Response serializer for transcript creation endpoint.
+      properties:
+        job_id:
+          type: string
+          format: uuid
+          description: Unique transcript job identifier
+        created_at:
+          type: string
+          format: date-time
+          description: Job creation timestamp (ISO 8601 format)
+        status:
+          enum:
+          - pending
+          - processing
+          - completed
+          - failed
+          type: string
+          x-spec-enum-id: 4185d9a317b1ac17
+          description: |-
+            Current job status
+
+            * `pending` - Pending - Job queued
+            * `processing` - Processing - Job in progress
+            * `completed` - Completed - Transcript ready
+            * `failed` - Failed - Job failed
+        video_id:
+          type: string
+          description: YouTube video ID
+        type:
+          type: string
+          description: Content type (video or short)
+        title:
+          type: string
+          nullable: true
+          description: Video title
+        url:
+          type: string
+          format: uri
+          nullable: true
+          description: Full YouTube video URL
+        language:
+          type: string
+          description: Transcript language code
+        caption_type:
+          type: string
+          description: Type of captions used (subtitles, automatic_captions, ai_transcribe)
+        used_credits:
+          type: integer
+          description: Credits charged for this request
+        available_credits:
+          type: integer
+          description: Remaining credits after this request
+        download_format:
+          type: string
+          nullable: true
+          description: Output format (json, srt, vtt, txt)
+        transcripts:
+          nullable: true
+          description: Transcript content (format depends on download_format parameter)
+      required:
+      - available_credits
+      - caption_type
+      - created_at
+      - job_id
+      - language
+      - status
+      - type
+      - used_credits
+      - video_id
+    VideoValidationRequestRequest:
+      type: object
+      description: Request serializer for video validation endpoint.
+      properties:
+        url:
+          type: string
+          minLength: 1
+          description: YouTube URL or video ID to validate
+          maxLength: 500
+      required:
+      - url
+    VideoValidationResponse:
+      type: object
+      description: Response serializer for video validation endpoint.
+      properties:
+        video_id:
+          type: string
+          description: YouTube video ID (11 characters)
+        type:
+          enum:
+          - video
+          - short
+          type: string
+          x-spec-enum-id: 2828c3896643152e
+          description: |-
+            Type of YouTube content
+
+            * `video` - Regular Video
+            * `short` - YouTube Short
+        title:
+          type: string
+          description: Video title
+        duration:
+          type: integer
+          nullable: true
+          description: Duration in seconds
+        author:
+          type: string
+          nullable: true
+          description: Channel name
+        view_count:
+          type: integer
+          nullable: true
+          description: Total view count
+        upload_date:
+          type: string
+          nullable: true
+          description: Upload date in ISO format (YYYY-MM-DD)
+        description:
+          type: string
+          nullable: true
+          description: Video description (may be truncated)
+        thumbnail:
+          type: string
+          format: uri
+          nullable: true
+          description: Thumbnail image URL
+        like_count:
+          type: integer
+          nullable: true
+          description: Number of likes
+        categories:
+          type: array
+          items:
+            type: string
+          description: Video categories
+        tags:
+          type: array
+          items:
+            type: string
+          description: Video tags
+        language:
+          type: string
+          nullable: true
+          description: Detected video language code
+        subtitles:
+          type: array
+          items:
+            type: string
+          description: Available manual subtitle language codes
+        automatic_captions:
+          type: array
+          items:
+            type: string
+          description: Available auto-generated caption language codes
+      required:
+      - title
+      - type
+      - video_id
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'API key authentication. Use format: Api-Key YOUR_API_KEY'
+    XApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Alternative API key header
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+tags:
+- name: Info
+  description: API information and discovery
+- name: Health
+  description: Service health monitoring
+- name: Account
+  description: Account and credit management
+- name: Videos
+  description: YouTube video validation and information
+- name: Transcripts
+  description: Transcript extraction and creation
