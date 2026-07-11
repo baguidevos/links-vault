@@ -12,6 +12,34 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/test-email', function () {
+    $to = request('to', 'test@example.com');
+
+    try {
+        Illuminate\Support\Facades\Mail::raw('Ceci est un email de test envoyé avec succès depuis votre application Laravel !', function ($message) use ($to) {
+            $message->to($to)
+                ->subject('Test d\'envoi d\'email - ' . config('app.name'));
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Email de test envoyé avec succès à : {$to}",
+            'config' => [
+                'mailer' => config('mail.default'),
+                'host' => config('mail.mailers.smtp.host'),
+                'port' => config('mail.mailers.smtp.port'),
+                'from' => config('mail.from.address'),
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => "Échec de l'envoi de l'email : " . $e->getMessage(),
+        ], 500);
+    }
+});
+
 // Routes pour GLM API
 Route::prefix('glm')->group(function () {
     Route::post('/chat', [GlmController::class, 'simpleChat'])->name('glm.chat');

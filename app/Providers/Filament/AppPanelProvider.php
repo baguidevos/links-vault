@@ -39,6 +39,7 @@ class AppPanelProvider extends PanelProvider
             ->spa(hasPrefetching: true)
             ->login()
             ->registration()
+            ->passwordReset()
             ->colors([
                 'primary' => Color::Amber,
             ])
