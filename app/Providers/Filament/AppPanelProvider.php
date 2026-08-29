@@ -23,7 +23,6 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use LaravelDaily\FilaTeams\FilaTeamsPlugin;
-use Nafiswatsiq\Subbase\SubbasePlugin;
 
 class AppPanelProvider extends PanelProvider
 {
@@ -50,10 +49,7 @@ class AppPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
-            ->plugins([
-                FilaTeamsPlugin::make(),
-                SubbasePlugin::make(),
-            ])
+            ->plugin(FilaTeamsPlugin::make())
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 AccountWidget::class,
