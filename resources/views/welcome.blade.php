@@ -11,6 +11,9 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+        <!-- Favicons & Manifest -->
+        @include('filament.render_hooks.favicons')
+
         <!-- Styles / Scripts -->
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
             @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -23,7 +26,10 @@
             <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <div class="flex items-center gap-12">
-                        <a href="/" class="text-xl font-semibold tracking-tight">LinksVault</a>
+                        <a href="/" class="flex items-center gap-2.5 text-xl font-semibold tracking-tight">
+                            <img src="{{ asset('white_theme.png') }}" alt="LinksVault" class="h-7 w-auto" />
+                            <span>LinksVault</span>
+                        </a>
                         <div class="hidden md:flex items-center gap-10">
                             <a href="#features" class="text-sm text-muted-silver hover:text-white transition-colors">Features</a>
                             <a href="#how-it-works" class="text-sm text-muted-silver hover:text-white transition-colors">How it Works</a>
