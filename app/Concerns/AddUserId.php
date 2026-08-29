@@ -4,10 +4,12 @@ namespace App\Concerns;
 
 trait AddUserId
 {
-    protected static function bootAddUserId()
+    protected static function bootAddUserId(): void
     {
         static::creating(function ($model) {
-            $model->user_id = auth()->user()->id;
+            if (empty($model->user_id) && auth()->check()) {
+                $model->user_id = auth()->id();
+            }
         });
     }
 }

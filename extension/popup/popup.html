@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Links Vault Clipper</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2"/>
+            <path d="M10 10l4 4m0-4l-4 4"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">Links Vault</span>
+          <span class="user-badge" id="user-badge" style="display: none;"></span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-options" class="icon-button" title="Paramètres">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Global Alert / Status Banner -->
+    <div id="alert-banner" class="alert-banner" style="display: none;">
+      <span id="alert-message"></span>
+    </div>
+
+    <!-- VIEW 1: AUTHENTICATION / CONFIG -->
+    <div id="view-auth" class="view" style="display: none;">
+      <div class="auth-box">
+        <div class="auth-intro">
+          <h2>Connexion requise</h2>
+          <p>Connectez l'extension à votre instance Links Vault pour enregistrer vos liens.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="auth-server-url">URL du serveur Links Vault</label>
+          <input type="url" id="auth-server-url" placeholder="http://localhost:8000" value="http://localhost:8000">
+        </div>
+
+        <div class="auth-tabs">
+          <button class="tab-btn active" id="tab-login">Connexion directe</button>
+          <button class="tab-btn" id="tab-token">Clé API (Token)</button>
+        </div>
+
+        <!-- Form Login Direct -->
+        <div id="panel-login" class="tab-panel active">
+          <div class="form-group">
+            <label for="auth-email">Adresse Email</label>
+            <input type="email" id="auth-email" placeholder="votre@email.com" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="auth-password">Mot de passe</label>
+            <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password">
+          </div>
+          <button id="btn-login-submit" class="btn btn-primary btn-block">
+            <span class="btn-text">Se connecter & Activer</span>
+            <div class="spinner" style="display: none;"></div>
+          </button>
+        </div>
+
+        <!-- Form Token Manuel -->
+        <div id="panel-token" class="tab-panel" style="display: none;">
+          <div class="form-group">
+            <label for="auth-token">Personal Access Token (Sanctum)</label>
+            <input type="password" id="auth-token" placeholder="1|abcdef123456...">
+            <span class="field-hint">Générez un token depuis votre espace Links Vault.</span>
+          </div>
+          <button id="btn-token-submit" class="btn btn-primary btn-block">
+            <span class="btn-text">Enregistrer le Token</span>
+            <div class="spinner" style="display: none;"></div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: SAVE LINK FORM -->
+    <div id="view-save" class="view" style="display: none;">
+      <!-- Preview Card -->
+      <div class="preview-card" id="preview-card">
+        <div class="preview-thumb-container" id="preview-thumb-container" style="display: none;">
+          <img id="preview-thumb" src="" alt="Thumbnail">
+        </div>
+        <div class="preview-info">
+          <div class="preview-meta-row">
+            <img id="preview-favicon" class="favicon-img" src="" alt="" style="display: none;">
+            <span class="domain-badge" id="preview-domain">site.com</span>
+            <span class="type-badge" id="preview-type">article</span>
+          </div>
+          <div class="preview-url-text" id="preview-url-display">https://...</div>
+        </div>
+      </div>
+
+      <!-- Main Form -->
+      <form id="link-form" class="form-body">
+        <div class="form-group">
+          <label for="link-title">Titre <span class="required">*</span></label>
+          <input type="text" id="link-title" required placeholder="Titre du lien...">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group form-col" id="team-group">
+            <label for="link-team">Espace / Team</label>
+            <select id="link-team">
+              <option value="">Chargement...</option>
+            </select>
+          </div>
+
+          <div class="form-group form-col">
+            <label for="link-category">Catégorie</label>
+            <select id="link-category">
+              <option value="">Aucune catégorie</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="tag-input-field">Tags</label>
+          <div class="tags-wrapper" id="tags-wrapper">
+            <div id="tags-chips-container" class="tags-chips-container"></div>
+            <input type="text" id="tag-input-field" placeholder="Ajouter un tag + Entrée...">
+          </div>
+          <div id="suggested-tags-container" class="suggested-tags" style="display: none;"></div>
+        </div>
+
+        <div class="form-group">
+          <div class="label-with-action">
+            <label for="link-description">Notes & Description</label>
+            <button type="button" id="btn-insert-selection" class="text-action-btn" style="display: none;">
+              + Insérer la sélection
+            </button>
+          </div>
+          <textarea id="link-description" rows="3" placeholder="Description ou notes personnelles..."></textarea>
+        </div>
+
+        <!-- Toggles Row -->
+        <div class="toggles-row">
+          <label class="switch-card">
+            <input type="checkbox" id="toggle-favorite">
+            <span class="switch-slider"></span>
+            <span class="switch-label">Favori ⭐</span>
+          </label>
+
+          <label class="switch-card">
+            <input type="checkbox" id="toggle-ai-summary" checked>
+            <span class="switch-slider"></span>
+            <span class="switch-label">Résumé IA 🤖</span>
+          </label>
+        </div>
+
+        <!-- Submit Footer -->
+        <div class="form-footer">
+          <button type="submit" id="btn-save-link" class="btn btn-primary btn-save">
+            <span class="btn-text">Enregistrer dans le Vault</span>
+            <div class="spinner" style="display: none;"></div>
+          </button>
+        </div>
+      </form>
+
+      <!-- Success Action Box (Displayed after save) -->
+      <div id="success-box" class="success-box" style="display: none;">
+        <div class="success-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h3>Enregistré avec succès !</h3>
+        <p id="success-message">Le lien a été ajouté à votre coffre-fort.</p>
+        <div class="success-actions">
+          <a id="btn-open-vault" href="#" target="_blank" class="btn btn-secondary">
+            Ouvrir dans Links Vault ↗
+          </a>
+          <button type="button" id="btn-save-another" class="btn btn-outline">
+            Modifier / Ré-enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 3: LOADING SKELETON -->
+    <div id="view-loading" class="view">
+      <div class="skeleton-loader">
+        <div class="skeleton-preview"></div>
+        <div class="skeleton-line" style="width: 70%;"></div>
+        <div class="skeleton-line" style="width: 100%;"></div>
+        <div class="skeleton-line" style="width: 90%;"></div>
+        <div class="skeleton-btn"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

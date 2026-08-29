@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tags', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('team_id')->constrained()->cascadeOnDelete();
-            $table->string('name', 50);
-            $table->string('slug', 50)->unique();
-            $table->timestamps();
+        if (! Schema::hasTable('tags')) {
+            Schema::create('tags', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+                $table->foreignId('team_id')->constrained()->cascadeOnDelete();
+                $table->string('name', 50);
+                $table->string('slug', 50)->unique();
+                $table->timestamps();
 
-            $table->index('name');
-            $table->index('slug');
-        });
+                $table->index('name');
+                $table->index('slug');
+            });
+        }
     }
 
     /**

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use LaravelDaily\FilaTeams\Contracts\HasTeamMembership;
 
 #[Fillable(['name', 'email', 'password'])]
@@ -19,7 +20,7 @@ use LaravelDaily\FilaTeams\Contracts\HasTeamMembership;
 class User extends Authenticatable implements HasTeamMembership
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasTeams, Notifiable;
+    use HasApiTokens, HasFactory, HasTeams, Notifiable;
 
     /**
      * Get the attributes that should be cast.

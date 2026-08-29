@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paramètres - Links Vault Clipper</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="18" x="3" y="3" rx="2"/>
+          <path d="M10 10l4 4m0-4l-4 4"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Links Vault Clipper</h1>
+        <p class="subtitle">Paramètres de l'extension et configuration API</p>
+      </div>
+    </header>
+
+    <div id="status-message" class="status-box" style="display: none;"></div>
+
+    <main class="card">
+      <section class="section">
+        <h2>Configuration du Serveur</h2>
+        <p class="section-desc">Renseignez l'URL de votre instance Links Vault.</p>
+        
+        <div class="form-group">
+          <label for="server-url">URL du Serveur</label>
+          <div class="input-with-action">
+            <input type="url" id="server-url" placeholder="http://localhost:8000" required>
+            <button type="button" id="btn-test-connection" class="btn btn-secondary">Tester la connexion</button>
+          </div>
+          <span class="hint">Exemple : <code>http://localhost:8000</code> ou <code>https://links.mon-domaine.com</code></span>
+        </div>
+      </section>
+
+      <hr class="divider">
+
+      <section class="section">
+        <h2>Authentification & Token API</h2>
+        <p class="section-desc">Votre Personal Access Token (Sanctum) utilisé pour autoriser les requêtes.</p>
+
+        <div class="form-group">
+          <label for="api-token">Personal Access Token</label>
+          <div class="input-with-action">
+            <input type="password" id="api-token" placeholder="1|abcdef123456...">
+            <button type="button" id="btn-toggle-token" class="btn btn-outline">Afficher</button>
+          </div>
+          <span class="hint">Vous pouvez vous connecter directement depuis le popup ou coller un token ici.</span>
+        </div>
+
+        <div id="user-info-card" class="user-card" style="display: none;">
+          <div class="avatar-icon">👤</div>
+          <div>
+            <div class="user-name" id="connected-user-name">-</div>
+            <div class="user-email" id="connected-user-email">-</div>
+          </div>
+          <button type="button" id="btn-disconnect" class="btn btn-danger-outline">Déconnecter</button>
+        </div>
+      </section>
+
+      <hr class="divider">
+
+      <section class="section">
+        <h2>Comportement par Défaut</h2>
+
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="default-ai-summary" checked>
+            <span>Activer la génération de résumé IA par défaut</span>
+          </label>
+
+          <label class="checkbox-label">
+            <input type="checkbox" id="default-favorite">
+            <span>Marquer les liens comme Favoris par défaut</span>
+          </label>
+        </div>
+      </section>
+
+      <hr class="divider">
+
+      <section class="section">
+        <h2>Raccourcis Clavier</h2>
+        <div class="shortcut-box">
+          <div class="shortcut-item">
+            <span>Ouvrir l'extension Clipper</span>
+            <kbd>Alt + S</kbd>
+          </div>
+        </div>
+        <span class="hint">Vous pouvez personnaliser les raccourcis dans <code>chrome://extensions/shortcuts</code>.</span>
+      </section>
+
+      <div class="footer-actions">
+        <button type="button" id="btn-save-settings" class="btn btn-primary">
+          <span class="btn-text">Enregistrer les paramètres</span>
+          <div class="spinner" style="display: none;"></div>
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
