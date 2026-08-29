@@ -18,8 +18,8 @@ return new class extends Migration
             }
         });
 
-        // Donner le rôle admin au premier utilisateur existant
-        DB::table('users')->where('id', 1)->update(['is_admin' => true]);
+        // Donner le rôle admin à l'utilisateur webmaster@gmail.com
+        DB::table('users')->where('email', 'webmaster@gmail.com')->update(['is_admin' => true]);
     }
 
     /**

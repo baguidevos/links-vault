@@ -7,15 +7,32 @@ use LaravelDaily\FilaTeams\Models\Team;
 uses(RefreshDatabase::class);
 
 test('a non-admin user cannot access the admin panel', function () {
-    $user = User::factory()->create(['is_admin' => false]);
+    $user = User::factory()->create([
+        'email' => 'regular@example.com',
+        'is_admin' => false,
+    ]);
 
     $this->actingAs($user)
         ->get('/admin')
         ->assertForbidden();
 });
 
+test('webmaster@gmail.com can access the admin panel', function () {
+    $webmaster = User::factory()->create([
+        'email' => 'webmaster@gmail.com',
+        'is_admin' => false,
+    ]);
+
+    $this->actingAs($webmaster)
+        ->get('/admin')
+        ->assertOk();
+});
+
 test('an admin user can access the admin panel', function () {
-    $admin = User::factory()->create(['is_admin' => true]);
+    $admin = User::factory()->create([
+        'email' => 'admin@example.com',
+        'is_admin' => true,
+    ]);
 
     $this->actingAs($admin)
         ->get('/admin')
