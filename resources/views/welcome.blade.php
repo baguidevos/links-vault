@@ -26,9 +26,9 @@
             <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <div class="flex items-center gap-12">
-                        <a href="/" class="flex items-center gap-2.5 text-xl font-semibold tracking-tight">
-                            <img src="{{ asset('white_theme.png') }}" alt="LinksVault" class="h-7 w-auto" />
-                            <span>LinksVault</span>
+                        <a href="/" class="flex items-center gap-2.5 text-xl font-bold tracking-tight">
+                            <img src="{{ asset('favicon-96x96.png') }}" alt="LinksVault" class="h-7 w-7 rounded-md" />
+                            <span class="bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300 bg-clip-text text-transparent">LinksVault</span>
                         </a>
                         <div class="hidden md:flex items-center gap-10">
                             <a href="#features" class="text-sm text-muted-silver hover:text-white transition-colors">Features</a>

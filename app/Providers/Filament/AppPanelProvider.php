@@ -40,9 +40,8 @@ class AppPanelProvider extends PanelProvider
             ->registration()
             ->passwordReset()
             ->brandName('LinkVault')
-            ->brandLogo(asset('black_theme.png'))
-            ->darkModeBrandLogo(asset('white_theme.png'))
-            ->brandLogoHeight('2.25rem')
+            ->brandLogo(fn () => view('filament.components.brand-logo'))
+            ->brandLogoHeight('2.5rem')
             ->favicon(asset('favicon.ico'))
             ->renderHook(PanelsRenderHook::HEAD_START, fn () => view('filament.render_hooks.favicons'))
             ->colors([
