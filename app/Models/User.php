@@ -6,6 +6,8 @@ namespace App\Models;
 
 use App\Concerns\TeamConcerns\HasTeams;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,9 +18,9 @@ use Laravel\Sanctum\HasApiTokens;
 use Laravelcm\Subscriptions\Traits\HasPlanSubscriptions;
 use LaravelDaily\FilaTeams\Contracts\HasTeamMembership;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'is_admin'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements HasTeamMembership
+class User extends Authenticatable implements FilamentUser, HasTeamMembership
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasPlanSubscriptions, HasTeams, Notifiable;
@@ -33,7 +35,20 @@ class User extends Authenticatable implements HasTeamMembership
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    /**
+     * Vérifier si l'utilisateur a le droit d'accéder au panel Filament donné.
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        if ($panel->getId() === 'admin') {
+            return (bool) $this->is_admin;
+        }
+
+        return true;
     }
 
     /**
