@@ -45,7 +45,7 @@ class AppPanelProvider extends PanelProvider
             ->favicon(asset('favicon.ico'))
             ->renderHook(PanelsRenderHook::HEAD_START, fn () => view('filament.render_hooks.favicons'))
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#0099FF'),
             ])
             ->tenant(Team::class, slugAttribute: 'slug')
             ->tenantRegistration(CreateTeamPage::class)

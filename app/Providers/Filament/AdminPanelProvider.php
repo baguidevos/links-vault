@@ -40,7 +40,7 @@ class AdminPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/app/theme.css')
             ->spa(hasPrefetching: true)
             ->colors([
-                'primary' => Color::Indigo,
+                'primary' => Color::hex('#0099FF'),
             ])
             ->plugins([
                 SubbasePlugin::make(),
