@@ -48,7 +48,7 @@ class LinkForm
                         ->maxLength(2048)
                         ->autofocus()
                         ->url()
-                        ->live()
+                        ->live(onBlur: true)
                         ->afterStateUpdated(function ($state, Set $set, Get $get) {
                             if (empty($state)) {
                                 return;
@@ -143,9 +143,7 @@ class LinkForm
 
                                 $response = $agent->text;
 
-
-
-                                $tagsAgent = (new TagFinderAgent())->prompt(
+                                $tagsAgent = (new TagFinderAgent)->prompt(
                                     "Génère des tags basés sur ces informations:\n\n{$context}",
                                     model: 'openai/gpt-oss-120b',
                                     provider: Lab::Groq
@@ -154,8 +152,6 @@ class LinkForm
                                 $response = $tagsAgent->text;
 
                                 Log::info('Description générée', ['description' => $response]);
-                               
-
 
                                 // Parser la réponse de l'agent
                                 $description = '';
@@ -253,7 +249,7 @@ class LinkForm
                 ]),
             TagsInput::make('tags')
                 ->label(__('Tags'))
-                ->default(["fzrf",'fzezrge']),
+                ->default(['fzrf', 'fzezrge']),
             Grid::make(2)
                 ->components([
                     Toggle::make('is_favorite')

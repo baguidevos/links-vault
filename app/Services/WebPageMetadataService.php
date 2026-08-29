@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -55,11 +56,37 @@ class WebPageMetadataService
             ];
         }
 
-        try {
-            // Récupérer le contenu HTML
-            $html = $this->fetchHtml($url);
+        $cacheKey = 'web_meta_'.hash('sha256', $url);
 
-            if ($html === null) {
+        return Cache::remember($cacheKey, now()->addHours(6), function () use ($url) {
+            try {
+                // Récupérer le contenu HTML
+                $html = $this->fetchHtml($url);
+
+                if ($html === null) {
+                    return [
+                        'title' => null,
+                        'description' => null,
+                        'favicon' => null,
+                        'image' => null,
+                        'site_name' => null,
+                        'author' => null,
+                        'type' => null,
+                        'url' => null,
+                        'error' => 'Impossible de récupérer le contenu de la page',
+                    ];
+                }
+
+                // Parser les métadonnées
+                $metadata = $this->parseMetadata($html, $url);
+
+                return array_merge($metadata, ['error' => null]);
+            } catch (Exception $e) {
+                Log::error('Erreur lors de la récupération des métadonnées', [
+                    'url' => $url,
+                    'error' => $e->getMessage(),
+                ]);
+
                 return [
                     'title' => null,
                     'description' => null,
@@ -69,34 +96,10 @@ class WebPageMetadataService
                     'author' => null,
                     'type' => null,
                     'url' => null,
-                    'error' => 'Impossible de récupérer le contenu de la page',
+                    'error' => $e->getMessage(),
                 ];
             }
-
-            // Parser les métadonnées
-            $metadata = $this->parseMetadata($html, $url);
-
-            return array_merge($metadata, ['error' => null]);
-
-        } catch (Exception $e) {
-            Log::warning('Erreur lors de la récupération des métadonnées', [
-                'url' => $url,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return [
-                'title' => null,
-                'description' => null,
-                'favicon' => null,
-                'image' => null,
-                'site_name' => null,
-                'author' => null,
-                'type' => null,
-                'url' => null,
-                'error' => 'Erreur: '.$e->getMessage(),
-            ];
-        }
+        });
     }
 
     /**
