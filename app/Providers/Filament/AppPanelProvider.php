@@ -37,6 +37,8 @@ class AppPanelProvider extends PanelProvider
             ->login()
             ->registration()
             ->passwordReset()
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('30s')
             ->brandName('LinkVault')
             ->brandLogo(fn () => view('filament.components.brand-logo'))
             ->brandLogoHeight('2.5rem')
