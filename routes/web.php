@@ -2,10 +2,12 @@
 
 use App\Ai\Agents\TagFinderAgent;
 use App\Http\Controllers\AcceptInvitationController;
+use App\Http\Controllers\ExtensionDownloadController;
 use App\Http\Controllers\GlmController;
 use App\Http\Controllers\LinkShareController;
 use App\Services\GlmService;
 use App\Services\WebPageMetadataService;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Route;
 
@@ -13,13 +15,17 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Téléchargement du package de l'extension Chrome
+Route::get('/extension/download', ExtensionDownloadController::class)
+    ->name('extension.download');
+
 Route::get('/test-email', function () {
     $to = request('to', 'test@example.com');
 
     try {
-        Illuminate\Support\Facades\Mail::raw('Ceci est un email de test envoyé avec succès depuis votre application Laravel !', function ($message) use ($to) {
+        Mail::raw('Ceci est un email de test envoyé avec succès depuis votre application Laravel !', function ($message) use ($to) {
             $message->to($to)
-                ->subject('Test d\'envoi d\'email - ' . config('app.name'));
+                ->subject('Test d\'envoi d\'email - '.config('app.name'));
         });
 
         return response()->json([
@@ -30,12 +36,12 @@ Route::get('/test-email', function () {
                 'host' => config('mail.mailers.smtp.host'),
                 'port' => config('mail.mailers.smtp.port'),
                 'from' => config('mail.from.address'),
-            ]
+            ],
         ]);
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         return response()->json([
             'status' => 'error',
-            'message' => "Échec de l'envoi de l'email : " . $e->getMessage(),
+            'message' => "Échec de l'envoi de l'email : ".$e->getMessage(),
         ], 500);
     }
 });
@@ -54,7 +60,6 @@ Route::get('/share/{token}', [LinkShareController::class, 'redirect'])
 Route::get('/team-invitations/{code}/accept', AcceptInvitationController::class)
     ->middleware(['web', 'signed'])
     ->name('filateams.invitations.accept');
-
 
 Route::get('/test', function () {
 
@@ -85,8 +90,8 @@ Route::get('/test', function () {
 
     // echo $fullText;
 
-    $agent = new TagFinderAgent();
-    $agentReponse  = $agent->prompt('trouve les tags pour une description', provider:'nvidia', model:'minimaxai/minimax-m2.7', );
+    $agent = new TagFinderAgent;
+    $agentReponse = $agent->prompt('trouve les tags pour une description', provider: 'nvidia', model: 'minimaxai/minimax-m2.7');
 
     dump($output, $data);
 

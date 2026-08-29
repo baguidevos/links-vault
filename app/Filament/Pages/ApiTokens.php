@@ -47,6 +47,13 @@ class ApiTokens extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('download_extension')
+                ->label('Télécharger l\'Extension (.zip)')
+                ->icon(TablerIcon::Download)
+                ->color('gray')
+                ->url(route('extension.download'))
+                ->openUrlInNewTab(),
+
             Action::make('create_token')
                 ->label('Générer une clé API')
                 ->icon(TablerIcon::Plus)
