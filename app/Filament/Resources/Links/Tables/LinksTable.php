@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Links\Tables;
 
 use App\Enums\ContentType;
 use App\Enums\LinkVisibility;
+use App\Filament\Resources\Links\Actions\ChangeVisibilityAction;
 use App\Models\Folder;
 use App\Models\Link;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
@@ -144,6 +145,7 @@ class LinksTable
                     ->slideOver()
                     // ->view('filament.resources.links.pages.view')
                     ->modalWidth('2xl'),
+                ChangeVisibilityAction::make(),
                 EditAction::make()
                     ->slideOver()
                     ->modalWidth('2xl')

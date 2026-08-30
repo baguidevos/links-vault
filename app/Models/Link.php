@@ -183,4 +183,39 @@ class Link extends Model
 
         return $id ? "https://img.youtube.com/vi/{$id}/0.jpg" : null;
     }
+
+    /**
+     * Vérifie si un utilisateur a le droit de modifier la visibilité de ce lien.
+     *
+     * Règles :
+     * 1. Le bouton/action ne doit s'afficher que sur l'espace d'appartenance du lien (l'espace du créateur).
+     * 2. L'utilisateur doit être le créateur du lien ou le propriétaire de l'espace.
+     * 3. Si c'est un invité, il doit avoir le rôle éditeur (sur le dossier du lien).
+     */
+    public function canChangeVisibility(User $user, ?Model $tenant = null): bool
+    {
+        $currentTenant = $tenant ?: (class_exists(Filament::class) ? Filament::getTenant() : null);
+
+        // 1. Ne s'affiche que sur l'espace du créateur / d'origine du lien
+        if ($currentTenant && $this->team_id && (int) $this->team_id !== (int) $currentTenant->id) {
+            return false;
+        }
+
+        // 2. Créateur du lien
+        if ($this->user_id === $user->id) {
+            return true;
+        }
+
+        // 3. Propriétaire de l'équipe
+        if ($this->team && $user->ownsTeam($this->team)) {
+            return true;
+        }
+
+        // 4. Invité ayant le rôle éditeur sur le dossier associé
+        if ($this->folder && $this->folder->canBeEditedBy($user)) {
+            return true;
+        }
+
+        return false;
+    }
 }
