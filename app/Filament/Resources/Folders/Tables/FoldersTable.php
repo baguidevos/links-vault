@@ -38,8 +38,9 @@ class FoldersTable
             ->columns([
                 IconColumn::make('icon')
                     ->label(__('Icône'))
-                    ->icon(fn ($state) => $state ?? TablerIcon::Folder)
-                    ->color(fn ($record) => $record->color ?? 'primary'),
+                    ->icon(fn ($state) => ! empty($state) ? $state : TablerIcon::Folder)
+                    ->default(TablerIcon::Folder)
+                    ->color(fn ($record) => $record->color ?: 'primary'),
 
                 TextColumn::make('name')
                     ->label(__('Nom'))

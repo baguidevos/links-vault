@@ -31,6 +31,7 @@ class FolderForm
         return $schema
             ->components([
                 Section::make()
+                    ->columnSpanFull()
                     ->components(self::getComponents()),
             ]);
     }
