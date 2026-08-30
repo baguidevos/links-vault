@@ -9,6 +9,7 @@ use App\Concerns\AddUserId;
 use App\Concerns\BelongsToTeam;
 use App\Enums\FolderRole;
 use App\Enums\FolderVisibility;
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -70,21 +71,22 @@ class Folder extends Model
      */
     public function scopeAccessibleForUser(Builder $query, User $user): Builder
     {
-        if ($user->is_admin) {
-            return $query;
-        }
+        $tenant = class_exists(Filament::class) ? Filament::getTenant() : null;
 
-        // Si l'utilisateur est le propriétaire de l'équipe active
-        if (method_exists($user, 'isCurrentTeamOwner') && $user->isCurrentTeamOwner()) {
+        // Si l'utilisateur est le propriétaire de cette équipe active
+        if ($tenant && $user->ownsTeam($tenant)) {
             return $query;
         }
 
         return $query->where(function (Builder $q) use ($user) {
             $q->where('user_id', $user->id)
+                ->orWhere('visibility', FolderVisibility::Team->value)
                 ->orWhere('visibility', FolderVisibility::Team)
                 ->orWhere(function (Builder $subQuery) use ($user) {
-                    $subQuery->where('visibility', FolderVisibility::Restricted)
-                        ->whereHas('members', fn (Builder $m) => $m->where('users.id', $user->id));
+                    $subQuery->where(function ($sq) {
+                        $sq->where('visibility', FolderVisibility::Restricted->value)
+                            ->orWhere('visibility', FolderVisibility::Restricted);
+                    })->whereHas('members', fn (Builder $m) => $m->where('users.id', $user->id));
                 });
         });
     }
@@ -94,19 +96,21 @@ class Folder extends Model
      */
     public function isAccessibleBy(User $user): bool
     {
-        if ($user->is_admin || $this->user_id === $user->id) {
+        if ($this->user_id === $user->id) {
             return true;
         }
 
-        if (method_exists($user, 'isCurrentTeamOwner') && $user->isCurrentTeamOwner()) {
+        if ($this->team && $user->ownsTeam($this->team)) {
             return true;
         }
 
-        if ($this->visibility === FolderVisibility::Team) {
-            return $user->belongsToTeam($this->team);
+        $vis = $this->visibility instanceof FolderVisibility ? $this->visibility->value : (string) $this->visibility;
+
+        if ($vis === FolderVisibility::Team->value) {
+            return $this->team ? $user->belongsToTeam($this->team) : true;
         }
 
-        if ($this->visibility === FolderVisibility::Restricted) {
+        if ($vis === FolderVisibility::Restricted->value) {
             return $this->members()->where('users.id', $user->id)->exists();
         }
 
@@ -118,19 +122,21 @@ class Folder extends Model
      */
     public function canBeEditedBy(User $user): bool
     {
-        if ($user->is_admin || $this->user_id === $user->id) {
+        if ($this->user_id === $user->id) {
             return true;
         }
 
-        if (method_exists($user, 'isCurrentTeamOwner') && $user->isCurrentTeamOwner()) {
+        if ($this->team && $user->ownsTeam($this->team)) {
             return true;
         }
 
-        if ($this->visibility === FolderVisibility::Team) {
+        $vis = $this->visibility instanceof FolderVisibility ? $this->visibility->value : (string) $this->visibility;
+
+        if ($vis === FolderVisibility::Team->value) {
             return true;
         }
 
-        if ($this->visibility === FolderVisibility::Restricted) {
+        if ($vis === FolderVisibility::Restricted->value) {
             $member = $this->members()->where('users.id', $user->id)->first();
 
             return $member && ($member->pivot->role === FolderRole::Editor->value || $member->pivot->role === 'editor');

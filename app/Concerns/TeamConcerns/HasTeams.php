@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Concerns\TeamConcerns;
 
+use App\Models\TeamMember;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +14,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use LaravelDaily\FilaTeams\Contracts\TeamPermissionContract;
-use LaravelDaily\FilaTeams\Contracts\TeamRoleContract;
 use LaravelDaily\FilaTeams\Facades\FilaTeams;
 use LaravelDaily\FilaTeams\Models\Membership;
 use LaravelDaily\FilaTeams\Models\Team;
@@ -70,19 +71,39 @@ trait HasTeams
         return $this->current_team_id === $team->id;
     }
 
-    public function ownsTeam(Team $team): bool
+    public function ownsTeam(Model|Team $team): bool
     {
-        return $this->teamRole($team) === FilaTeams::ownerRole();
+        $role = $this->teamRole($team);
+
+        if (! $role) {
+            return false;
+        }
+
+        $roleValue = $role instanceof BackedEnum ? $role->value : (string) $role;
+
+        return $roleValue === 'owner';
     }
 
-    public function isCurrentTeamOwner(): bool
+    public function isCurrentTeamOwner(?Model $team = null): bool
     {
-        return $this->currentTeam ? $this->ownsTeam($this->currentTeam) : false;
+        $targetTeam = $team;
+
+        if (! $targetTeam && class_exists(Filament::class)) {
+            $targetTeam = Filament::getTenant();
+        }
+
+        if (! $targetTeam) {
+            $targetTeam = $this->currentTeam;
+        }
+
+        return $targetTeam ? $this->ownsTeam($targetTeam) : false;
     }
 
-    public function teamRole(Team $team): ?TeamRoleContract
+    public function teamRole(Model|Team $team): mixed
     {
-        $membership = $this->teamMemberships()->where('team_id', $team->id)->first();
+        $membership = TeamMember::where('user_id', $this->id)
+            ->where('team_id', $team->id)
+            ->first();
 
         return $membership?->role;
     }

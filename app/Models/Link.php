@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\AddUserId;
 use App\Enums\ContentType;
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -77,11 +78,10 @@ class Link extends Model
      */
     public function scopeAccessibleForUser(Builder $query, User $user): Builder
     {
-        if ($user->is_admin) {
-            return $query;
-        }
+        $tenant = class_exists(Filament::class) ? Filament::getTenant() : null;
 
-        if (method_exists($user, 'isCurrentTeamOwner') && $user->isCurrentTeamOwner()) {
+        // Si l'utilisateur est le propriétaire de cette équipe active
+        if ($tenant && $user->ownsTeam($tenant)) {
             return $query;
         }
 

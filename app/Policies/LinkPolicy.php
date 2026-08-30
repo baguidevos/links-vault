@@ -12,15 +12,6 @@ class LinkPolicy
 {
     use HandlesAuthorization;
 
-    public function before(User $user, string $ability): ?bool
-    {
-        if ($user->is_admin) {
-            return true;
-        }
-
-        return null;
-    }
-
     public function viewAny(User $user): bool
     {
         return true;
@@ -32,7 +23,7 @@ class LinkPolicy
             return true;
         }
 
-        if (method_exists($user, 'isCurrentTeamOwner') && $user->isCurrentTeamOwner()) {
+        if ($link->team && $user->ownsTeam($link->team)) {
             return true;
         }
 
@@ -57,7 +48,7 @@ class LinkPolicy
             return true;
         }
 
-        if (method_exists($user, 'isCurrentTeamOwner') && $user->isCurrentTeamOwner()) {
+        if ($link->team && $user->ownsTeam($link->team)) {
             return true;
         }
 
@@ -74,7 +65,7 @@ class LinkPolicy
             return true;
         }
 
-        if (method_exists($user, 'isCurrentTeamOwner') && $user->isCurrentTeamOwner()) {
+        if ($link->team && $user->ownsTeam($link->team)) {
             return true;
         }
 

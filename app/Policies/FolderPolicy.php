@@ -12,15 +12,6 @@ class FolderPolicy
 {
     use HandlesAuthorization;
 
-    public function before(User $user, string $ability): ?bool
-    {
-        if ($user->is_admin) {
-            return true;
-        }
-
-        return null;
-    }
-
     public function viewAny(User $user): bool
     {
         return true;
@@ -43,11 +34,10 @@ class FolderPolicy
 
     public function delete(User $user, Folder $folder): bool
     {
-        // Seul le créateur ou le propriétaire de l'équipe peut supprimer le dossier
         if ($folder->user_id === $user->id) {
             return true;
         }
 
-        return method_exists($user, 'isCurrentTeamOwner') && $user->isCurrentTeamOwner();
+        return $folder->team && $user->ownsTeam($folder->team);
     }
 }
