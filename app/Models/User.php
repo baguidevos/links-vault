@@ -11,6 +11,7 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -57,6 +58,24 @@ class User extends Authenticatable implements FilamentUser, HasTeamMembership
     public function sharedLinks(): HasMany
     {
         return $this->hasMany(LinkShare::class, 'sender_user_id');
+    }
+
+    /**
+     * Les dossiers créés par cet utilisateur.
+     */
+    public function folders(): HasMany
+    {
+        return $this->hasMany(Folder::class);
+    }
+
+    /**
+     * Les dossiers restreints partagés avec cet utilisateur.
+     */
+    public function sharedFolders(): BelongsToMany
+    {
+        return $this->belongsToMany(Folder::class, 'folder_user')
+            ->withPivot('role')
+            ->withTimestamps();
     }
 
     /**

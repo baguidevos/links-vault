@@ -2,6 +2,7 @@
 
 namespace App\Concerns;
 
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 
 trait BelongsToTeam
@@ -12,8 +13,10 @@ trait BelongsToTeam
     protected static function bootBelongsToTeam(): void
     {
         static::addGlobalScope('team', function (Builder $query) {
-            if (auth()->check() && auth()->user()->current_team_id) {
-                $query->where('team_id', auth()->user()->current_team_id);
+            if (class_exists(Filament::class) && Filament::getTenant()) {
+                $query->where($query->getModel()->getTable().'.team_id', Filament::getTenant()->id);
+            } elseif (auth()->check() && auth()->user()->current_team_id) {
+                $query->where($query->getModel()->getTable().'.team_id', auth()->user()->current_team_id);
             }
         });
     }

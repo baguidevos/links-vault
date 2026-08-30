@@ -75,6 +75,11 @@ trait HasTeams
         return $this->teamRole($team) === FilaTeams::ownerRole();
     }
 
+    public function isCurrentTeamOwner(): bool
+    {
+        return $this->currentTeam ? $this->ownsTeam($this->currentTeam) : false;
+    }
+
     public function teamRole(Team $team): ?TeamRoleContract
     {
         $membership = $this->teamMemberships()->where('team_id', $team->id)->first();

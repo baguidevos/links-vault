@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\AddUserId;
 use App\Enums\ContentType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -27,6 +28,7 @@ class Link extends Model
         'ai_summary_status',
         'objective',
         'category_id',
+        'folder_id',
         'favicon_url',
         'thumbnail_url',
         'is_favorite',
@@ -60,9 +62,41 @@ class Link extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function folder(): BelongsTo
+    {
+        return $this->belongsTo(Folder::class);
+    }
+
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class);
+    }
+
+    /**
+     * Scope pour filtrer les liens accessibles à un utilisateur.
+     */
+    public function scopeAccessibleForUser(Builder $query, User $user): Builder
+    {
+        if ($user->is_admin) {
+            return $query;
+        }
+
+        if (method_exists($user, 'isCurrentTeamOwner') && $user->isCurrentTeamOwner()) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($user) {
+            // 1. Liens créés par l'utilisateur
+            $q->where('user_id', $user->id)
+                // 2. Ou liens dans un dossier accessible
+                ->orWhereHas('folder', function (Builder $folderQuery) use ($user) {
+                    $folderQuery->accessibleForUser($user);
+                })
+                // 3. Ou liens directement partagés avec l'utilisateur
+                ->orWhereHas('shares', function (Builder $shareQuery) use ($user) {
+                    $shareQuery->where('recipient_user_id', $user->id)->valid();
+                });
+        });
     }
 
     /**

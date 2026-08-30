@@ -8,6 +8,7 @@ use App\Ai\Agents\TagFinderAgent;
 use App\Ai\Agents\YoutubeTranscriptSummary;
 use App\Enums\ContentType;
 use App\Models\Category;
+use App\Models\Folder;
 use App\Services\ContentDetectionService;
 use App\Services\GoogleClient\YouTube\YouTubeTranscriptCliService;
 use Filament\Actions\Action;
@@ -212,17 +213,35 @@ class LinkForm
                 ->default('{}'),
             Grid::make(3)
                 ->components([
-                    Select::make('content_type')
-                        ->label(__('Content Type'))
-                        ->options(collect(ContentType::cases())
-                            ->mapWithKeys(fn (ContentType $case) => [$case->value => $case->label()])
-                            ->toArray())
-                        ->default(ContentType::Other->value),
+                    Select::make('folder_id')
+                        ->label(__('Dossier'))
+                        ->options(function () {
+                            $user = auth()->user();
+                            $query = Folder::query();
+                            if ($user) {
+                                $query->accessibleForUser($user);
+                            }
+
+                            return $query->pluck('name', 'id');
+                        })
+                        ->searchable()
+                        ->preload()
+                        ->placeholder(__('Aucun dossier (racine)'))
+                        ->live()
+                        ->afterStateUpdated(function ($state, Set $set) {
+                            if ($state) {
+                                $folder = Folder::find($state);
+                                if ($folder && $folder->category_id) {
+                                    $set('category_id', $folder->category_id);
+                                }
+                            }
+                        }),
                     Select::make('category_id')
                         ->label(__('Category'))
                         ->options(fn () => Category::pluck('name', 'id'))
                         ->searchable()
                         ->preload()
+                        ->placeholder(__('Sélectionner une catégorie'))
                         ->createOptionForm([
                             TextInput::make('name')
                                 ->label(__('Name'))
@@ -235,6 +254,12 @@ class LinkForm
                         ->createOptionUsing(function (array $data): int {
                             return Category::create($data)->id;
                         }),
+                    Select::make('content_type')
+                        ->label(__('Content Type'))
+                        ->options(collect(ContentType::cases())
+                            ->mapWithKeys(fn (ContentType $case) => [$case->value => $case->label()])
+                            ->toArray())
+                        ->default(ContentType::Other->value),
                     TextInput::make('objective')
                         ->label(__('Objective'))
                         ->maxLength(255),

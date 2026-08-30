@@ -19,7 +19,14 @@ class LinksTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['category', 'tags']))
+            ->modifyQueryUsing(function (Builder $query) {
+                $user = auth()->user();
+                $query->with(['category', 'folder', 'tags']);
+
+                if ($user) {
+                    $query->accessibleForUser($user);
+                }
+            })
             ->columns([
                 // ImageColumn::make('thumbnail_url')
                 //     ->label(__('thumbnail_url'))
@@ -45,6 +52,13 @@ class LinksTable
                     ->sortable()
                     ->limit(40)
                     ->url(fn ($record) => $record->url, shouldOpenInNewTab: true),
+                TextColumn::make('folder.name')
+                    ->label(__('Dossier'))
+                    ->searchable()
+                    ->sortable()
+                    ->badge()
+                    ->color('info')
+                    ->placeholder('—'),
                 TextColumn::make('category.name')
                     ->label(__('Category'))
                     ->searchable()
@@ -79,6 +93,11 @@ class LinksTable
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
+                SelectFilter::make('folder')
+                    ->relationship('folder', 'name')
+                    ->label(__('Dossier'))
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('category')
                     ->relationship('category', 'name')
                     ->label(__('Category'))
