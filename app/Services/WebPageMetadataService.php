@@ -223,10 +223,6 @@ class WebPageMetadataService
      */
     protected function parseMetadata(string $html, string $baseUrl): array
     {
-        // Supprimer les scripts et styles pour améliorer les performances
-        $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
-        $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html);
-
         $metadata = [
             'title' => null,
             'description' => null,
@@ -238,30 +234,75 @@ class WebPageMetadataService
             'url' => null,
         ];
 
+        // 1. Extraction spécifique YouTube shortDescription (depuis le script ytInitialPlayerResponse avant nettoyage)
+        if (str_contains($baseUrl, 'youtube.com') || str_contains($baseUrl, 'youtu.be')) {
+            if (preg_match('/"shortDescription":"(.*?)"(?=,"isCrawlable"|,"allowRatings"|,"lengthSeconds")/s', $html, $ytDesc)) {
+                $decodedDesc = stripcslashes($ytDesc[1]);
+                if (! empty($decodedDesc)) {
+                    $metadata['description'] = trim($decodedDesc);
+                }
+            }
+        }
+
+        // 2. Extraction JSON-LD (Schema.org)
+        if (preg_match('/<script[^>]*type=["\']application\/ld\+json["\'][^>]*>(.*?)<\/script>/is', $html, $jsonLdMatch)) {
+            try {
+                $jsonLd = json_decode(trim($jsonLdMatch[1]), true);
+                if (is_array($jsonLd)) {
+                    if (empty($metadata['description']) && ! empty($jsonLd['description'])) {
+                        $metadata['description'] = is_string($jsonLd['description']) ? trim($jsonLd['description']) : null;
+                    }
+                    if (empty($metadata['title']) && ! empty($jsonLd['headline'] ?? $jsonLd['name'])) {
+                        $metadata['title'] = trim($jsonLd['headline'] ?? $jsonLd['name']);
+                    }
+                    if (empty($metadata['image']) && ! empty($jsonLd['image'])) {
+                        $img = is_array($jsonLd['image']) ? ($jsonLd['image']['url'] ?? $jsonLd['image'][0] ?? null) : $jsonLd['image'];
+                        if (is_string($img)) {
+                            $metadata['image'] = $this->resolveUrl($img, $baseUrl);
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // Ignorer
+            }
+        }
+
+        // Nettoyer les scripts et styles pour le parsing des balises standard
+        $cleanedHtml = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
+        $cleanedHtml = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $cleanedHtml);
+
         // Extraire le titre
-        if (preg_match('/<title[^>]*>(.*?)<\/title>/is', $html, $matches)) {
+        if (preg_match('/<title[^>]*>(.*?)<\/title>/is', $cleanedHtml, $matches)) {
             $metadata['title'] = trim(strip_tags($matches[1]));
         }
 
-        // Extraire les meta tags Open Graph et Twitter
-        if (preg_match_all('/<meta[^>]+>/i', $html, $metaMatches)) {
+        // Extraire les meta tags Open Graph, Twitter et standard
+        if (preg_match_all('/<meta[^>]+>/i', $cleanedHtml, $metaMatches)) {
             foreach ($metaMatches[0] as $metaTag) {
-                // Description
-                if (preg_match('/property=["\']og:description["\'].*?content=["\'](.*?)["\']/i', $metaTag, $matches)
-                    || preg_match('/name=["\']description["\'].*?content=["\'](.*?)["\']/i', $metaTag, $matches)) {
-                    $metadata['description'] = trim($matches[1]);
+                // Description (og:description, twitter:description, description, itemprop)
+                if (empty($metadata['description'])) {
+                    if (preg_match('/property=["\']og:description["\'].*?content=["\'](.*?)["\']/is', $metaTag, $matches)
+                        || preg_match('/content=["\'](.*?)["\'].*?property=["\']og:description["\']/is', $metaTag, $matches)
+                        || preg_match('/name=["\']description["\'].*?content=["\'](.*?)["\']/is', $metaTag, $matches)
+                        || preg_match('/content=["\'](.*?)["\'].*?name=["\']description["\']/is', $metaTag, $matches)
+                        || preg_match('/name=["\']twitter:description["\'].*?content=["\'](.*?)["\']/is', $metaTag, $matches)
+                        || preg_match('/itemprop=["\']description["\'].*?content=["\'](.*?)["\']/is', $metaTag, $matches)) {
+                        $metadata['description'] = trim(html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8'));
+                    }
                 }
 
                 // Image
-                if (preg_match('/property=["\']og:image["\'].*?content=["\'](.*?)["\']/i', $metaTag, $matches)
-                    || preg_match('/name=["\']twitter:image["\'].*?content=["\'](.*?)["\']/i', $metaTag, $matches)) {
-                    $imageUrl = trim($matches[1]);
-                    $metadata['image'] = $this->resolveUrl($imageUrl, $baseUrl);
+                if (empty($metadata['image'])) {
+                    if (preg_match('/property=["\']og:image["\'].*?content=["\'](.*?)["\']/i', $metaTag, $matches)
+                        || preg_match('/name=["\']twitter:image["\'].*?content=["\'](.*?)["\']/i', $metaTag, $matches)) {
+                        $imageUrl = trim($matches[1]);
+                        $metadata['image'] = $this->resolveUrl($imageUrl, $baseUrl);
+                    }
                 }
 
                 // Site name
                 if (preg_match('/property=["\']og:site_name["\'].*?content=["\'](.*?)["\']/i', $metaTag, $matches)) {
-                    $metadata['site_name'] = trim($matches[1]);
+                    $metadata['site_name'] = trim(html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8'));
                 }
 
                 // Type
@@ -277,17 +318,17 @@ class WebPageMetadataService
         }
 
         // Extraire l'auteur
-        if (preg_match('/<meta[^>]*name=["\']author["\'][^>]*content=["\'](.*?)["\']/i', $html, $matches)
-            || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*name=["\']author["\']/i', $html, $matches)) {
-            $metadata['author'] = trim($matches[1]);
+        if (preg_match('/<meta[^>]*name=["\']author["\'][^>]*content=["\'](.*?)["\']/i', $cleanedHtml, $matches)
+            || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*name=["\']author["\']/i', $cleanedHtml, $matches)) {
+            $metadata['author'] = trim(html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8'));
         }
 
         // Extraire le favicon
-        $metadata['favicon'] = $this->extractFaviconFromHtml($html, $baseUrl);
+        $metadata['favicon'] = $this->extractFaviconFromHtml($cleanedHtml, $baseUrl);
 
         // Fallback: utiliser le titre OG si pas de titre normal
-        if (empty($metadata['title']) && preg_match('/property=["\']og:title["\'].*?content=["\'](.*?)["\']/i', $html, $matches)) {
-            $metadata['title'] = trim($matches[1]);
+        if (empty($metadata['title']) && preg_match('/property=["\']og:title["\'].*?content=["\'](.*?)["\']/i', $cleanedHtml, $matches)) {
+            $metadata['title'] = trim(html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8'));
         }
 
         return $metadata;

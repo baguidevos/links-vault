@@ -64,28 +64,40 @@ class LinkForm
                             $contentDetection = new ContentDetectionService;
                             $analysis = $contentDetection->analyze($state);
                             $type = $analysis['type'];
+                            $metadata = $analysis['metadata'] ?? [];
 
-                            // Auto-detect content type
+                            // 1. Détection du type de contenu
                             $set('content_type', $type);
-                            $set('favicon_url', $analysis['metadata']['favicon']);
-                            $set('thumbnail_url', $analysis['metadata']['image'] ?? 'nom disponible');
 
-                            // Auto-generate title if empty
-                            $title = $get('title');
-                            if (empty($title)) {
-                                $set('title', $contentDetection->generateTitleFromUrl($state, $analysis['type']));
+                            // 2. Favicon & Miniature
+                            if (! empty($metadata['favicon'])) {
+                                $set('favicon_url', $metadata['favicon']);
+                            }
+                            if (! empty($metadata['image']) && $metadata['image'] !== 'nom disponible') {
+                                $set('thumbnail_url', $metadata['image']);
                             }
 
-                            if ($type === 'youtube') {
-                                $set('description', $contentDetection->getYoutubeVideoDescription($state));
-                            } else {
-                                $set('title', $analysis['metadata']['title']);
-                                $set('description', $analysis['metadata']['description']);
+                            // 3. Titre automatique du site ou de la vidéo
+                            $detectedTitle = ! empty($metadata['title'])
+                                ? $metadata['title']
+                                : $contentDetection->generateTitleFromUrl($state, $type);
+
+                            if (empty($get('title')) && ! empty($detectedTitle)) {
+                                $set('title', $detectedTitle);
                             }
 
-                            // Auto-fill metadata
-                            if (! empty($analysis['metadata'])) {
-                                $set('metadata', json_encode($analysis['metadata']));
+                            // 4. Description automatique du site ou de la vidéo
+                            $detectedDescription = ! empty($metadata['description'])
+                                ? $metadata['description']
+                                : ($type === 'youtube' ? $contentDetection->getYoutubeVideoDescription($state) : null);
+
+                            if (empty($get('description')) && ! empty($detectedDescription)) {
+                                $set('description', $detectedDescription);
+                            }
+
+                            // 5. Métadonnées complètes
+                            if (! empty($metadata)) {
+                                $set('metadata', json_encode($metadata));
                             }
                         }),
                     TextInput::make('title')
