@@ -38,6 +38,11 @@ class Category extends Model
         return $this->belongsTo(Team::class);
     }
 
+    public function folders(): HasMany
+    {
+        return $this->hasMany(Folder::class);
+    }
+
     public function links(): HasMany
     {
         return $this->hasMany(Link::class);

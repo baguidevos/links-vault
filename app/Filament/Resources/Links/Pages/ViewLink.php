@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Links\Pages;
 
+use App\Filament\Resources\Links\Actions\ChangeVisibilityAction;
 use App\Filament\Resources\Links\Actions\ShareLinkModalAction;
 use App\Filament\Resources\Links\LinkResource;
 use App\Models\Link;
@@ -10,6 +11,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Collection;
 
 class ViewLink extends ViewRecord
@@ -18,11 +20,21 @@ class ViewLink extends ViewRecord
 
     protected string $view = 'filament.resources.links.pages.view-link';
 
+    public function getTitle(): string|Htmlable
+    {
+        return $this->record->title ?: $this->record->url;
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return $this->record->title ?: __('Détails');
+    }
+
     public function mount(int|string $record): void
     {
         parent::mount($record);
 
-        $this->record->load(['tags', 'category']);
+        $this->record->load(['tags', 'category', 'folder', 'members']);
     }
 
     protected function getHeaderActions(): array
@@ -36,6 +48,9 @@ class ViewLink extends ViewRecord
                 ->action(fn () => $this->recordVisit()),
 
             ShareLinkModalAction::make()
+                ->record($this->record),
+
+            ChangeVisibilityAction::make()
                 ->record($this->record),
 
             Action::make('toggle_favorite')

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Concerns\TeamConcerns;
 
+use App\Models\TeamMember;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +14,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use LaravelDaily\FilaTeams\Contracts\TeamPermissionContract;
-use LaravelDaily\FilaTeams\Contracts\TeamRoleContract;
 use LaravelDaily\FilaTeams\Facades\FilaTeams;
 use LaravelDaily\FilaTeams\Models\Membership;
 use LaravelDaily\FilaTeams\Models\Team;
@@ -42,12 +43,12 @@ trait HasTeams
         return $this->belongsTo(Team::class, 'current_team_id');
     }
 
-    public function personalTeam(): ?Team
+    public function personalTeam(): ?Model
     {
         return $this->teams()->where('is_personal', true)->first();
     }
 
-    public function switchTeam(Team $team): bool
+    public function switchTeam(Model|Team $team): bool
     {
         if (! $this->belongsToTeam($team)) {
             return false;
@@ -60,29 +61,54 @@ trait HasTeams
         return true;
     }
 
-    public function belongsToTeam(Team $team): bool
+    public function belongsToTeam(Model|Team $team): bool
     {
         return $this->teams()->where('teams.id', $team->id)->exists();
     }
 
-    public function isCurrentTeam(Team $team): bool
+    public function isCurrentTeam(Model|Team $team): bool
     {
         return $this->current_team_id === $team->id;
     }
 
-    public function ownsTeam(Team $team): bool
+    public function ownsTeam(Model|Team $team): bool
     {
-        return $this->teamRole($team) === FilaTeams::ownerRole();
+        $role = $this->teamRole($team);
+
+        if (! $role) {
+            return false;
+        }
+
+        $roleValue = $role instanceof BackedEnum ? $role->value : (string) $role;
+
+        return $roleValue === 'owner';
     }
 
-    public function teamRole(Team $team): ?TeamRoleContract
+    public function isCurrentTeamOwner(?Model $team = null): bool
     {
-        $membership = $this->teamMemberships()->where('team_id', $team->id)->first();
+        $targetTeam = $team;
+
+        if (! $targetTeam && class_exists(Filament::class)) {
+            $targetTeam = Filament::getTenant();
+        }
+
+        if (! $targetTeam) {
+            $targetTeam = $this->currentTeam;
+        }
+
+        return $targetTeam ? $this->ownsTeam($targetTeam) : false;
+    }
+
+    public function teamRole(Model|Team $team): mixed
+    {
+        $membership = TeamMember::where('user_id', $this->id)
+            ->where('team_id', $team->id)
+            ->first();
 
         return $membership?->role;
     }
 
-    public function hasTeamPermission(Team $team, string|TeamPermissionContract $permission): bool
+    public function hasTeamPermission(Model|Team $team, string|TeamPermissionContract $permission): bool
     {
         $role = $this->teamRole($team);
         $value = $permission instanceof BackedEnum ? $permission->value : $permission;
@@ -90,7 +116,7 @@ trait HasTeams
         return $role !== null && $role->hasPermission($value);
     }
 
-    public function fallbackTeam(?Team $excluding = null): ?Team
+    public function fallbackTeam(?Model $excluding = null): ?Model
     {
         return $this->teams()
             ->when($excluding, fn ($query) => $query->where('teams.id', '!=', $excluding->id))

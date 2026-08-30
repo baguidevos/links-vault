@@ -39,7 +39,7 @@
                     @endif
 
                     <div class="p-6 sm:p-8 space-y-6">
-                        {{-- Badges de Catégorie & Type --}}
+                        {{-- Badges de Dossier, Catégorie, Visibilité & Type --}}
                         <div class="flex flex-wrap items-center gap-2.5">
                             @if ($record->content_type)
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
@@ -48,10 +48,46 @@
                                 </span>
                             @endif
 
+                            @if ($record->folder)
+                                <a 
+                                    href="{{ \App\Filament\Resources\Folders\FolderResource::getUrl('view', ['record' => $record->folder->id]) }}"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50 border border-blue-200/60 dark:border-blue-800/40 transition"
+                                    title="Voir le dossier"
+                                >
+                                    <x-filament::icon icon="heroicon-m-folder" class="w-3.5 h-3.5" />
+                                    <span>{{ $record->folder->name }}</span>
+                                </a>
+                            @else
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border border-gray-200/60 dark:border-gray-700/40">
+                                    <x-filament::icon icon="heroicon-m-folder-minus" class="w-3.5 h-3.5 text-gray-400" />
+                                    <span>Racine (sans dossier)</span>
+                                </span>
+                            @endif
+
                             @if ($record->category)
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
-                                    <x-filament::icon icon="heroicon-m-folder" class="w-3.5 h-3.5" />
+                                    <x-filament::icon icon="heroicon-m-tag" class="w-3.5 h-3.5" />
                                     <span>{{ $record->category->name }}</span>
+                                </span>
+                            @endif
+
+                            @php
+                                $visVal = $record->visibility instanceof \App\Enums\LinkVisibility ? $record->visibility->value : (string) ($record->visibility ?? 'private');
+                            @endphp
+                            @if ($visVal === 'team')
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
+                                    <x-filament::icon icon="heroicon-m-user-group" class="w-3.5 h-3.5" />
+                                    <span>Visibilité : Équipe</span>
+                                </span>
+                            @elseif ($visVal === 'restricted')
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/40">
+                                    <x-filament::icon icon="heroicon-m-lock-closed" class="w-3.5 h-3.5" />
+                                    <span>Visibilité : Restreint ({{ $record->members->count() }})</span>
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-200/60 dark:border-gray-700/40">
+                                    <x-filament::icon icon="heroicon-m-lock-closed" class="w-3.5 h-3.5" />
+                                    <span>Visibilité : Privé</span>
                                 </span>
                             @endif
 
@@ -132,7 +168,19 @@
                         @endif
 
                         {{-- Grille de Métadonnées / Statistiques --}}
-                        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100 sm:grid-cols-4 dark:border-gray-800">
+                        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100 sm:grid-cols-5 dark:border-gray-800">
+                            <div class="space-y-1">
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Dossier</span>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                    @if ($record->folder)
+                                        <a href="{{ \App\Filament\Resources\Folders\FolderResource::getUrl('view', ['record' => $record->folder->id]) }}" class="hover:underline text-primary-600 dark:text-primary-400">
+                                            {{ $record->folder->name }}
+                                        </a>
+                                    @else
+                                        Racine
+                                    @endif
+                                </p>
+                            </div>
                             <div class="space-y-1">
                                 <span class="text-xs text-gray-500 dark:text-gray-400">Ajouté le</span>
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white">
@@ -190,7 +238,7 @@
                                     <div class="flex flex-wrap gap-2">
                                         @foreach ($tagsList as $tag)
                                             <span class="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 rounded-lg border border-gray-200 dark:border-gray-700">
-                                                <x-filament::icon icon="heroicon-m-hashtag" class="w-3 h-3 text-gray-400" />
+                                                <x-filament::icon icon="heroicon-m-hashtag" class="w-3 text-gray-400" />
                                                 <span>{{ is_object($tag) ? $tag->name : $tag }}</span>
                                             </span>
                                         @endforeach
@@ -229,6 +277,17 @@
                             <x-filament::icon icon="heroicon-o-pencil-square" class="w-4 h-4" />
                             <span>Modifier</span>
                         </button>
+
+                        @if ($record->canChangeVisibility(auth()->user()))
+                            <button 
+                                type="button" 
+                                wire:click="mountAction('change_visibility')"
+                                class="inline-flex items-center justify-center gap-2 w-full px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-xl transition"
+                            >
+                                <x-filament::icon icon="heroicon-o-lock-closed" class="w-4 h-4 text-primary-500" />
+                                <span>Modifier la visibilité</span>
+                            </button>
+                        @endif
 
                         <button 
                             type="button" 

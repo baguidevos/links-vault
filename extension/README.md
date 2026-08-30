@@ -28,7 +28,7 @@ L'extension officielle **Links Vault Clipper** vous permet de capturer, enrichir
 - Rendez-vous sur n'importe quel site ou vidéo YouTube.
 - Cliquez sur l'extension (ou raccourci **`Alt + S`**).
 - L'extension extrait instantanément le titre, l'image d'aperçu, la favicon et la description.
-- Choisissez votre **Team**, **Catégorie** et ajoutez vos **Tags**.
+- Choisissez votre **Espace / Team**, **Dossier**, **Catégorie** et ajoutez vos **Tags**.
 - Activez ou désactivez le **Résumé IA 🤖** ou le marqueur **Favori ⭐**.
 - Cliquez sur **« Enregistrer dans le Vault »**.
 

@@ -37,6 +37,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
   let targetUrl = tab.url;
   let title = tab.title || '';
+  if (targetUrl && (targetUrl.includes('youtube.com') || targetUrl.includes('youtu.be'))) {
+    title = title.replace(/\s*-\s*YouTube.*$/i, '').trim();
+  }
   let description = null;
 
   if (info.menuItemId === 'save-target-link' && info.linkUrl) {

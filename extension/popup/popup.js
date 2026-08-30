@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const previewUrlDisplay = document.getElementById('preview-url-display');
   const linkTitle = document.getElementById('link-title');
   const linkTeam = document.getElementById('link-team');
+  const linkFolder = document.getElementById('link-folder');
   const linkCategory = document.getElementById('link-category');
   const tagInputField = document.getElementById('tag-input-field');
   const tagsChipsContainer = document.getElementById('tags-chips-container');
@@ -64,6 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     type: 'article',
   };
   let currentTags = [];
+  let availableFolders = [];
   let availableCategories = [];
   let availableTeams = [];
 
@@ -198,11 +200,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Change Team -> Reload Categories & Tags for this team
+  // Change Team -> Reload Categories, Folders & Tags for this team
   linkTeam.addEventListener('change', async () => {
-    const teamId = linkTeam.value;
-    if (teamId) {
-      await loadContext(teamId);
+    const selectedTeamId = linkTeam.value;
+    if (selectedTeamId) {
+      linkFolder.innerHTML = '<option value="">Chargement...</option>';
+      linkCategory.innerHTML = '<option value="">Chargement...</option>';
+      await loadContext(selectedTeamId);
+    }
+  });
+
+  // Change Folder -> Auto select linked category if available
+  linkFolder.addEventListener('change', () => {
+    const selectedFolderId = linkFolder.value;
+    if (!selectedFolderId) return;
+
+    const folder = availableFolders.find((f) => String(f.id) === String(selectedFolderId));
+    if (folder && folder.category_id) {
+      const catOption = linkCategory.querySelector(`option[value="${folder.category_id}"]`);
+      if (catOption) {
+        linkCategory.value = folder.category_id;
+      }
     }
   });
 
@@ -216,6 +234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       title: linkTitle.value.trim(),
       description: linkDescription.value.trim() || null,
       team_id: linkTeam.value ? parseInt(linkTeam.value) : null,
+      folder_id: linkFolder.value ? parseInt(linkFolder.value) : null,
       category_id: linkCategory.value ? parseInt(linkCategory.value) : null,
       tags: currentTags,
       content_type: currentTabData.type || 'other',
@@ -322,16 +341,63 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentTabData.title = tab.title || '';
       currentTabData.favicon = tab.favIconUrl || '';
 
+      // Detect content type early
+      if (currentTabData.url.includes('youtube.com/') || currentTabData.url.includes('youtu.be/')) {
+        currentTabData.type = 'youtube';
+        const ytMatch = currentTabData.url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+        if (ytMatch && ytMatch[1]) {
+          currentTabData.image = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+        }
+      } else if (currentTabData.url.includes('drive.google.com') || currentTabData.url.includes('docs.google.com')) {
+        currentTabData.type = 'drive';
+      } else if (currentTabData.url.endsWith('.pdf')) {
+        currentTabData.type = 'pdf';
+      } else {
+        currentTabData.type = 'article';
+      }
+
       // Check if URL is inspectable (not chrome:// or extension pages)
       if (tab.url.startsWith('http://') || tab.url.startsWith('https://')) {
         const results = await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           func: () => {
+            const isYouTube = window.location.hostname.includes('youtube.com') || window.location.hostname.includes('youtu.be');
             const getMeta = (prop) =>
               document.querySelector(`meta[property="${prop}"]`)?.content ||
               document.querySelector(`meta[name="${prop}"]`)?.content || '';
 
+            let title = '';
+            let description = '';
+
+            if (isYouTube) {
+              // Sur les SPA comme YouTube, les balises <meta> dans <head> ne sont pas rafraîchies lors du clic sur une vidéo suggérée.
+              // 1. Titre visible dans le lecteur DOM
+              const ytTitleEl = document.querySelector('h1.ytd-watch-metadata yt-formatted-string, ytd-watch-metadata #title h1, #title h1 yt-formatted-string, #title h1');
+              if (ytTitleEl && ytTitleEl.textContent && ytTitleEl.textContent.trim()) {
+                title = ytTitleEl.textContent.trim();
+              } else if (document.title) {
+                // 2. Nettoyage du suffixe YouTube dans document.title
+                title = document.title.replace(/\s*-\s*YouTube.*$/i, '').trim();
+              }
+
+              // Description visible dans le conteneur YouTube
+              const ytDescEl = document.querySelector('ytd-text-inline-expander#description-inline-expander yt-attributed-string, #description-inline-expander');
+              if (ytDescEl && ytDescEl.innerText && ytDescEl.innerText.trim()) {
+                description = ytDescEl.innerText.trim();
+              }
+            }
+
+            if (!title) {
+              title = getMeta('og:title') || getMeta('twitter:title') || document.title || '';
+            }
+
+            if (!description) {
+              description = getMeta('og:description') || getMeta('twitter:description') || getMeta('description') || '';
+            }
+
             return {
+              title: title,
+              description: description,
               ogTitle: getMeta('og:title') || getMeta('twitter:title'),
               ogDescription: getMeta('og:description') || getMeta('twitter:description') || getMeta('description'),
               ogImage: getMeta('og:image') || getMeta('twitter:image'),
@@ -343,23 +409,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (results && results[0] && results[0].result) {
           const dom = results[0].result;
-          if (dom.ogTitle) currentTabData.title = dom.ogTitle;
-          if (dom.ogDescription) currentTabData.description = dom.ogDescription;
-          if (dom.ogImage) currentTabData.image = dom.ogImage;
+          if (dom.title) currentTabData.title = dom.title;
+          else if (dom.ogTitle) currentTabData.title = dom.ogTitle;
+
+          if (dom.description) currentTabData.description = dom.description;
+          else if (dom.ogDescription) currentTabData.description = dom.ogDescription;
+
+          if (dom.ogImage && !currentTabData.image) currentTabData.image = dom.ogImage;
           if (dom.favicon) currentTabData.favicon = dom.favicon;
           if (dom.selectedText) currentTabData.selectedText = dom.selectedText;
         }
-      }
-
-      // Detect content type
-      if (currentTabData.url.includes('youtube.com/') || currentTabData.url.includes('youtu.be/')) {
-        currentTabData.type = 'youtube';
-      } else if (currentTabData.url.includes('drive.google.com') || currentTabData.url.includes('docs.google.com')) {
-        currentTabData.type = 'drive';
-      } else if (currentTabData.url.endsWith('.pdf')) {
-        currentTabData.type = 'pdf';
-      } else {
-        currentTabData.type = 'article';
       }
     } catch (e) {
       console.warn('DOM extraction skipped:', e);
@@ -395,22 +454,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     availableTeams = data.teams || [];
     availableCategories = data.categories || [];
+    availableFolders = data.folders || [];
     const availableTags = data.tags || [];
 
     // Populate Teams
+    const targetTeamId = teamId !== null && teamId !== undefined
+      ? String(teamId)
+      : (data.current_team_id ? String(data.current_team_id) : (availableTeams[0] ? String(availableTeams[0].id) : ''));
+
     linkTeam.innerHTML = '';
     if (availableTeams.length > 0) {
       availableTeams.forEach((t) => {
         const opt = document.createElement('option');
         opt.value = t.id;
         opt.textContent = t.name + (t.is_personal ? ' (Perso)' : '');
-        if (t.id === (teamId || data.current_team_id)) opt.selected = true;
+        if (String(t.id) === targetTeamId) opt.selected = true;
         linkTeam.appendChild(opt);
       });
+      linkTeam.value = targetTeamId;
       document.getElementById('team-group').style.display = availableTeams.length > 1 ? 'flex' : 'none';
     } else {
       document.getElementById('team-group').style.display = 'none';
     }
+
+    // Populate Folders
+    linkFolder.innerHTML = '<option value="">Aucun dossier (racine)</option>';
+    availableFolders.forEach((folder) => {
+      const opt = document.createElement('option');
+      opt.value = folder.id;
+      const icon = folder.icon ? `${folder.icon} ` : '📁 ';
+      opt.textContent = `${icon}${folder.name}`;
+      linkFolder.appendChild(opt);
+    });
 
     // Populate Categories
     linkCategory.innerHTML = '<option value="">Aucune catégorie</option>';
@@ -487,12 +562,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (!res.ok) return;
       const data = await res.json();
+      const isYouTube = currentTabData.type === 'youtube' || currentTabData.url.includes('youtube.com/') || currentTabData.url.includes('youtu.be/');
 
-      if (data.title && (!linkTitle.value || linkTitle.value === currentTabData.url)) {
+      if (data.title && (!linkTitle.value || linkTitle.value === currentTabData.url || isYouTube)) {
         linkTitle.value = data.title;
+        currentTabData.title = data.title;
       }
-      if (data.description && !linkDescription.value) {
+      if (data.description && (!linkDescription.value || isYouTube)) {
         linkDescription.value = data.description;
+        currentTabData.description = data.description;
       }
       if (data.thumbnail_url) {
         currentTabData.image = data.thumbnail_url;

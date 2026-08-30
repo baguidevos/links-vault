@@ -7,12 +7,17 @@ use App\Ai\Agents\LinkDescriptionAgent;
 use App\Ai\Agents\TagFinderAgent;
 use App\Ai\Agents\YoutubeTranscriptSummary;
 use App\Enums\ContentType;
+use App\Enums\LinkVisibility;
 use App\Models\Category;
+use App\Models\Folder;
+use App\Models\User;
 use App\Services\ContentDetectionService;
 use App\Services\GoogleClient\YouTube\YouTubeTranscriptCliService;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
@@ -22,6 +27,8 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Laravel\Ai\Enums\Lab;
 
@@ -57,28 +64,40 @@ class LinkForm
                             $contentDetection = new ContentDetectionService;
                             $analysis = $contentDetection->analyze($state);
                             $type = $analysis['type'];
+                            $metadata = $analysis['metadata'] ?? [];
 
-                            // Auto-detect content type
+                            // 1. Détection du type de contenu
                             $set('content_type', $type);
-                            $set('favicon_url', $analysis['metadata']['favicon']);
-                            $set('thumbnail_url', $analysis['metadata']['image'] ?? 'nom disponible');
 
-                            // Auto-generate title if empty
-                            $title = $get('title');
-                            if (empty($title)) {
-                                $set('title', $contentDetection->generateTitleFromUrl($state, $analysis['type']));
+                            // 2. Favicon & Miniature
+                            if (! empty($metadata['favicon'])) {
+                                $set('favicon_url', $metadata['favicon']);
+                            }
+                            if (! empty($metadata['image']) && $metadata['image'] !== 'nom disponible') {
+                                $set('thumbnail_url', $metadata['image']);
                             }
 
-                            if ($type === 'youtube') {
-                                $set('description', $contentDetection->getYoutubeVideoDescription($state));
-                            } else {
-                                $set('title', $analysis['metadata']['title']);
-                                $set('description', $analysis['metadata']['description']);
+                            // 3. Titre automatique du site ou de la vidéo
+                            $detectedTitle = ! empty($metadata['title'])
+                                ? $metadata['title']
+                                : $contentDetection->generateTitleFromUrl($state, $type);
+
+                            if (empty($get('title')) && ! empty($detectedTitle)) {
+                                $set('title', $detectedTitle);
                             }
 
-                            // Auto-fill metadata
-                            if (! empty($analysis['metadata'])) {
-                                $set('metadata', json_encode($analysis['metadata']));
+                            // 4. Description automatique du site ou de la vidéo
+                            $detectedDescription = ! empty($metadata['description'])
+                                ? $metadata['description']
+                                : ($type === 'youtube' ? $contentDetection->getYoutubeVideoDescription($state) : null);
+
+                            if (empty($get('description')) && ! empty($detectedDescription)) {
+                                $set('description', $detectedDescription);
+                            }
+
+                            // 5. Métadonnées complètes
+                            if (! empty($metadata)) {
+                                $set('metadata', json_encode($metadata));
                             }
                         }),
                     TextInput::make('title')
@@ -120,16 +139,24 @@ class LinkForm
                                 if ($contentType === 'youtube') {
                                     try {
                                         $video_id = Youtube::parseVidFromURL($url);
-                                        $video_infos = \Alaouy\Youtube\Facades\Youtube::getVideoInfo($video_id);
-                                        $context .= "\nInformations YouTube:\n";
-                                        $context .= "- Titre vidéo: {$video_infos->snippet->title}\n";
-                                        $context .= "- Chaîne: {$video_infos->snippet->channelTitle}\n";
-                                        $context .= "- Date de publication: {$video_infos->snippet->publishedAt}\n";
+                                        if (config('youtube.key')) {
+                                            try {
+                                                $video_infos = \Alaouy\Youtube\Facades\Youtube::getVideoInfo($video_id);
+                                                if ($video_infos && isset($video_infos->snippet)) {
+                                                    $context .= "\nInformations YouTube:\n";
+                                                    $context .= "- Titre vidéo: {$video_infos->snippet->title}\n";
+                                                    $context .= "- Chaîne: {$video_infos->snippet->channelTitle}\n";
+                                                    $context .= "- Date de publication: {$video_infos->snippet->publishedAt}\n";
 
-                                        if (! empty($video_infos->snippet->description)) {
-                                            $context .= '- Description originale: '.substr($video_infos->snippet->description, 0, 500)."\n";
+                                                    if (! empty($video_infos->snippet->description)) {
+                                                        $context .= '- Description originale: '.substr($video_infos->snippet->description, 0, 500)."\n";
+                                                    }
+                                                }
+                                            } catch (\Throwable) {
+                                                // Fallback oEmbed si clé invalide
+                                            }
                                         }
-                                    } catch (\Exception $e) {
+                                    } catch (\Throwable $e) {
                                         Log::warning('Impossible de récupérer les infos YouTube', ['error' => $e->getMessage()]);
                                     }
                                 }
@@ -212,17 +239,35 @@ class LinkForm
                 ->default('{}'),
             Grid::make(3)
                 ->components([
-                    Select::make('content_type')
-                        ->label(__('Content Type'))
-                        ->options(collect(ContentType::cases())
-                            ->mapWithKeys(fn (ContentType $case) => [$case->value => $case->label()])
-                            ->toArray())
-                        ->default(ContentType::Other->value),
+                    Select::make('folder_id')
+                        ->label(__('Dossier'))
+                        ->options(function () {
+                            $user = auth()->user();
+                            $query = Folder::query();
+                            if ($user) {
+                                $query->accessibleForUser($user);
+                            }
+
+                            return $query->pluck('name', 'id');
+                        })
+                        ->searchable()
+                        ->preload()
+                        ->placeholder(__('Aucun dossier (racine)'))
+                        ->live()
+                        ->afterStateUpdated(function ($state, Set $set) {
+                            if ($state) {
+                                $folder = Folder::find($state);
+                                if ($folder && $folder->category_id) {
+                                    $set('category_id', $folder->category_id);
+                                }
+                            }
+                        }),
                     Select::make('category_id')
                         ->label(__('Category'))
                         ->options(fn () => Category::pluck('name', 'id'))
                         ->searchable()
                         ->preload()
+                        ->placeholder(__('Sélectionner une catégorie'))
                         ->createOptionForm([
                             TextInput::make('name')
                                 ->label(__('Name'))
@@ -235,6 +280,12 @@ class LinkForm
                         ->createOptionUsing(function (array $data): int {
                             return Category::create($data)->id;
                         }),
+                    Select::make('content_type')
+                        ->label(__('Content Type'))
+                        ->options(collect(ContentType::cases())
+                            ->mapWithKeys(fn (ContentType $case) => [$case->value => $case->label()])
+                            ->toArray())
+                        ->default(ContentType::Other->value),
                     TextInput::make('objective')
                         ->label(__('Objective'))
                         ->maxLength(255),
@@ -247,6 +298,65 @@ class LinkForm
                         // ->hiddenOn('create')
                         ->readOnly(),
                 ]),
+
+            Section::make(__('Visibilité du lien'))
+                ->description(__('Contrôlez qui peut voir ce lien dans l\'équipe.'))
+                ->columns(1)
+                ->schema([
+                    Select::make('visibility')
+                        ->label(__('Visibilité / Accès'))
+                        ->options(collect(LinkVisibility::cases())->mapWithKeys(fn ($case) => [$case->value => $case->getLabel()])->toArray())
+                        ->default(LinkVisibility::Private->value)
+                        ->required()
+                        ->live()
+                        ->helperText(fn (Get $get) => match ($get('visibility')) {
+                            'private', LinkVisibility::Private->value => __('Visible uniquement par vous (et le propriétaire de l\'équipe).'),
+                            'team', LinkVisibility::Team->value => __('Visible par tous les membres de cette équipe.'),
+                            'restricted', LinkVisibility::Restricted->value => __('Visible uniquement par les membres spécifiés ci-dessous.'),
+                            default => null,
+                        }),
+
+                    Section::make(__('Membres ayant accès à ce lien'))
+                        ->description(__('Sélectionnez les membres de l\'équipe autorisés à consulter ce lien.'))
+                        ->visible(fn (Get $get) => in_array($get('visibility'), ['restricted', LinkVisibility::Restricted->value, LinkVisibility::Restricted]))
+                        ->schema([
+                            Repeater::make('members_data')
+                                ->label('')
+                                ->schema([
+                                    Select::make('user_id')
+                                        ->label(__('Membre de l\'équipe'))
+                                        ->options(function () {
+                                            $team = Filament::getTenant();
+                                            if (! $team) {
+                                                return User::where('id', '!=', Auth::id())->pluck('name', 'id');
+                                            }
+
+                                            return $team->members()
+                                                ->where('users.id', '!=', Auth::id())
+                                                ->pluck('users.name', 'users.id');
+                                        })
+                                        ->searchable()
+                                        ->preload()
+                                        ->required()
+                                        ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                                ])
+                                ->columns(1)
+                                ->defaultItems(0)
+                                ->addActionLabel(__('Ajouter un membre'))
+                                ->afterStateHydrated(function (Repeater $component, ?Model $record) {
+                                    if (! $record || ! method_exists($record, 'members')) {
+                                        return;
+                                    }
+
+                                    $members = $record->members()->get()->map(fn ($member) => [
+                                        'user_id' => (string) $member->id,
+                                    ])->toArray();
+
+                                    $component->state($members);
+                                }),
+                        ]),
+                ]),
+
             TagsInput::make('tags')
                 ->label(__('Tags'))
                 ->default(['fzrf', 'fzezrge']),
@@ -277,17 +387,21 @@ class LinkForm
                             if ($type === 'youtube') {
                                 try {
                                     $video_id = Youtube::parseVidFromURL($get('url'));
-                                    $video_infos = \Alaouy\Youtube\Facades\Youtube::getVideoInfo($video_id);
 
-                                    // Récupérer la langue de la vidéo et la normaliser
-                                    $detectedLang = $video_infos->snippet->defaultLanguage ?? 'fr';
-
-                                    // Normaliser le code de langue (extraire les 2 premières lettres)
-                                    $lang = str_contains($detectedLang, '-')
-                                        ? explode('-', $detectedLang)[0]
-                                        : $detectedLang;
-
-                                    $lang = strtolower($lang);
+                                    if (config('youtube.key')) {
+                                        try {
+                                            $video_infos = \Alaouy\Youtube\Facades\Youtube::getVideoInfo($video_id);
+                                            if ($video_infos && isset($video_infos->snippet->defaultLanguage)) {
+                                                $detectedLang = $video_infos->snippet->defaultLanguage;
+                                                $lang = str_contains($detectedLang, '-')
+                                                    ? explode('-', $detectedLang)[0]
+                                                    : $detectedLang;
+                                                $lang = strtolower($lang);
+                                            }
+                                        } catch (\Throwable) {
+                                            // Fallback vers 'fr' par défaut
+                                        }
+                                    }
 
                                     // Utiliser le nouveau service CLI avec fallback multi-langues
                                     $cliService = new YouTubeTranscriptCliService;

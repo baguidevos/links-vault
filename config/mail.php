@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'default' => strtolower((string) env('MAIL_MAILER', 'log')),
+    'default' => env('MAIL_MAILER', 'log'),
 
     /*
     |--------------------------------------------------------------------------

@@ -18,7 +18,6 @@ class Team extends Model
     use GeneratesUniqueTeamSlugs;
 
     use HasFactory;
-
     use SoftDeletes;
     use SoftDeletes;
 
