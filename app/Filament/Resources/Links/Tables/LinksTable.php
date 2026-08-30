@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Links\Tables;
 use App\Enums\ContentType;
 use App\Enums\LinkVisibility;
 use App\Models\Folder;
+use App\Models\Link;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -145,7 +146,27 @@ class LinksTable
                     ->modalWidth('2xl'),
                 EditAction::make()
                     ->slideOver()
-                    ->modalWidth('2xl'),
+                    ->modalWidth('2xl')
+                    ->after(function (Link $record, array $data) {
+                        $vis = $record->visibility instanceof LinkVisibility
+                            ? $record->visibility->value
+                            : (string) $record->visibility;
+
+                        if ($vis === LinkVisibility::Restricted->value) {
+                            $membersData = $data['members_data'] ?? [];
+
+                            $syncData = [];
+                            foreach ($membersData as $item) {
+                                if (! empty($item['user_id'])) {
+                                    $syncData[] = (int) $item['user_id'];
+                                }
+                            }
+
+                            $record->members()->sync($syncData);
+                        } else {
+                            $record->members()->detach();
+                        }
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

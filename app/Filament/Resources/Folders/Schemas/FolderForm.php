@@ -20,6 +20,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -82,8 +83,7 @@ class FolderForm
                 ->description(__('Sélectionnez les membres de l\'équipe autorisés à consulter ou éditer ce dossier.'))
                 ->visible(fn (Get $get) => in_array($get('visibility'), ['restricted', FolderVisibility::Restricted->value, FolderVisibility::Restricted]))
                 ->schema([
-                    Repeater::make('members')
-                        ->relationship('members')
+                    Repeater::make('members_data')
                         ->label('')
                         ->schema([
                             Select::make('user_id')
@@ -111,7 +111,19 @@ class FolderForm
                         ])
                         ->columns(2)
                         ->defaultItems(0)
-                        ->addActionLabel(__('Ajouter un membre')),
+                        ->addActionLabel(__('Ajouter un membre'))
+                        ->afterStateHydrated(function (Repeater $component, ?Model $record) {
+                            if (! $record) {
+                                return;
+                            }
+
+                            $members = $record->members()->get()->map(fn ($member) => [
+                                'user_id' => (string) $member->id,
+                                'role' => $member->pivot->role,
+                            ])->toArray();
+
+                            $component->state($members);
+                        }),
                 ]),
 
             Grid::make(3)

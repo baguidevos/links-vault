@@ -299,8 +299,7 @@ class LinkForm
                         ->description(__('Sélectionnez les membres de l\'équipe autorisés à consulter ce lien.'))
                         ->visible(fn (Get $get) => in_array($get('visibility'), ['restricted', LinkVisibility::Restricted->value, LinkVisibility::Restricted]))
                         ->schema([
-                            Repeater::make('members')
-                                ->relationship('members')
+                            Repeater::make('members_data')
                                 ->label('')
                                 ->schema([
                                     Select::make('user_id')
@@ -322,7 +321,18 @@ class LinkForm
                                 ])
                                 ->columns(1)
                                 ->defaultItems(0)
-                                ->addActionLabel(__('Ajouter un membre')),
+                                ->addActionLabel(__('Ajouter un membre'))
+                                ->afterStateHydrated(function (Repeater $component, ?Model $record) {
+                                    if (! $record || ! method_exists($record, 'members')) {
+                                        return;
+                                    }
+
+                                    $members = $record->members()->get()->map(fn ($member) => [
+                                        'user_id' => (string) $member->id,
+                                    ])->toArray();
+
+                                    $component->state($members);
+                                }),
                         ]),
                 ]),
 
