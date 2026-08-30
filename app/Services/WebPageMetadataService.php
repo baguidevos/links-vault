@@ -1,7 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
+use DOMDocument;
+use DOMXPath;
 use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -15,14 +19,14 @@ class WebPageMetadataService
     protected const TIMEOUT = 10;
 
     /**
-     * Taille maximale de la réponse (en octets) - 1MB.
+     * Taille maximale de la réponse (en octets) - 2MB.
      */
-    protected const MAX_SIZE = 1048576;
+    protected const MAX_SIZE = 2097152;
 
     /**
-     * User-Agent pour les requêtes HTTP.
+     * User-Agent moderne simulant un navigateur standard pour éviter les blocages.
      */
-    protected const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    protected const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
 
     /**
      * Récupérer les métadonnées d'une page web.
@@ -41,7 +45,6 @@ class WebPageMetadataService
      */
     public function fetchMetadata(string $url): array
     {
-        // Validation de l'URL
         if (! $this->isValidUrl($url)) {
             return [
                 'title' => null,
@@ -58,100 +61,73 @@ class WebPageMetadataService
 
         $cacheKey = 'web_meta_'.hash('sha256', $url);
 
-        return Cache::remember($cacheKey, now()->addHours(6), function () use ($url) {
-            try {
-                // Récupérer le contenu HTML
-                $html = $this->fetchHtml($url);
+        // Si en cache et avec un titre valide, renvoyer
+        if ($cached = Cache::get($cacheKey)) {
+            if (is_array($cached) && ! empty($cached['title'])) {
+                return $cached;
+            }
+        }
 
-                if ($html === null) {
-                    return [
-                        'title' => null,
-                        'description' => null,
-                        'favicon' => null,
-                        'image' => null,
-                        'site_name' => null,
-                        'author' => null,
-                        'type' => null,
-                        'url' => null,
-                        'error' => 'Impossible de récupérer le contenu de la page',
-                    ];
-                }
+        try {
+            $html = $this->fetchHtml($url);
 
-                // Parser les métadonnées
-                $metadata = $this->parseMetadata($html, $url);
-
-                return array_merge($metadata, ['error' => null]);
-            } catch (Exception $e) {
-                Log::error('Erreur lors de la récupération des métadonnées', [
-                    'url' => $url,
-                    'error' => $e->getMessage(),
-                ]);
-
+            if ($html === null) {
                 return [
                     'title' => null,
                     'description' => null,
-                    'favicon' => null,
+                    'favicon' => $this->fetchFavicon($url),
                     'image' => null,
-                    'site_name' => null,
+                    'site_name' => parse_url($url, PHP_URL_HOST),
                     'author' => null,
                     'type' => null,
-                    'url' => null,
-                    'error' => $e->getMessage(),
+                    'url' => $url,
+                    'error' => 'Impossible de récupérer le contenu de la page',
                 ];
             }
-        });
+
+            $metadata = $this->parseMetadata($html, $url);
+            $result = array_merge($metadata, ['error' => null]);
+
+            if (! empty($result['title'])) {
+                Cache::put($cacheKey, $result, now()->addHours(6));
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            Log::error('Erreur lors de la récupération des métadonnées', [
+                'url' => $url,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'title' => null,
+                'description' => null,
+                'favicon' => null,
+                'image' => null,
+                'site_name' => null,
+                'author' => null,
+                'type' => null,
+                'url' => $url,
+                'error' => $e->getMessage(),
+            ];
+        }
     }
 
     /**
-     * Récupérer uniquement le favicon d'une page.
+     * Récupérer le favicon d'une page.
      */
     public function fetchFavicon(string $url): ?string
     {
         try {
             $parsedUrl = parse_url($url);
-            $scheme = $parsedUrl['scheme'] ?? 'https';
             $host = $parsedUrl['host'] ?? '';
 
             if (empty($host)) {
                 return null;
             }
 
-            // Essayer plusieurs emplacements courants pour le favicon
-            $faviconUrls = [
-                "{$scheme}://{$host}/favicon.ico",
-                "{$scheme}://{$host}/favicon.png",
-                "{$scheme}://www.{$host}/favicon.ico",
-                "{$scheme}://www.{$host}/favicon.png",
-            ];
-
-            foreach ($faviconUrls as $faviconUrl) {
-                $response = Http::timeout(5)
-                    ->withHeaders(['User-Agent' => self::USER_AGENT])
-                    ->withoutVerifying()
-                    ->head($faviconUrl);
-
-                if ($response->successful()) {
-                    return $faviconUrl;
-                }
-            }
-
-            // Si aucun favicon trouvé, essayer de parser le HTML
-            $html = $this->fetchHtml($url);
-            if ($html) {
-                $favicon = $this->extractFaviconFromHtml($html, $url);
-                if ($favicon) {
-                    return $favicon;
-                }
-            }
-
-            return null;
-
-        } catch (Exception $e) {
-            Log::debug('Erreur lors de la récupération du favicon', [
-                'url' => $url,
-                'error' => $e->getMessage(),
-            ]);
-
+            return "https://www.google.com/s2/favicons?domain={$host}&sz=64";
+        } catch (Exception) {
             return null;
         }
     }
@@ -166,17 +142,31 @@ class WebPageMetadataService
     }
 
     /**
-     * Récupérer le contenu HTML d'une page.
+     * Récupérer le contenu HTML d'une page avec gestion des redirections et headers complets.
      */
     protected function fetchHtml(string $url): ?string
     {
         try {
             $response = Http::timeout(self::TIMEOUT)
+                ->withOptions([
+                    'allow_redirects' => [
+                        'max' => 5,
+                        'strict' => false,
+                        'referer' => true,
+                        'protocols' => ['http', 'https'],
+                    ],
+                    'verify' => false,
+                ])
                 ->withHeaders([
                     'User-Agent' => self::USER_AGENT,
-                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                    'Accept-Language' => 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+                    'Upgrade-Insecure-Requests' => '1',
+                    'Sec-Fetch-Dest' => 'document',
+                    'Sec-Fetch-Mode' => 'navigate',
+                    'Sec-Fetch-Site' => 'none',
+                    'Sec-Fetch-User' => '?1',
                 ])
-                ->withoutVerifying()
                 ->get($url);
 
             if (! $response->successful()) {
@@ -188,15 +178,12 @@ class WebPageMetadataService
                 return null;
             }
 
-            // Vérifier la taille de la réponse
             $body = $response->body();
             if (strlen($body) > self::MAX_SIZE) {
-                // Tronquer à la taille maximale
                 $body = substr($body, 0, self::MAX_SIZE);
             }
 
             return $body;
-
         } catch (Exception $e) {
             Log::warning('Exception lors de la récupération HTML', [
                 'url' => $url,
@@ -208,7 +195,7 @@ class WebPageMetadataService
     }
 
     /**
-     * Parser les métadonnées depuis le HTML.
+     * Parser les métadonnées depuis le HTML avec DOMXPath et Schema.org.
      *
      * @return array{
      *     title: string|null,
@@ -231,10 +218,10 @@ class WebPageMetadataService
             'site_name' => null,
             'author' => null,
             'type' => null,
-            'url' => null,
+            'url' => $baseUrl,
         ];
 
-        // 1. Extraction spécifique YouTube shortDescription (depuis le script ytInitialPlayerResponse avant nettoyage)
+        // 1. YouTube shortDescription
         if (str_contains($baseUrl, 'youtube.com') || str_contains($baseUrl, 'youtu.be')) {
             if (preg_match('/"shortDescription":"(.*?)"(?=,"isCrawlable"|,"allowRatings"|,"lengthSeconds")/s', $html, $ytDesc)) {
                 $decodedDesc = stripcslashes($ytDesc[1]);
@@ -244,120 +231,174 @@ class WebPageMetadataService
             }
         }
 
-        // 2. Extraction JSON-LD (Schema.org)
-        if (preg_match('/<script[^>]*type=["\']application\/ld\+json["\'][^>]*>(.*?)<\/script>/is', $html, $jsonLdMatch)) {
-            try {
-                $jsonLd = json_decode(trim($jsonLdMatch[1]), true);
-                if (is_array($jsonLd)) {
-                    if (empty($metadata['description']) && ! empty($jsonLd['description'])) {
-                        $metadata['description'] = is_string($jsonLd['description']) ? trim($jsonLd['description']) : null;
+        // 2. Initialisation DOMDocument & DOMXPath
+        $dom = new DOMDocument;
+        $libxmlState = libxml_use_internal_errors(true);
+        @$dom->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($libxmlState);
+
+        $xpath = new DOMXPath($dom);
+
+        // A. Titre (priorité au tag <title>, puis og:title, twitter:title, <h1>)
+        $titleQueries = [
+            '//title/text()',
+            "//meta[@property='og:title']/@content",
+            "//meta[@name='twitter:title']/@content",
+            '//h1/text()',
+        ];
+
+        foreach ($titleQueries as $query) {
+            $nodes = $xpath->query($query);
+            if ($nodes && $nodes->length > 0) {
+                $text = trim($nodes->item(0)?->nodeValue ?? '');
+                if (! empty($text)) {
+                    $metadata['title'] = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
+                    break;
+                }
+            }
+        }
+
+        // B. Description depuis balises meta
+        if (empty($metadata['description'])) {
+            $descQueries = [
+                "//meta[@property='og:description']/@content",
+                "//meta[@name='description']/@content",
+                "//meta[@name='twitter:description']/@content",
+                "//meta[@itemprop='description']/@content",
+            ];
+
+            foreach ($descQueries as $query) {
+                $nodes = $xpath->query($query);
+                if ($nodes && $nodes->length > 0) {
+                    $text = trim($nodes->item(0)?->nodeValue ?? '');
+                    if (! empty($text) && strlen($text) > 10) {
+                        $metadata['description'] = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
+                        break;
                     }
-                    if (empty($metadata['title']) && ! empty($jsonLd['headline'] ?? $jsonLd['name'])) {
-                        $metadata['title'] = trim($jsonLd['headline'] ?? $jsonLd['name']);
+                }
+            }
+        }
+
+        // C. Image / Miniature
+        if (empty($metadata['image'])) {
+            $imageQueries = [
+                "//meta[@property='og:image:secure_url']/@content",
+                "//meta[@property='og:image']/@content",
+                "//meta[@name='twitter:image:src']/@content",
+                "//meta[@name='twitter:image']/@content",
+                "//meta[@itemprop='image']/@content",
+                "//link[@rel='image_src']/@href",
+            ];
+
+            foreach ($imageQueries as $query) {
+                $nodes = $xpath->query($query);
+                if ($nodes && $nodes->length > 0) {
+                    $src = trim($nodes->item(0)?->nodeValue ?? '');
+                    if (! empty($src)) {
+                        $metadata['image'] = $this->resolveUrl($src, $baseUrl);
+                        break;
                     }
-                    if (empty($metadata['image']) && ! empty($jsonLd['image'])) {
-                        $img = is_array($jsonLd['image']) ? ($jsonLd['image']['url'] ?? $jsonLd['image'][0] ?? null) : $jsonLd['image'];
-                        if (is_string($img)) {
-                            $metadata['image'] = $this->resolveUrl($img, $baseUrl);
+                }
+            }
+        }
+
+        // D. Favicon
+        if (empty($metadata['favicon'])) {
+            $iconQueries = [
+                "//link[contains(@rel, 'icon')]/@href",
+                "//link[contains(@rel, 'shortcut icon')]/@href",
+                "//link[contains(@rel, 'apple-touch-icon')]/@href",
+            ];
+
+            foreach ($iconQueries as $query) {
+                $nodes = $xpath->query($query);
+                if ($nodes && $nodes->length > 0) {
+                    $iconHref = trim($nodes->item(0)?->nodeValue ?? '');
+                    if (! empty($iconHref)) {
+                        $metadata['favicon'] = $this->resolveUrl($iconHref, $baseUrl);
+                        break;
+                    }
+                }
+            }
+
+            if (empty($metadata['favicon'])) {
+                $metadata['favicon'] = $this->fetchFavicon($baseUrl);
+            }
+        }
+
+        // E. Schema.org JSON-LD (enrichissement supplémentaire si description ou image manquante)
+        if (empty($metadata['description']) || empty($metadata['image'])) {
+            if (preg_match_all('/<script[^>]*type=["\']application\/ld\+json["\'][^>]*>(.*?)<\/script>/is', $html, $jsonLdMatches)) {
+                foreach ($jsonLdMatches[1] as $jsonString) {
+                    try {
+                        $jsonLd = json_decode(trim($jsonString), true);
+                        if (is_array($jsonLd)) {
+                            $item = isset($jsonLd['@graph']) && is_array($jsonLd['@graph']) ? ($jsonLd['@graph'][0] ?? $jsonLd) : $jsonLd;
+                            if (is_array($item)) {
+                                if (empty($metadata['description']) && ! empty($item['description']) && is_string($item['description'])) {
+                                    $metadata['description'] = trim($item['description']);
+                                }
+                                if (empty($metadata['image']) && ! empty($item['image'])) {
+                                    $img = is_array($item['image']) ? ($item['image']['url'] ?? $item['image'][0] ?? null) : $item['image'];
+                                    if (is_string($img)) {
+                                        $metadata['image'] = $this->resolveUrl($img, $baseUrl);
+                                    }
+                                }
+                            }
                         }
+                    } catch (\Throwable) {
+                        // Ignorer
                     }
-                }
-            } catch (\Throwable) {
-                // Ignorer
-            }
-        }
-
-        // Nettoyer les scripts et styles pour le parsing des balises standard
-        $cleanedHtml = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
-        $cleanedHtml = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $cleanedHtml);
-
-        // Extraire le titre
-        if (preg_match('/<title[^>]*>(.*?)<\/title>/is', $cleanedHtml, $matches)) {
-            $metadata['title'] = trim(strip_tags($matches[1]));
-        }
-
-        // Extraire les meta tags Open Graph, Twitter et standard
-        if (preg_match_all('/<meta[^>]+>/i', $cleanedHtml, $metaMatches)) {
-            foreach ($metaMatches[0] as $metaTag) {
-                // Description (og:description, twitter:description, description, itemprop)
-                if (empty($metadata['description'])) {
-                    if (preg_match('/property=["\']og:description["\'].*?content=["\'](.*?)["\']/is', $metaTag, $matches)
-                        || preg_match('/content=["\'](.*?)["\'].*?property=["\']og:description["\']/is', $metaTag, $matches)
-                        || preg_match('/name=["\']description["\'].*?content=["\'](.*?)["\']/is', $metaTag, $matches)
-                        || preg_match('/content=["\'](.*?)["\'].*?name=["\']description["\']/is', $metaTag, $matches)
-                        || preg_match('/name=["\']twitter:description["\'].*?content=["\'](.*?)["\']/is', $metaTag, $matches)
-                        || preg_match('/itemprop=["\']description["\'].*?content=["\'](.*?)["\']/is', $metaTag, $matches)) {
-                        $metadata['description'] = trim(html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8'));
-                    }
-                }
-
-                // Image
-                if (empty($metadata['image'])) {
-                    if (preg_match('/property=["\']og:image["\'].*?content=["\'](.*?)["\']/i', $metaTag, $matches)
-                        || preg_match('/name=["\']twitter:image["\'].*?content=["\'](.*?)["\']/i', $metaTag, $matches)) {
-                        $imageUrl = trim($matches[1]);
-                        $metadata['image'] = $this->resolveUrl($imageUrl, $baseUrl);
-                    }
-                }
-
-                // Site name
-                if (preg_match('/property=["\']og:site_name["\'].*?content=["\'](.*?)["\']/i', $metaTag, $matches)) {
-                    $metadata['site_name'] = trim(html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8'));
-                }
-
-                // Type
-                if (preg_match('/property=["\']og:type["\'].*?content=["\'](.*?)["\']/i', $metaTag, $matches)) {
-                    $metadata['type'] = trim($matches[1]);
-                }
-
-                // URL canonique
-                if (preg_match('/property=["\']og:url["\'].*?content=["\'](.*?)["\']/i', $metaTag, $matches)) {
-                    $metadata['url'] = trim($matches[1]);
                 }
             }
         }
 
-        // Extraire l'auteur
-        if (preg_match('/<meta[^>]*name=["\']author["\'][^>]*content=["\'](.*?)["\']/i', $cleanedHtml, $matches)
-            || preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*name=["\']author["\']/i', $cleanedHtml, $matches)) {
-            $metadata['author'] = trim(html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8'));
+        // F. Fallback description : extraction du premier paragraphe textuel significatif du corps
+        if (empty($metadata['description'])) {
+            $paragraphs = $xpath->query("//div[contains(@id, 'mw-content-text') or contains(@id, 'content') or contains(@class, 'content') or contains(@class, 'article') or contains(@class, 'post')]//p[not(@class) or contains(@class, 'lead') or contains(@class, 'summary')] | //article//p | //main//p | //p");
+            if ($paragraphs) {
+                foreach ($paragraphs as $p) {
+                    $pText = trim(strip_tags($p->textContent ?? ''));
+                    if (strlen($pText) > 40 && ! str_contains($pText, 'modifier le code') && ! str_starts_with($pText, 'Pour les articles')) {
+                        $metadata['description'] = html_entity_decode(substr($pText, 0, 350), ENT_QUOTES, 'UTF-8');
+                        break;
+                    }
+                }
+            }
         }
 
-        // Extraire le favicon
-        $metadata['favicon'] = $this->extractFaviconFromHtml($cleanedHtml, $baseUrl);
+        // G. Nom du site
+        if (empty($metadata['site_name'])) {
+            $nodes = $xpath->query("//meta[@property='og:site_name']/@content");
+            if ($nodes && $nodes->length > 0) {
+                $metadata['site_name'] = trim($nodes->item(0)?->nodeValue ?? '');
+            } else {
+                $metadata['site_name'] = parse_url($baseUrl, PHP_URL_HOST);
+            }
+        }
 
-        // Fallback: utiliser le titre OG si pas de titre normal
-        if (empty($metadata['title']) && preg_match('/property=["\']og:title["\'].*?content=["\'](.*?)["\']/i', $cleanedHtml, $matches)) {
-            $metadata['title'] = trim(html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8'));
+        // H. Auteur
+        if (empty($metadata['author'])) {
+            $authorQueries = [
+                "//meta[@name='author']/@content",
+                "//meta[@property='article:author']/@content",
+                "//meta[@name='twitter:creator']/@content",
+            ];
+
+            foreach ($authorQueries as $query) {
+                $nodes = $xpath->query($query);
+                if ($nodes && $nodes->length > 0) {
+                    $author = trim($nodes->item(0)?->nodeValue ?? '');
+                    if (! empty($author)) {
+                        $metadata['author'] = html_entity_decode($author, ENT_QUOTES, 'UTF-8');
+                        break;
+                    }
+                }
+            }
         }
 
         return $metadata;
-    }
-
-    /**
-     * Extraire le favicon depuis le HTML.
-     */
-    protected function extractFaviconFromHtml(string $html, string $baseUrl): ?string
-    {
-        // Chercher les balises link avec rel="icon" ou rel="shortcut icon"
-        if (preg_match('/<link[^>]*rel=["\'](icon|shortcut icon)["\'][^>]*href=["\'](.*?)["\']/i', $html, $matches)
-            || preg_match('/<link[^>]*href=["\'](.*?)["\'][^>]*rel=["\'](icon|shortcut icon)["\']/i', $html, $matches)) {
-
-            $faviconUrl = trim($matches[2] ?? $matches[1]);
-
-            return $this->resolveUrl($faviconUrl, $baseUrl);
-        }
-
-        // Fallback: favicon.ico à la racine
-        $parsedUrl = parse_url($baseUrl);
-        $scheme = $parsedUrl['scheme'] ?? 'https';
-        $host = $parsedUrl['host'] ?? '';
-
-        if (! empty($host)) {
-            return "{$scheme}://{$host}/favicon.ico";
-        }
-
-        return null;
     }
 
     /**
@@ -365,35 +406,29 @@ class WebPageMetadataService
      */
     protected function resolveUrl(string $url, string $baseUrl): string
     {
-        // Si c'est déjà une URL absolue
+        if (empty($url)) {
+            return $url;
+        }
+
         if (filter_var($url, FILTER_VALIDATE_URL)) {
             return $url;
         }
 
-        // Si l'URL commence par //
         if (str_starts_with($url, '//')) {
-            $parsedBase = parse_url($baseUrl);
-            $scheme = $parsedBase['scheme'] ?? 'https';
+            $scheme = parse_url($baseUrl, PHP_URL_SCHEME) ?: 'https';
 
             return "{$scheme}:{$url}";
         }
 
-        // Si l'URL commence par /
-        if (str_starts_with($url, '/')) {
-            $parsedBase = parse_url($baseUrl);
-            $scheme = $parsedBase['scheme'] ?? 'https';
-            $host = $parsedBase['host'] ?? '';
-
-            return "{$scheme}://{$host}{$url}";
-        }
-
-        // URL relative
         $parsedBase = parse_url($baseUrl);
         $scheme = $parsedBase['scheme'] ?? 'https';
         $host = $parsedBase['host'] ?? '';
-        $path = $parsedBase['path'] ?? '';
 
-        // Obtenir le dossier de base
+        if (str_starts_with($url, '/')) {
+            return "{$scheme}://{$host}{$url}";
+        }
+
+        $path = $parsedBase['path'] ?? '';
         $basePath = dirname($path);
         if ($basePath === '\\' || $basePath === '/') {
             $basePath = '';

@@ -131,10 +131,9 @@ class ContentDetectionService
         return match ($contentType) {
             'youtube' => $this->extractYouTubeMetadata($url),
             'google_drive', 'google_doc', 'google_slides', 'google_sheet', 'google_form' => $this->extractDriveMetadata($url),
-            'article' => $this->extractArticleMetadata($url),
             'pdf' => $this->extractPdfMetadata($url),
             'image' => $this->extractImageMetadata($url),
-            default => [],
+            default => $this->extractArticleMetadata($url),
         };
     }
 
@@ -436,6 +435,16 @@ class ContentDetectionService
                 'google_form' => 'Google Form',
                 default => 'Google Drive File',
             };
+        }
+
+        // 1. Tenter d'extraire le vrai titre de la page web
+        try {
+            $meta = (new WebPageMetadataService)->fetchMetadata($url);
+            if (! empty($meta['title'])) {
+                return $meta['title'];
+            }
+        } catch (\Throwable) {
+            // Fallback slug
         }
 
         $path = trim($parsed['path'] ?? '', '/');
