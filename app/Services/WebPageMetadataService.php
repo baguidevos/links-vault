@@ -63,7 +63,7 @@ class WebPageMetadataService
 
         // Si en cache et avec un titre valide, renvoyer
         if ($cached = Cache::get($cacheKey)) {
-            if (is_array($cached) && ! empty($cached['title'])) {
+            if (is_array($cached) && ! empty($cached['title']) && $cached['title'] !== 'Just a moment...') {
                 return $cached;
             }
         }
@@ -71,7 +71,15 @@ class WebPageMetadataService
         try {
             $html = $this->fetchHtml($url);
 
-            if ($html === null) {
+            // Si le HTML direct est bloqué (Cloudflare 403, etc.) ou challenge
+            if ($html === null || str_contains($html, 'Just a moment...') || str_contains($html, 'challenges.cloudflare.com')) {
+                $fallbackResult = $this->fetchViaFallbackResolvers($url);
+                if (! empty($fallbackResult['title'])) {
+                    Cache::put($cacheKey, $fallbackResult, now()->addHours(6));
+
+                    return $fallbackResult;
+                }
+
                 return [
                     'title' => null,
                     'description' => null,
@@ -86,9 +94,20 @@ class WebPageMetadataService
             }
 
             $metadata = $this->parseMetadata($html, $url);
+
+            // Si le titre est vide ou correspond à une page de challenge
+            if (empty($metadata['title']) || $metadata['title'] === 'Just a moment...') {
+                $fallbackResult = $this->fetchViaFallbackResolvers($url);
+                if (! empty($fallbackResult['title'])) {
+                    Cache::put($cacheKey, $fallbackResult, now()->addHours(6));
+
+                    return $fallbackResult;
+                }
+            }
+
             $result = array_merge($metadata, ['error' => null]);
 
-            if (! empty($result['title'])) {
+            if (! empty($result['title']) && $result['title'] !== 'Just a moment...') {
                 Cache::put($cacheKey, $result, now()->addHours(6));
             }
 
@@ -99,10 +118,18 @@ class WebPageMetadataService
                 'error' => $e->getMessage(),
             ]);
 
+            // Tenter le fallback même en cas d'erreur
+            $fallbackResult = $this->fetchViaFallbackResolvers($url);
+            if (! empty($fallbackResult['title'])) {
+                Cache::put($cacheKey, $fallbackResult, now()->addHours(6));
+
+                return $fallbackResult;
+            }
+
             return [
                 'title' => null,
                 'description' => null,
-                'favicon' => null,
+                'favicon' => $this->fetchFavicon($url),
                 'image' => null,
                 'site_name' => null,
                 'author' => null,
@@ -114,12 +141,92 @@ class WebPageMetadataService
     }
 
     /**
+     * Tenter de récupérer les métadonnées via des résolveurs de secours gratuits (Microlink, Jina Reader)
+     * particulièrement utiles pour les sites protégés par Cloudflare / Anti-Bot.
+     *
+     * @return array<string, mixed>
+     */
+    protected function fetchViaFallbackResolvers(string $url): array
+    {
+        // 1. Microlink API (Gratuit, résout OpenGraph et images même derrière Cloudflare)
+        try {
+            $response = Http::timeout(6)->get('https://api.microlink.io', ['url' => $url]);
+            if ($response->successful()) {
+                $json = $response->json();
+                $data = $json['data'] ?? [];
+
+                $title = $data['title'] ?? null;
+                if (! empty($title) && $title !== 'Just a moment...') {
+                    return [
+                        'title' => html_entity_decode((string) $title, ENT_QUOTES, 'UTF-8'),
+                        'description' => ! empty($data['description']) ? html_entity_decode((string) $data['description'], ENT_QUOTES, 'UTF-8') : null,
+                        'favicon' => $data['logo']['url'] ?? $this->fetchFavicon($url),
+                        'image' => $data['image']['url'] ?? null,
+                        'site_name' => $data['publisher'] ?? parse_url($url, PHP_URL_HOST),
+                        'author' => $data['author'] ?? null,
+                        'type' => null,
+                        'url' => $url,
+                        'error' => null,
+                    ];
+                }
+            }
+        } catch (\Throwable) {
+            // Ignorer et tenter Jina Reader
+        }
+
+        // 2. Jina Reader (Gratuit, bypass Cloudflare)
+        try {
+            $response = Http::timeout(6)
+                ->withHeaders([
+                    'Accept' => 'application/json',
+                    'X-Return-Format' => 'json',
+                ])
+                ->get("https://r.jina.ai/{$url}");
+
+            if ($response->successful()) {
+                $json = $response->json();
+                $data = $json['data'] ?? [];
+
+                $title = $data['title'] ?? null;
+                if (! empty($title) && $title !== 'Just a moment...') {
+                    return [
+                        'title' => html_entity_decode((string) $title, ENT_QUOTES, 'UTF-8'),
+                        'description' => ! empty($data['description']) ? html_entity_decode((string) $data['description'], ENT_QUOTES, 'UTF-8') : null,
+                        'favicon' => $this->fetchFavicon($url),
+                        'image' => null,
+                        'site_name' => parse_url($url, PHP_URL_HOST),
+                        'author' => null,
+                        'type' => null,
+                        'url' => $url,
+                        'error' => null,
+                    ];
+                }
+            }
+        } catch (\Throwable) {
+            // Ignorer
+        }
+
+        return [
+            'title' => null,
+            'description' => null,
+            'favicon' => $this->fetchFavicon($url),
+            'image' => null,
+            'site_name' => parse_url($url, PHP_URL_HOST),
+            'author' => null,
+            'type' => null,
+            'url' => $url,
+            'error' => 'Fallback échoué',
+        ];
+    }
+
+    /**
      * Récupérer le favicon d'une page.
      */
     public function fetchFavicon(string $url): ?string
     {
         try {
             $parsedUrl = parse_url($url);
+            $scheme = $parsedUrl['scheme'] ?? 'https';
             $host = $parsedUrl['host'] ?? '';
 
             if (empty($host)) {
