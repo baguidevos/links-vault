@@ -7,13 +7,17 @@ use App\Ai\Agents\LinkDescriptionAgent;
 use App\Ai\Agents\TagFinderAgent;
 use App\Ai\Agents\YoutubeTranscriptSummary;
 use App\Enums\ContentType;
+use App\Enums\LinkVisibility;
 use App\Models\Category;
 use App\Models\Folder;
+use App\Models\User;
 use App\Services\ContentDetectionService;
 use App\Services\GoogleClient\YouTube\YouTubeTranscriptCliService;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
@@ -23,6 +27,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Laravel\Ai\Enums\Lab;
 
@@ -272,6 +277,55 @@ class LinkForm
                         // ->hiddenOn('create')
                         ->readOnly(),
                 ]),
+
+            Section::make(__('Visibilité du lien'))
+                ->description(__('Contrôlez qui peut voir ce lien dans l\'équipe.'))
+                ->columns(1)
+                ->schema([
+                    Select::make('visibility')
+                        ->label(__('Visibilité / Accès'))
+                        ->options(collect(LinkVisibility::cases())->mapWithKeys(fn ($case) => [$case->value => $case->getLabel()])->toArray())
+                        ->default(LinkVisibility::Private->value)
+                        ->required()
+                        ->live()
+                        ->helperText(fn (Get $get) => match ($get('visibility')) {
+                            'private', LinkVisibility::Private->value => __('Visible uniquement par vous (et le propriétaire de l\'équipe).'),
+                            'team', LinkVisibility::Team->value => __('Visible par tous les membres de cette équipe.'),
+                            'restricted', LinkVisibility::Restricted->value => __('Visible uniquement par les membres spécifiés ci-dessous.'),
+                            default => null,
+                        }),
+
+                    Section::make(__('Membres ayant accès à ce lien'))
+                        ->description(__('Sélectionnez les membres de l\'équipe autorisés à consulter ce lien.'))
+                        ->visible(fn (Get $get) => in_array($get('visibility'), ['restricted', LinkVisibility::Restricted->value, LinkVisibility::Restricted]))
+                        ->schema([
+                            Repeater::make('members')
+                                ->relationship('members')
+                                ->label('')
+                                ->schema([
+                                    Select::make('user_id')
+                                        ->label(__('Membre de l\'équipe'))
+                                        ->options(function () {
+                                            $team = Filament::getTenant();
+                                            if (! $team) {
+                                                return User::where('id', '!=', Auth::id())->pluck('name', 'id');
+                                            }
+
+                                            return $team->members()
+                                                ->where('users.id', '!=', Auth::id())
+                                                ->pluck('users.name', 'users.id');
+                                        })
+                                        ->searchable()
+                                        ->preload()
+                                        ->required()
+                                        ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                                ])
+                                ->columns(1)
+                                ->defaultItems(0)
+                                ->addActionLabel(__('Ajouter un membre')),
+                        ]),
+                ]),
+
             TagsInput::make('tags')
                 ->label(__('Tags'))
                 ->default(['fzrf', 'fzezrge']),

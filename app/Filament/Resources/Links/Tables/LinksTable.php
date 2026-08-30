@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Links\Tables;
 
 use App\Enums\ContentType;
+use App\Enums\LinkVisibility;
 use App\Models\Folder;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\BulkAction;
@@ -86,6 +87,11 @@ class LinksTable
                         ContentType::Image => 'success',
                         ContentType::Other => 'gray',
                     }),
+                TextColumn::make('visibility')
+                    ->label(__('Visibilité'))
+                    ->badge()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('visit_count')
                     ->label(__('Visits'))
                     ->numeric()
@@ -126,6 +132,10 @@ class LinksTable
                         '0' => __('No'),
                     ])
                     ->query(fn ($query) => $query->where('is_archived', false)),
+                SelectFilter::make('visibility')
+                    ->label(__('Visibilité'))
+                    ->options(collect(LinkVisibility::cases())->mapWithKeys(fn ($case) => [$case->value => $case->getLabel()])->toArray())
+                    ->searchable(),
             ], FiltersLayout::AboveContent)
             ->recordAction('view')
             ->recordActions([

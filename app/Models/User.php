@@ -85,4 +85,13 @@ class User extends Authenticatable implements FilamentUser, HasTeamMembership
     {
         return $this->hasMany(LinkShare::class, 'recipient_user_id');
     }
+
+    /**
+     * Les liens restreints auxquels cet utilisateur a accès.
+     */
+    public function accessibleLinks(): BelongsToMany
+    {
+        return $this->belongsToMany(Link::class, 'link_user')
+            ->withTimestamps();
+    }
 }

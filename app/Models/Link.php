@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Concerns\AddUserId;
 use App\Enums\ContentType;
 use App\Enums\FolderVisibility;
+use App\Enums\LinkVisibility;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -31,6 +32,7 @@ class Link extends Model
         'objective',
         'category_id',
         'folder_id',
+        'visibility',
         'favicon_url',
         'thumbnail_url',
         'is_favorite',
@@ -42,6 +44,7 @@ class Link extends Model
     protected $casts = [
         'url' => 'string',
         'content_type' => ContentType::class,
+        'visibility' => LinkVisibility::class,
         'metadata' => 'array',
         'is_favorite' => 'boolean',
         'is_archived' => 'boolean',
@@ -75,26 +78,53 @@ class Link extends Model
     }
 
     /**
+     * Utilisateurs ayant un accès restreint à ce lien.
+     */
+    public function members(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'link_user')
+            ->withTimestamps();
+    }
+
+    /**
      * Scope pour filtrer les liens accessibles à un utilisateur.
      *
-     * - Team owner : voit tout dans l'équipe.
-     * - Dossier « team » ou « restricted » (si membre) : tous les liens du dossier sont visibles.
-     * - Dossier « private » dont user_id = $user : seuls les liens créés par $user sont visibles.
-     * - Liens sans dossier : seuls les liens créés par $user ou partagés via LinkShare.
+     * Hiérarchie de visibilité :
+     * 1. Le propriétaire de l'équipe active voit tout.
+     * 2. Sinon, un lien est visible si :
+     *    a. Il a été créé par l'utilisateur (user_id).
+     *    b. Sa visibilité est « team ».
+     *    c. Sa visibilité est « restricted » ET l'utilisateur est dans link_user.
+     *    d. Il est dans un dossier « team » ou « restricted » dont l'utilisateur est membre.
+     *    e. Il a été partagé via LinkShare.
+     *
+     * Les liens « private » d'un autre utilisateur ne sont JAMAIS visibles,
+     * même s'ils se trouvent dans un dossier dont l'invité est propriétaire.
      */
     public function scopeAccessibleForUser(Builder $query, User $user): Builder
     {
         $tenant = class_exists(Filament::class) ? Filament::getTenant() : null;
 
-        // Si l'utilisateur est le propriétaire de cette équipe active
         if ($tenant && $user->ownsTeam($tenant)) {
             return $query;
         }
 
         return $query->where(function (Builder $q) use ($user) {
-            // 1. Liens créés par l'utilisateur (quel que soit le dossier)
+            // 1. Liens créés par l'utilisateur
             $q->where('user_id', $user->id)
-                // 2. Liens dans un dossier team/restricted accessible (tous les liens visibles)
+                // 2. Liens avec visibilité « team »
+                ->orWhere(function (Builder $teamQ) {
+                    $teamQ->where('visibility', LinkVisibility::Team->value)
+                        ->orWhere('visibility', LinkVisibility::Team);
+                })
+                // 3. Liens avec visibilité « restricted » ET utilisateur assigné
+                ->orWhere(function (Builder $restrictedQ) use ($user) {
+                    $restrictedQ->where(function ($sq) {
+                        $sq->where('visibility', LinkVisibility::Restricted->value)
+                            ->orWhere('visibility', LinkVisibility::Restricted);
+                    })->whereHas('members', fn (Builder $m) => $m->where('users.id', $user->id));
+                })
+                // 4. Liens dans un dossier team/restricted accessible (hors private)
                 ->orWhereHas('folder', function (Builder $folderQuery) use ($user) {
                     $folderQuery->where(function (Builder $fq) use ($user) {
                         $fq->where('visibility', FolderVisibility::Team->value)
@@ -107,7 +137,7 @@ class Link extends Model
                             });
                     });
                 })
-                // 3. Liens directement partagés avec l'utilisateur
+                // 5. Liens partagés via LinkShare
                 ->orWhereHas('shares', function (Builder $shareQuery) use ($user) {
                     $shareQuery->where('recipient_user_id', $user->id)->valid();
                 });

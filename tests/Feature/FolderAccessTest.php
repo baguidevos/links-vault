@@ -3,6 +3,7 @@
 use App\Enums\ContentType;
 use App\Enums\FolderRole;
 use App\Enums\FolderVisibility;
+use App\Enums\LinkVisibility;
 use App\Models\Category;
 use App\Models\Folder;
 use App\Models\Link;
@@ -244,4 +245,94 @@ test('multiple isolated links can be assigned to a folder in bulk', function () 
     expect($link1->fresh()->folder_id)->toBe($folder->id)
         ->and($link1->fresh()->category_id)->toBe($this->category->id)
         ->and($link2->fresh()->folder_id)->toBe($folder->id);
+});
+
+test('link with private visibility is only visible to its creator', function () {
+    $privateLink = Link::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'title' => 'Lien Privé Owner',
+        'url' => 'https://private-owner.com',
+        'content_type' => ContentType::Other,
+        'visibility' => LinkVisibility::Private,
+    ]);
+
+    $accessibleByMember = Link::where('team_id', $this->team->id)
+        ->accessibleForUser($this->member)
+        ->pluck('id')
+        ->toArray();
+
+    expect($accessibleByMember)->not->toContain($privateLink->id);
+
+    $accessibleByOwner = Link::where('team_id', $this->team->id)
+        ->accessibleForUser($this->owner)
+        ->pluck('id')
+        ->toArray();
+
+    expect($accessibleByOwner)->toContain($privateLink->id);
+});
+
+test('link with team visibility is visible to all team members', function () {
+    $teamLink = Link::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'title' => 'Lien Équipe',
+        'url' => 'https://team-link.com',
+        'content_type' => ContentType::Other,
+        'visibility' => LinkVisibility::Team,
+    ]);
+
+    // Le membre de l'équipe doit voir le lien team
+    $accessibleByMember = Link::where('team_id', $this->team->id)
+        ->accessibleForUser($this->member)
+        ->pluck('id')
+        ->toArray();
+
+    expect($accessibleByMember)->toContain($teamLink->id);
+
+    // Le créateur (owner) doit aussi voir son lien via la clause user_id
+    $accessibleByOwner = Link::where('team_id', $this->team->id)
+        ->accessibleForUser($this->owner)
+        ->pluck('id')
+        ->toArray();
+
+    expect($accessibleByOwner)->toContain($teamLink->id);
+});
+
+test('link with restricted visibility is only visible to assigned members', function () {
+    $restrictedLink = Link::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'title' => 'Lien Restreint',
+        'url' => 'https://restricted-link.com',
+        'content_type' => ContentType::Other,
+        'visibility' => LinkVisibility::Restricted,
+    ]);
+
+    // Avant d'assigner le membre
+    $accessibleByMember = Link::where('team_id', $this->team->id)
+        ->accessibleForUser($this->member)
+        ->pluck('id')
+        ->toArray();
+
+    expect($accessibleByMember)->not->toContain($restrictedLink->id);
+
+    // Assigner le membre via la table pivot link_user
+    $restrictedLink->members()->attach($this->member->id);
+
+    // Après assignation
+    $accessibleByMember = Link::where('team_id', $this->team->id)
+        ->accessibleForUser($this->member)
+        ->pluck('id')
+        ->toArray();
+
+    expect($accessibleByMember)->toContain($restrictedLink->id);
+
+    // L'utilisateur non assigné ne voit pas le lien
+    $accessibleByOther = Link::where('team_id', $this->team->id)
+        ->accessibleForUser($this->otherUser)
+        ->pluck('id')
+        ->toArray();
+
+    expect($accessibleByOther)->not->toContain($restrictedLink->id);
 });

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Enums\LinkVisibility;
 use App\Models\Link;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -25,6 +26,20 @@ class LinkPolicy
 
         if ($link->team && $user->ownsTeam($link->team)) {
             return true;
+        }
+
+        $vis = $link->visibility instanceof LinkVisibility
+            ? $link->visibility->value
+            : (string) $link->visibility;
+
+        if ($vis === LinkVisibility::Team->value) {
+            return $link->team ? $user->belongsToTeam($link->team) : true;
+        }
+
+        if ($vis === LinkVisibility::Restricted->value) {
+            if ($link->members()->where('users.id', $user->id)->exists()) {
+                return true;
+            }
         }
 
         if ($link->folder && $link->folder->isAccessibleBy($user)) {
