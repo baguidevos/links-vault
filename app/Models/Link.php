@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\AddUserId;
 use App\Enums\ContentType;
+use App\Enums\FolderVisibility;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -75,6 +76,11 @@ class Link extends Model
 
     /**
      * Scope pour filtrer les liens accessibles à un utilisateur.
+     *
+     * - Team owner : voit tout dans l'équipe.
+     * - Dossier « team » ou « restricted » (si membre) : tous les liens du dossier sont visibles.
+     * - Dossier « private » dont user_id = $user : seuls les liens créés par $user sont visibles.
+     * - Liens sans dossier : seuls les liens créés par $user ou partagés via LinkShare.
      */
     public function scopeAccessibleForUser(Builder $query, User $user): Builder
     {
@@ -86,13 +92,22 @@ class Link extends Model
         }
 
         return $query->where(function (Builder $q) use ($user) {
-            // 1. Liens créés par l'utilisateur
+            // 1. Liens créés par l'utilisateur (quel que soit le dossier)
             $q->where('user_id', $user->id)
-                // 2. Ou liens dans un dossier accessible
+                // 2. Liens dans un dossier team/restricted accessible (tous les liens visibles)
                 ->orWhereHas('folder', function (Builder $folderQuery) use ($user) {
-                    $folderQuery->accessibleForUser($user);
+                    $folderQuery->where(function (Builder $fq) use ($user) {
+                        $fq->where('visibility', FolderVisibility::Team->value)
+                            ->orWhere('visibility', FolderVisibility::Team)
+                            ->orWhere(function (Builder $rq) use ($user) {
+                                $rq->where(function ($sq) {
+                                    $sq->where('visibility', FolderVisibility::Restricted->value)
+                                        ->orWhere('visibility', FolderVisibility::Restricted);
+                                })->whereHas('members', fn (Builder $m) => $m->where('users.id', $user->id));
+                            });
+                    });
                 })
-                // 3. Ou liens directement partagés avec l'utilisateur
+                // 3. Liens directement partagés avec l'utilisateur
                 ->orWhereHas('shares', function (Builder $shareQuery) use ($user) {
                     $shareQuery->where('recipient_user_id', $user->id)->valid();
                 });
