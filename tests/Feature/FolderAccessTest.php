@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\LinkActions\CreateLinkAction;
 use App\Enums\ContentType;
 use App\Enums\FolderRole;
 use App\Enums\FolderVisibility;
@@ -376,4 +377,29 @@ test('a user can view the custom folder detail page with links and stats', funct
     $response->assertSee('Analytics Dashboard');
     $response->assertSee('Total des liens');
     $response->assertSee('Total des visites');
+});
+
+test('create link action handles string and array metadata without throwing TypeError', function () {
+    $folder = Folder::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'name' => 'Dossier Dev',
+        'visibility' => FolderVisibility::Team,
+    ]);
+
+    // Test avec metadata sous forme de string JSON (comme envoyé par le formulaire Filament)
+    $link = CreateLinkAction::execute([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'folder_id' => $folder->id,
+        'url' => 'https://laravel.com/docs',
+        'title' => 'Laravel Docs',
+        'metadata' => '{"custom_key": "custom_value"}',
+        'tags' => ['php', 'laravel'],
+    ]);
+
+    expect($link)->toBeInstanceOf(Link::class)
+        ->and($link->folder_id)->toBe($folder->id)
+        ->and($link->tags)->toBe('php,laravel')
+        ->and($link->metadata)->toBeArray();
 });
