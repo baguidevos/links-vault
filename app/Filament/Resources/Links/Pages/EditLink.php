@@ -7,10 +7,21 @@ use App\Filament\Resources\Links\LinkResource;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Contracts\Support\Htmlable;
 
 class EditLink extends EditRecord
 {
     protected static string $resource = LinkResource::class;
+
+    public function getTitle(): string|Htmlable
+    {
+        return __('Modifier le lien : :title', ['title' => $this->record->title ?: $this->record->url]);
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return __('Modifier');
+    }
 
     protected function getHeaderActions(): array
     {

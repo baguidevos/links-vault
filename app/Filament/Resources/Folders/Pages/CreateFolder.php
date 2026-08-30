@@ -7,10 +7,21 @@ namespace App\Filament\Resources\Folders\Pages;
 use App\Enums\FolderVisibility;
 use App\Filament\Resources\Folders\FolderResource;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Contracts\Support\Htmlable;
 
 class CreateFolder extends CreateRecord
 {
     protected static string $resource = FolderResource::class;
+
+    public function getTitle(): string|Htmlable
+    {
+        return __('Créer un dossier');
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return __('Créer');
+    }
 
     /**
      * Synchronise les membres du dossier via la table pivot folder_user après création.

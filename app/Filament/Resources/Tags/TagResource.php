@@ -24,6 +24,23 @@ class TagResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'slug';
 
+    protected static ?int $navigationSort = 4;
+
+    public static function getModelLabel(): string
+    {
+        return __('Tag');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Tags');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Tags');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return TagForm::configure($schema);

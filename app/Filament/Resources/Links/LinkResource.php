@@ -24,6 +24,23 @@ class LinkResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'title';
 
+    protected static ?int $navigationSort = 1;
+
+    public static function getModelLabel(): string
+    {
+        return __('Lien');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Liens');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Liens');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return LinkForm::configure($schema);

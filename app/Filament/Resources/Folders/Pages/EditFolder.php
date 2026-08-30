@@ -9,10 +9,21 @@ use App\Filament\Resources\Folders\FolderResource;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Contracts\Support\Htmlable;
 
 class EditFolder extends EditRecord
 {
     protected static string $resource = FolderResource::class;
+
+    public function getTitle(): string|Htmlable
+    {
+        return __('Modifier le dossier : :name', ['name' => $this->record->name]);
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return __('Modifier');
+    }
 
     protected function getHeaderActions(): array
     {

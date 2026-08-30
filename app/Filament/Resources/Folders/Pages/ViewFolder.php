@@ -16,6 +16,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Collection;
 
 class ViewFolder extends ViewRecord
@@ -27,6 +28,16 @@ class ViewFolder extends ViewRecord
     public string $searchQuery = '';
 
     public ?string $selectedType = null;
+
+    public function getTitle(): string|Htmlable
+    {
+        return $this->record->name;
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return $this->record->name;
+    }
 
     public function mount(int|string $record): void
     {

@@ -24,6 +24,23 @@ class CategoryResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static ?int $navigationSort = 3;
+
+    public static function getModelLabel(): string
+    {
+        return __('Catégorie');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Catégories');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Catégories');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return CategoryForm::configure($schema);

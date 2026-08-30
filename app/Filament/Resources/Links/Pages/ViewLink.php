@@ -11,6 +11,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Collection;
 
 class ViewLink extends ViewRecord
@@ -18,6 +19,16 @@ class ViewLink extends ViewRecord
     protected static string $resource = LinkResource::class;
 
     protected string $view = 'filament.resources.links.pages.view-link';
+
+    public function getTitle(): string|Htmlable
+    {
+        return $this->record->title ?: $this->record->url;
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return $this->record->title ?: __('Détails');
+    }
 
     public function mount(int|string $record): void
     {

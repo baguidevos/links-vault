@@ -28,6 +28,21 @@ class FolderResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    public static function getModelLabel(): string
+    {
+        return __('Dossier');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Dossiers');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Dossiers');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return FolderForm::configure($schema);

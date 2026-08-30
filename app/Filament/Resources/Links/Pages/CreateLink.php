@@ -5,10 +5,21 @@ namespace App\Filament\Resources\Links\Pages;
 use App\Enums\LinkVisibility;
 use App\Filament\Resources\Links\LinkResource;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Contracts\Support\Htmlable;
 
 class CreateLink extends CreateRecord
 {
     protected static string $resource = LinkResource::class;
+
+    public function getTitle(): string|Htmlable
+    {
+        return __('Ajouter un lien');
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return __('Ajouter');
+    }
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
