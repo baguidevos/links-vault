@@ -127,16 +127,24 @@ class LinkForm
                                 if ($contentType === 'youtube') {
                                     try {
                                         $video_id = Youtube::parseVidFromURL($url);
-                                        $video_infos = \Alaouy\Youtube\Facades\Youtube::getVideoInfo($video_id);
-                                        $context .= "\nInformations YouTube:\n";
-                                        $context .= "- Titre vidéo: {$video_infos->snippet->title}\n";
-                                        $context .= "- Chaîne: {$video_infos->snippet->channelTitle}\n";
-                                        $context .= "- Date de publication: {$video_infos->snippet->publishedAt}\n";
+                                        if (config('youtube.key')) {
+                                            try {
+                                                $video_infos = \Alaouy\Youtube\Facades\Youtube::getVideoInfo($video_id);
+                                                if ($video_infos && isset($video_infos->snippet)) {
+                                                    $context .= "\nInformations YouTube:\n";
+                                                    $context .= "- Titre vidéo: {$video_infos->snippet->title}\n";
+                                                    $context .= "- Chaîne: {$video_infos->snippet->channelTitle}\n";
+                                                    $context .= "- Date de publication: {$video_infos->snippet->publishedAt}\n";
 
-                                        if (! empty($video_infos->snippet->description)) {
-                                            $context .= '- Description originale: '.substr($video_infos->snippet->description, 0, 500)."\n";
+                                                    if (! empty($video_infos->snippet->description)) {
+                                                        $context .= '- Description originale: '.substr($video_infos->snippet->description, 0, 500)."\n";
+                                                    }
+                                                }
+                                            } catch (\Throwable) {
+                                                // Fallback oEmbed si clé invalide
+                                            }
                                         }
-                                    } catch (\Exception $e) {
+                                    } catch (\Throwable $e) {
                                         Log::warning('Impossible de récupérer les infos YouTube', ['error' => $e->getMessage()]);
                                     }
                                 }
@@ -367,17 +375,21 @@ class LinkForm
                             if ($type === 'youtube') {
                                 try {
                                     $video_id = Youtube::parseVidFromURL($get('url'));
-                                    $video_infos = \Alaouy\Youtube\Facades\Youtube::getVideoInfo($video_id);
 
-                                    // Récupérer la langue de la vidéo et la normaliser
-                                    $detectedLang = $video_infos->snippet->defaultLanguage ?? 'fr';
-
-                                    // Normaliser le code de langue (extraire les 2 premières lettres)
-                                    $lang = str_contains($detectedLang, '-')
-                                        ? explode('-', $detectedLang)[0]
-                                        : $detectedLang;
-
-                                    $lang = strtolower($lang);
+                                    if (config('youtube.key')) {
+                                        try {
+                                            $video_infos = \Alaouy\Youtube\Facades\Youtube::getVideoInfo($video_id);
+                                            if ($video_infos && isset($video_infos->snippet->defaultLanguage)) {
+                                                $detectedLang = $video_infos->snippet->defaultLanguage;
+                                                $lang = str_contains($detectedLang, '-')
+                                                    ? explode('-', $detectedLang)[0]
+                                                    : $detectedLang;
+                                                $lang = strtolower($lang);
+                                            }
+                                        } catch (\Throwable) {
+                                            // Fallback vers 'fr' par défaut
+                                        }
+                                    }
 
                                     // Utiliser le nouveau service CLI avec fallback multi-langues
                                     $cliService = new YouTubeTranscriptCliService;

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Alaouy\Youtube\Facades\Youtube;
 use App\Models\Link;
+use Illuminate\Support\Facades\Http;
 
 class ContentDetectionService
 {
@@ -267,13 +268,45 @@ class ContentDetectionService
     /**
      * Extract metadata for YouTube URLs.
      *
-     * @return array{video_id?: string}
+     * @return array<string, mixed>
      */
     protected function extractYouTubeMetadata(string $url): array
     {
         $videoId = $this->extractYouTubeVideoId($url);
         $metaData = (new WebPageMetadataService)->fetchMetadata($url);
         $metaData['video_id'] = $videoId ?? null;
+
+        // Enrichissement via oEmbed YouTube officiel (gratuit, sans clé API)
+        try {
+            $response = Http::timeout(5)
+                ->withoutVerifying()
+                ->get("https://www.youtube.com/oembed?url={$url}&format=json");
+
+            if ($response->successful()) {
+                $oembed = $response->json();
+                if (! empty($oembed['title'])) {
+                    $metaData['title'] = $oembed['title'];
+                }
+                if (! empty($oembed['thumbnail_url'])) {
+                    $metaData['image'] = $oembed['thumbnail_url'];
+                }
+                if (! empty($oembed['author_name'])) {
+                    $metaData['author'] = $oembed['author_name'];
+                    $metaData['site_name'] = 'YouTube - '.$oembed['author_name'];
+                }
+            }
+        } catch (\Throwable) {
+            // Ignorer l'erreur réseau silencieusement
+        }
+
+        // Fallback pour la miniature directe si vide
+        if ($videoId && (empty($metaData['image']) || $metaData['image'] === 'nom disponible')) {
+            $metaData['image'] = "https://img.youtube.com/vi/{$videoId}/hqdefault.jpg";
+        }
+
+        if (empty($metaData['favicon'])) {
+            $metaData['favicon'] = 'https://www.youtube.com/s/desktop/12d6b690/img/favicon.ico';
+        }
 
         return $metaData;
     }
@@ -336,7 +369,7 @@ class ContentDetectionService
             'ico' => 'image/x-icon',
         ];
 
-        $metaData['mime_type'] = $mimeTypes[$ext];
+        $metaData['mime_type'] = $mimeTypes[$ext] ?? 'image/jpeg';
 
         return $metaData;
     }
@@ -353,10 +386,46 @@ class ContentDetectionService
         $host = str_replace('www.', '', $host);
 
         if ($type === 'youtube') {
+            // 1. Tenter avec l'API YouTube officielle si la clé est valide
+            try {
+                $video_id = \Alaouy\Youtube\Youtube::parseVidFromURL($url);
+                if ($video_id && config('youtube.key')) {
+                    $info = Youtube::getVideoInfo($video_id);
+                    if ($info && isset($info->snippet->title)) {
+                        return $info->snippet->title;
+                    }
+                }
+            } catch (\Throwable) {
+                // Fallback oEmbed ci-dessous en cas de clé invalide ou absente
+            }
 
-            $video_id = \Alaouy\Youtube\Youtube::parseVidFromURL($url);
+            // 2. Fallback YouTube oEmbed officiel (gratuit, sans clé API requise)
+            try {
+                $response = Http::timeout(5)
+                    ->withoutVerifying()
+                    ->get("https://www.youtube.com/oembed?url={$url}&format=json");
 
-            return Youtube::getVideoInfo($video_id)->snippet->title;
+                if ($response->successful()) {
+                    $data = $response->json();
+                    if (! empty($data['title'])) {
+                        return $data['title'];
+                    }
+                }
+            } catch (\Throwable) {
+                // Fallback OpenGraph
+            }
+
+            // 3. Fallback OpenGraph / WebPageMetadataService
+            try {
+                $meta = (new WebPageMetadataService)->fetchMetadata($url);
+                if (! empty($meta['title'])) {
+                    return str_replace(' - YouTube', '', $meta['title']);
+                }
+            } catch (\Throwable) {
+                // Fallback
+            }
+
+            return 'Vidéo YouTube';
         }
 
         if (str_starts_with($type, 'google_')) {
@@ -380,15 +449,35 @@ class ContentDetectionService
         return $title ?: $host;
     }
 
-    public function getYoutubeVideoDescription($url): ?string
+    public function getYoutubeVideoDescription(string $url): ?string
     {
         if (empty($url)) {
             return null;
         }
 
-        $video_id = \Alaouy\Youtube\Youtube::parseVidFromURL($url);
+        // 1. Tenter avec l'API YouTube officielle si configurée
+        try {
+            $video_id = \Alaouy\Youtube\Youtube::parseVidFromURL($url);
+            if ($video_id && config('youtube.key')) {
+                $info = Youtube::getVideoInfo($video_id);
+                if ($info && isset($info->snippet->description)) {
+                    return $info->snippet->description;
+                }
+            }
+        } catch (\Throwable) {
+            // Fallback OpenGraph
+        }
 
-        return Youtube::getVideoInfo($video_id)->snippet->description;
+        // 2. Fallback OpenGraph / Page scraping
+        try {
+            $meta = (new WebPageMetadataService)->fetchMetadata($url);
+            if (! empty($meta['description'])) {
+                return $meta['description'];
+            }
+        } catch (\Throwable) {
+            // Ignorer
+        }
 
+        return null;
     }
 }
