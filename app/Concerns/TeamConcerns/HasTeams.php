@@ -43,12 +43,12 @@ trait HasTeams
         return $this->belongsTo(Team::class, 'current_team_id');
     }
 
-    public function personalTeam(): ?Team
+    public function personalTeam(): ?Model
     {
         return $this->teams()->where('is_personal', true)->first();
     }
 
-    public function switchTeam(Team $team): bool
+    public function switchTeam(Model|Team $team): bool
     {
         if (! $this->belongsToTeam($team)) {
             return false;
@@ -61,12 +61,12 @@ trait HasTeams
         return true;
     }
 
-    public function belongsToTeam(Team $team): bool
+    public function belongsToTeam(Model|Team $team): bool
     {
         return $this->teams()->where('teams.id', $team->id)->exists();
     }
 
-    public function isCurrentTeam(Team $team): bool
+    public function isCurrentTeam(Model|Team $team): bool
     {
         return $this->current_team_id === $team->id;
     }
@@ -108,7 +108,7 @@ trait HasTeams
         return $membership?->role;
     }
 
-    public function hasTeamPermission(Team $team, string|TeamPermissionContract $permission): bool
+    public function hasTeamPermission(Model|Team $team, string|TeamPermissionContract $permission): bool
     {
         $role = $this->teamRole($team);
         $value = $permission instanceof BackedEnum ? $permission->value : $permission;
@@ -116,7 +116,7 @@ trait HasTeams
         return $role !== null && $role->hasPermission($value);
     }
 
-    public function fallbackTeam(?Team $excluding = null): ?Team
+    public function fallbackTeam(?Model $excluding = null): ?Model
     {
         return $this->teams()
             ->when($excluding, fn ($query) => $query->where('teams.id', '!=', $excluding->id))
