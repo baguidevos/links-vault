@@ -98,6 +98,18 @@
                             <span>Ajouter un lien</span>
                         </button>
 
+                        @if ($record->canChangeVisibility(auth()->user()))
+                            <button
+                                type="button"
+                                wire:click="mountAction('change_visibility')"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition cursor-pointer"
+                                title="Modifier la visibilité"
+                            >
+                                <x-filament::icon icon="heroicon-o-lock-closed" class="w-4 h-4 text-primary-500" />
+                                <span class="hidden sm:inline">Visibilité</span>
+                            </button>
+                        @endif
+
                         <button
                             type="button"
                             wire:click="mountAction('edit')"

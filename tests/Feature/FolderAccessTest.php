@@ -403,3 +403,62 @@ test('create link action handles string and array metadata without throwing Type
         ->and($link->tags)->toBe('php,laravel')
         ->and($link->metadata)->toBeArray();
 });
+
+test('folder visibility change permissions strictly respect creator space and editor role', function () {
+    $creator = User::factory()->create();
+    $guestEditor = User::factory()->create();
+    $guestViewer = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $team1 = Team::create(['name' => 'Team 1', 'slug' => 'team-1', 'is_personal' => true]);
+    $team2 = Team::create(['name' => 'Team 2', 'slug' => 'team-2', 'is_personal' => false]);
+
+    $creator->teams()->attach($team1->id, ['role' => 'owner']);
+    $guestEditor->teams()->attach($team1->id, ['role' => 'member']);
+    $guestViewer->teams()->attach($team1->id, ['role' => 'member']);
+    $otherUser->teams()->attach($team2->id, ['role' => 'owner']);
+
+    $restrictedFolder = Folder::create([
+        'user_id' => $creator->id,
+        'team_id' => $team1->id,
+        'name' => 'Dossier Restreint Team 1',
+        'slug' => 'dossier-restreint-team-1',
+        'visibility' => FolderVisibility::Restricted,
+    ]);
+
+    // Guest Editor has editor role on folder
+    $restrictedFolder->members()->attach($guestEditor->id, ['role' => FolderRole::Editor->value]);
+    // Guest Viewer has viewer role on folder
+    $restrictedFolder->members()->attach($guestViewer->id, ['role' => FolderRole::Viewer->value]);
+
+    // 1. Creator on origin team -> ALLOWED
+    expect($restrictedFolder->canChangeVisibility($creator, $team1))->toBeTrue();
+
+    // 2. Guest with editor role on origin team -> ALLOWED
+    expect($restrictedFolder->canChangeVisibility($guestEditor, $team1))->toBeTrue();
+
+    // 3. Guest with viewer role on origin team -> DENIED
+    expect($restrictedFolder->canChangeVisibility($guestViewer, $team1))->toBeFalse();
+
+    // 4. In a different team (team 2) -> DENIED even if creator
+    expect($restrictedFolder->canChangeVisibility($creator, $team2))->toBeFalse();
+
+    // 5. Unrelated user -> DENIED
+    expect($restrictedFolder->canChangeVisibility($otherUser, $team1))->toBeFalse();
+});
+
+test('view folder page shows change visibility button for authorized user', function () {
+    $folder = Folder::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'name' => 'Dossier Marketing Visibilité',
+        'slug' => 'dossier-marketing-visibilite',
+        'visibility' => FolderVisibility::Team,
+    ]);
+
+    $response = $this->actingAs($this->owner)
+        ->get("/app/{$this->team->slug}/folders/{$folder->id}");
+
+    $response->assertOk();
+    $response->assertSee('Visibilité');
+});

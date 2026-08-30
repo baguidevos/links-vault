@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Folders\Pages;
 
 use App\Actions\LinkActions\CreateLinkAction;
 use App\Enums\FolderVisibility;
+use App\Filament\Resources\Folders\Actions\ChangeFolderVisibilityAction;
 use App\Filament\Resources\Folders\FolderResource;
 use App\Filament\Resources\Links\Schemas\LinkForm;
 use App\Models\Folder;
@@ -64,6 +65,9 @@ class ViewFolder extends ViewRecord
 
                     $this->record->refresh();
                 }),
+
+            ChangeFolderVisibilityAction::make()
+                ->record($this->record),
 
             EditAction::make(),
 

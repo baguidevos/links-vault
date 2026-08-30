@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Folders\Tables;
 
 use App\Enums\FolderVisibility;
+use App\Filament\Resources\Folders\Actions\ChangeFolderVisibilityAction;
 use App\Filament\Resources\Folders\FolderResource;
 use App\Models\Folder;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
@@ -101,6 +102,7 @@ class FoldersTable
             ], FiltersLayout::AboveContent)
             ->recordActions([
                 ViewAction::make(),
+                ChangeFolderVisibilityAction::make(),
                 EditAction::make(),
             ])
             ->toolbarActions([

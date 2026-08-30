@@ -144,4 +144,39 @@ class Folder extends Model
 
         return false;
     }
+
+    /**
+     * Vérifie si un utilisateur a le droit de modifier la visibilité de ce dossier.
+     *
+     * Règles :
+     * 1. Le dossier doit être dans l'espace actif (l'espace du créateur / d'origine du dossier).
+     * 2. L'utilisateur doit être le créateur du dossier ou le propriétaire de l'espace.
+     * 3. Ou si c'est un invité, il doit avoir le rôle éditeur (FolderRole::Editor) sur ce dossier.
+     */
+    public function canChangeVisibility(User $user, ?Model $tenant = null): bool
+    {
+        $currentTenant = $tenant ?: (class_exists(Filament::class) ? Filament::getTenant() : null);
+
+        // 1. Ne s'affiche que sur l'espace du créateur / d'origine du dossier
+        if ($currentTenant && $this->team_id && (int) $this->team_id !== (int) $currentTenant->id) {
+            return false;
+        }
+
+        // 2. Créateur du dossier
+        if ($this->user_id === $user->id) {
+            return true;
+        }
+
+        // 3. Propriétaire de l'équipe
+        if ($this->team && $user->ownsTeam($this->team)) {
+            return true;
+        }
+
+        // 4. Invité ayant le rôle éditeur sur ce dossier
+        if ($this->canBeEditedBy($user)) {
+            return true;
+        }
+
+        return false;
+    }
 }
