@@ -336,3 +336,44 @@ test('link with restricted visibility is only visible to assigned members', func
 
     expect($accessibleByOther)->not->toContain($restrictedLink->id);
 });
+
+test('a user can view the custom folder detail page with links and stats', function () {
+    $folder = Folder::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'category_id' => $this->category->id,
+        'name' => 'Dossier Marketing',
+        'visibility' => FolderVisibility::Team,
+    ]);
+
+    $link1 = Link::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'folder_id' => $folder->id,
+        'title' => 'Campagne Google Ads',
+        'url' => 'https://ads.google.com',
+        'content_type' => ContentType::Other,
+        'visit_count' => 12,
+        'is_favorite' => true,
+    ]);
+
+    $link2 = Link::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'folder_id' => $folder->id,
+        'title' => 'Analytics Dashboard',
+        'url' => 'https://analytics.google.com',
+        'content_type' => ContentType::Other,
+        'visit_count' => 8,
+    ]);
+
+    $response = $this->actingAs($this->owner)
+        ->get("/app/{$this->team->slug}/folders/{$folder->id}");
+
+    $response->assertOk();
+    $response->assertSee('Dossier Marketing');
+    $response->assertSee('Campagne Google Ads');
+    $response->assertSee('Analytics Dashboard');
+    $response->assertSee('Total des liens');
+    $response->assertSee('Total des visites');
+});

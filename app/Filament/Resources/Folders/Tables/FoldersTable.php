@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Folders\Tables;
 
 use App\Enums\FolderVisibility;
+use App\Filament\Resources\Folders\FolderResource;
+use App\Models\Folder;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -23,6 +25,7 @@ class FoldersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->recordUrl(fn (Folder $record): string => FolderResource::getUrl('view', ['record' => $record]))
             ->modifyQueryUsing(function (Builder $query) {
                 $user = auth()->user();
                 $query->with(['category', 'members'])
