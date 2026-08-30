@@ -3,16 +3,22 @@
 namespace App\Filament\Resources\Links\Tables;
 
 use App\Enums\ContentType;
+use App\Models\Folder;
+use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 class LinksTable
 {
@@ -133,6 +139,48 @@ class LinksTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('assign_to_folder')
+                        ->label(__('Assigner à un dossier'))
+                        ->icon(TablerIcon::FolderPlus)
+                        ->color('primary')
+                        ->form([
+                            Select::make('folder_id')
+                                ->label(__('Dossier de destination'))
+                                ->options(function () {
+                                    $user = auth()->user();
+                                    $query = Folder::query();
+                                    if ($user) {
+                                        $query->accessibleForUser($user);
+                                    }
+
+                                    return $query->pluck('name', 'id');
+                                })
+                                ->searchable()
+                                ->preload()
+                                ->placeholder(__('Retirer du dossier actuel'))
+                                ->helperText(__('Sélectionnez un dossier pour déplacer les liens ou laissez vide pour les isoler/retirer du dossier.')),
+                        ])
+                        ->action(function (Collection $records, array $data): void {
+                            $folderId = ! empty($data['folder_id']) ? (int) $data['folder_id'] : null;
+                            $folder = $folderId ? Folder::find($folderId) : null;
+
+                            $count = 0;
+                            foreach ($records as $record) {
+                                $updateData = ['folder_id' => $folderId];
+                                if ($folder && $folder->category_id && empty($record->category_id)) {
+                                    $updateData['category_id'] = $folder->category_id;
+                                }
+                                $record->update($updateData);
+                                $count++;
+                            }
+
+                            Notification::make()
+                                ->title(__('Liens mis à jour'))
+                                ->body(__(':count lien(s) assigné(s) au dossier.', ['count' => $count]))
+                                ->success()
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     DeleteBulkAction::make(),
                 ]),
             ]);

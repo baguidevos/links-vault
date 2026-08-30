@@ -203,3 +203,45 @@ test('folder editor role allows modifying links in the folder while viewer role 
     expect(Gate::forUser($this->member)->allows('update', $linkEditable))->toBeTrue()
         ->and(Gate::forUser($this->member)->allows('update', $linkReadOnly))->toBeFalse();
 });
+
+test('multiple isolated links can be assigned to a folder in bulk', function () {
+    $folder = Folder::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'category_id' => $this->category->id,
+        'name' => 'Collection Projets',
+        'visibility' => FolderVisibility::Team,
+    ]);
+
+    $link1 = Link::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'title' => 'Lien Isolé 1',
+        'url' => 'https://isolated1.com',
+        'content_type' => ContentType::Other,
+    ]);
+
+    $link2 = Link::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'title' => 'Lien Isolé 2',
+        'url' => 'https://isolated2.com',
+        'content_type' => ContentType::Other,
+    ]);
+
+    expect($link1->folder_id)->toBeNull()
+        ->and($link2->folder_id)->toBeNull();
+
+    // Simulate bulk update
+    $links = collect([$link1, $link2]);
+    foreach ($links as $link) {
+        $link->update([
+            'folder_id' => $folder->id,
+            'category_id' => $folder->category_id,
+        ]);
+    }
+
+    expect($link1->fresh()->folder_id)->toBe($folder->id)
+        ->and($link1->fresh()->category_id)->toBe($this->category->id)
+        ->and($link2->fresh()->folder_id)->toBe($folder->id);
+});
