@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\PreviewLinkRequest;
 use App\Http\Requests\Api\StoreLinkRequest;
+use App\Models\Folder;
 use App\Models\Link;
 use App\Models\Tag;
 use App\Services\AIService;
@@ -86,7 +87,7 @@ class LinkController extends Controller
 
             return response()->json([
                 'message' => 'Ce lien existe déjà dans votre coffre-fort.',
-                'link' => $existing->load('tags', 'category'),
+                'link' => $existing->load('tags', 'category', 'folder'),
                 'vault_url' => $webUrl,
                 'is_duplicate' => true,
             ], 409);
@@ -121,6 +122,16 @@ class LinkController extends Controller
             $thumbnailUrl = $thumbnailUrl ?: ($metadata['image'] ?? $metadata['og_image'] ?? null);
         }
 
+        $folderId = $data['folder_id'] ?? null;
+        $categoryId = $data['category_id'] ?? null;
+
+        if ($folderId && empty($categoryId)) {
+            $folder = Folder::find($folderId);
+            if ($folder && $folder->category_id) {
+                $categoryId = $folder->category_id;
+            }
+        }
+
         $link = Link::create([
             'user_id' => $user->id,
             'team_id' => $teamId,
@@ -129,7 +140,8 @@ class LinkController extends Controller
             'title' => $title ?: Str::limit($url, 100),
             'description' => $description,
             'content_type' => $type ?: 'other',
-            'category_id' => $data['category_id'] ?? null,
+            'category_id' => $categoryId,
+            'folder_id' => $folderId,
             'favicon_url' => $faviconUrl,
             'thumbnail_url' => $thumbnailUrl,
             'metadata' => $metadata,
@@ -175,7 +187,7 @@ class LinkController extends Controller
             }
         }
 
-        $link->load('tags', 'category', 'team');
+        $link->load('tags', 'category', 'folder', 'team');
         $tenant = $link->team;
         $webUrl = $tenant
             ? url("/app/{$tenant->slug}/links/{$link->id}")

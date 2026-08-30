@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const previewUrlDisplay = document.getElementById('preview-url-display');
   const linkTitle = document.getElementById('link-title');
   const linkTeam = document.getElementById('link-team');
+  const linkFolder = document.getElementById('link-folder');
   const linkCategory = document.getElementById('link-category');
   const tagInputField = document.getElementById('tag-input-field');
   const tagsChipsContainer = document.getElementById('tags-chips-container');
@@ -64,6 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     type: 'article',
   };
   let currentTags = [];
+  let availableFolders = [];
   let availableCategories = [];
   let availableTeams = [];
 
@@ -198,11 +200,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Change Team -> Reload Categories & Tags for this team
+  // Change Team -> Reload Categories, Folders & Tags for this team
   linkTeam.addEventListener('change', async () => {
-    const teamId = linkTeam.value;
-    if (teamId) {
-      await loadContext(teamId);
+    const selectedTeamId = linkTeam.value;
+    if (selectedTeamId) {
+      linkFolder.innerHTML = '<option value="">Chargement...</option>';
+      linkCategory.innerHTML = '<option value="">Chargement...</option>';
+      await loadContext(selectedTeamId);
+    }
+  });
+
+  // Change Folder -> Auto select linked category if available
+  linkFolder.addEventListener('change', () => {
+    const selectedFolderId = linkFolder.value;
+    if (!selectedFolderId) return;
+
+    const folder = availableFolders.find((f) => String(f.id) === String(selectedFolderId));
+    if (folder && folder.category_id) {
+      const catOption = linkCategory.querySelector(`option[value="${folder.category_id}"]`);
+      if (catOption) {
+        linkCategory.value = folder.category_id;
+      }
     }
   });
 
@@ -216,6 +234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       title: linkTitle.value.trim(),
       description: linkDescription.value.trim() || null,
       team_id: linkTeam.value ? parseInt(linkTeam.value) : null,
+      folder_id: linkFolder.value ? parseInt(linkFolder.value) : null,
       category_id: linkCategory.value ? parseInt(linkCategory.value) : null,
       tags: currentTags,
       content_type: currentTabData.type || 'other',
@@ -395,22 +414,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     availableTeams = data.teams || [];
     availableCategories = data.categories || [];
+    availableFolders = data.folders || [];
     const availableTags = data.tags || [];
 
     // Populate Teams
+    const targetTeamId = teamId !== null && teamId !== undefined
+      ? String(teamId)
+      : (data.current_team_id ? String(data.current_team_id) : (availableTeams[0] ? String(availableTeams[0].id) : ''));
+
     linkTeam.innerHTML = '';
     if (availableTeams.length > 0) {
       availableTeams.forEach((t) => {
         const opt = document.createElement('option');
         opt.value = t.id;
         opt.textContent = t.name + (t.is_personal ? ' (Perso)' : '');
-        if (t.id === (teamId || data.current_team_id)) opt.selected = true;
+        if (String(t.id) === targetTeamId) opt.selected = true;
         linkTeam.appendChild(opt);
       });
+      linkTeam.value = targetTeamId;
       document.getElementById('team-group').style.display = availableTeams.length > 1 ? 'flex' : 'none';
     } else {
       document.getElementById('team-group').style.display = 'none';
     }
+
+    // Populate Folders
+    linkFolder.innerHTML = '<option value="">Aucun dossier (racine)</option>';
+    availableFolders.forEach((folder) => {
+      const opt = document.createElement('option');
+      opt.value = folder.id;
+      const icon = folder.icon ? `${folder.icon} ` : '📁 ';
+      opt.textContent = `${icon}${folder.name}`;
+      linkFolder.appendChild(opt);
+    });
 
     // Populate Categories
     linkCategory.innerHTML = '<option value="">Aucune catégorie</option>';

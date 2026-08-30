@@ -27,6 +27,7 @@ class StoreLinkRequest extends FormRequest
             'title' => ['nullable', 'string', 'max:500'],
             'description' => ['nullable', 'string'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'folder_id' => ['nullable', 'integer', 'exists:folders,id'],
             'team_id' => ['nullable', 'integer', 'exists:teams,id'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:50'],

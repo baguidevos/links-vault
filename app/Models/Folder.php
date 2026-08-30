@@ -69,9 +69,9 @@ class Folder extends Model
     /**
      * Scope pour filtrer les dossiers accessibles à un utilisateur donné.
      */
-    public function scopeAccessibleForUser(Builder $query, User $user): Builder
+    public function scopeAccessibleForUser(Builder $query, User $user, ?Model $team = null): Builder
     {
-        $tenant = class_exists(Filament::class) ? Filament::getTenant() : null;
+        $tenant = $team ?: (class_exists(Filament::class) ? Filament::getTenant() : null);
 
         // Si l'utilisateur est le propriétaire de cette équipe active
         if ($tenant && $user->ownsTeam($tenant)) {
