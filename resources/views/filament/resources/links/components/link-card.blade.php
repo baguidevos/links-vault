@@ -1,6 +1,6 @@
 @php
-    /** @var \App\Models\Link $record */
-    $record = $getRecord();
+    /** @var \App\Models\Link|null $record */
+    $record = $record ?? null;
     if (! $record) {
         return;
     }
@@ -51,6 +51,7 @@
                 href="{{ $viewUrl }}" 
                 class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors"
                 title="Regarder la vidéo"
+                wire:navigate
             >
                 <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-600/90 text-white shadow-lg group-hover:scale-110 transition-transform">
                     <x-filament::icon icon="heroicon-s-play" class="w-6 h-6 ml-0.5" />
@@ -61,6 +62,7 @@
                 href="{{ $viewUrl }}" 
                 class="absolute inset-0"
                 title="{{ $record->title }}"
+                wire:navigate
             ></a>
         @endif
 
@@ -80,13 +82,24 @@
             @endif
         </div>
 
-        {{-- Bouton Favori en haut à droite --}}
+        {{-- Bouton Favori interactif (Toujours visible en bouton d'icône) --}}
         <div class="absolute top-2.5 right-2.5 z-10">
-            @if ($record->is_favorite)
-                <span class="flex items-center justify-center w-7 h-7 rounded-full backdrop-blur-md bg-amber-500/90 text-white shadow-xs" title="Favori">
-                    <x-filament::icon icon="heroicon-s-star" class="w-4 h-4" />
-                </span>
-            @endif
+            <button 
+                type="button"
+                wire:click.stop="toggleFavoriteFromCard({{ $record->id }})"
+                @class([
+                    'flex items-center justify-center w-8 h-8 rounded-full shadow-md backdrop-blur-md transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer',
+                    'bg-amber-500 hover:bg-amber-600 text-white ring-2 ring-amber-400/40 shadow-amber-500/20' => $record->is_favorite,
+                    'bg-white/90 hover:bg-white dark:bg-gray-900/90 dark:hover:bg-gray-800 text-gray-600 hover:text-amber-500 dark:text-gray-400 dark:hover:text-amber-400 border border-gray-200/80 dark:border-gray-700/80' => ! $record->is_favorite,
+                ])
+                title="{{ $record->is_favorite ? __('Retirer des favoris') : __('Ajouter aux favoris') }}"
+            >
+                @if ($record->is_favorite)
+                    <x-filament::icon icon="heroicon-s-star" class="w-4 h-4 text-white" />
+                @else
+                    <x-filament::icon icon="heroicon-o-star" class="w-4 h-4" />
+                @endif
+            </button>
         </div>
     </div>
 
@@ -109,6 +122,7 @@
                     href="{{ \App\Filament\Resources\Folders\FolderResource::getUrl('view', ['record' => $record->folder->id]) }}" 
                     class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 hover:bg-blue-100 transition truncate max-w-[130px]"
                     title="Dossier : {{ $record->folder->name }}"
+                    wire:navigate
                 >
                     <x-filament::icon icon="heroicon-m-folder" class="w-3 h-3 shrink-0" />
                     <span class="truncate">{{ $record->folder->name }}</span>
@@ -118,7 +132,7 @@
 
         {{-- Titre --}}
         <h3 class="font-bold text-sm sm:text-base leading-snug text-gray-900 dark:text-white line-clamp-2 hover:text-primary-600 dark:hover:text-primary-400 transition">
-            <a href="{{ $viewUrl }}">
+            <a href="{{ $viewUrl }}" wire:navigate>
                 {{ $record->title ?: $record->url }}
             </a>
         </h3>
@@ -171,6 +185,7 @@
                     target="_blank" 
                     class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 dark:bg-primary-950/40 dark:text-primary-300 dark:hover:bg-primary-900/50 transition duration-150"
                     title="Ouvrir le lien dans un nouvel onglet"
+                    wire:navigate
                 >
                     <span>Ouvrir</span>
                     <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="w-3.5 h-3.5" />
@@ -180,7 +195,7 @@
                     href="{{ $viewUrl }}" 
                     class="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                     title="Voir les détails"
-                >
+                    wire:navigate>
                     <x-filament::icon icon="heroicon-m-eye" class="w-4 h-4" />
                 </a>
 
@@ -188,6 +203,7 @@
                     href="{{ $editUrl }}" 
                     class="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                     title="Modifier"
+                    wire:navigate
                 >
                     <x-filament::icon icon="heroicon-m-pencil-square" class="w-4 h-4" />
                 </a>
