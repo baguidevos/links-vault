@@ -78,3 +78,37 @@ if (platform.phpBinary) {
         console.error('Error copying PHP binary', e);
     }
 }
+
+// Auto-heal Electron binary and .bin executables if missing after npm install
+try {
+    const currentDir = process.cwd();
+    const electronDir = join(currentDir, 'node_modules', 'electron');
+    const electronPathTxt = join(electronDir, 'path.txt');
+    const electronDistDir = join(electronDir, 'dist');
+    const electronExe = join(electronDistDir, isWindows ? 'electron.exe' : 'electron');
+    const vendorElectronDir = join(currentDir, '..', '..', 'vendor', 'nativephp', 'desktop', 'resources', 'electron', 'node_modules', 'electron');
+    const binDir = join(currentDir, 'node_modules', '.bin');
+    const vendorBinDir = join(currentDir, '..', '..', 'vendor', 'nativephp', 'desktop', 'resources', 'electron', 'node_modules', '.bin');
+
+    if (!fs.existsSync(electronPathTxt) || !fs.existsSync(electronExe)) {
+        console.log('Ensuring Electron binaries are present...');
+        ensureDirSync(electronDistDir);
+        if (fs.existsSync(join(vendorElectronDir, 'path.txt'))) {
+            fs.copyFileSync(join(vendorElectronDir, 'path.txt'), electronPathTxt);
+        } else {
+            fs.writeFileSync(electronPathTxt, isWindows ? 'electron.exe' : 'electron');
+        }
+        if (fs.existsSync(join(vendorElectronDir, 'dist'))) {
+            fs_extra.copySync(join(vendorElectronDir, 'dist'), electronDistDir, { overwrite: false });
+        }
+    }
+
+    if (!fs.existsSync(join(binDir, 'electron-vite.cmd')) && fs.existsSync(vendorBinDir)) {
+        console.log('Ensuring .bin executables are present...');
+        ensureDirSync(binDir);
+        fs_extra.copySync(vendorBinDir, binDir, { overwrite: false });
+    }
+} catch (e) {
+    console.error('Error verifying Electron runtime environment', e);
+}
+
