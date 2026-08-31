@@ -151,32 +151,34 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 
 ---
 
-### 2.7 Qualité & Suite de Tests Automatisés
+### 2.7 Intelligence Artificielle & Automatisation (Laravel AI SDK)
+
+| Fonctionnalité | Description Technique & Fonctionnelle | Statut |
+| :--- | :--- | :---: |
+| **Agent de Résumé Structuré (`LinkSummaryAgent`)** | Agent exploitant `Laravel\Ai` avec `HasStructuredOutput` produisant un TL;DR, 3 points clés et des tags pertinents. | 🟢 Terminé |
+| **Action & Job Asynchrone (`GenerateLinkAiSummaryJob`)** | File d'attente pour générer les résumés en arrière-plan sans ralentir la capture depuis l'extension ou le web. | 🟢 Terminé |
+| **Cycle de Vie du Statut IA** | Gestion des transitions d'état : `pending` ➔ `processing` (indicateur pulsé) ➔ `completed` / `failed` (tolérant aux pannes). | 🟢 Terminé |
+| **Auto-Tagging Intelligent** | Si un lien n'a pas de tags, l'IA lui attribue automatiquement les 3 à 5 tags les plus pertinents. | 🟢 Terminé |
+| **Bouton d'Action Filament « ✨ Résumé IA »** | Action en 1 clic disponible dans la table des liens et dans la fiche détaillée pour (ré)analyser le contenu. | 🟢 Terminé |
+
+---
+
+### 2.8 Qualité & Suite de Tests Automatisés
 
 - **Outil de test** : Pest PHP 4 / PHPUnit 12
-- **Couverture actuelle** : **32 tests automatisés passants (119 assertions)**
+- **Couverture actuelle** : **36 tests automatisés passants (130 assertions)**
 - **Domaines testés** :
   - Inscription d'utilisateur & création automatique d'espace personnel.
   - Connexion & authentification Filament / Sanctum.
   - Isolation stricte des données entre locataires (Multi-Tenancy security).
   - Gestion du CRUD des liens et validation des permissions.
+  - Agents IA `LinkSummaryAgent::fake()`, actions et jobs de file d'attente.
 
 ---
 
 ## 3. Feuille de Route des Fonctionnalités Futures
 
-### 3.1 Phase 4 : Intelligence Artificielle (Laravel AI SDK)
-
-| Fonctionnalité Prévue | Objectif Technique | Impact Utilisateur |
-| :--- | :--- | :--- |
-| **Résumés Automatiques Intelligents** | Utilisation de `Laravel\Ai` pour générer un résumé synthétique en 3 points clés à chaque enregistrement d'article ou de vidéo. | Gain de temps majeur lors de la relecture de la veille. |
-| **Auto-Tagging & Classification IA** | Analyse du contenu de la page pour proposer automatiquement 3 à 5 tags pertinents et suggérer le dossier le plus approprié. | Zéro friction d'organisation pour l'utilisateur. |
-| **Transcription & Synthèse YouTube** | Extraction de la transcription des vidéos YouTube et génération d'un compte-rendu textuel structuré. | Retrouver des passages clés d'une vidéo sans devoir la regarder en entier. |
-| **Recherche Sémantique & Chat RAG** | Vectorisation des contenus sauvegardés pour permettre à l'utilisateur de « chatter » avec sa base de liens (*ex: « Quels sont les articles qui parlent de Tailwind v4 ? »*). | Transformation de LinksVault en second cerveau numérique interactif. |
-
----
-
-### 3.2 Phase 5 : Import/Export, Collaboration & Monétisation SaaS
+### 3.1 Phase 5 : Import/Export, Collaboration & Monétisation SaaS
 
 | Fonctionnalité Prévue | Objectif Technique | Impact Utilisateur |
 | :--- | :--- | :--- |
