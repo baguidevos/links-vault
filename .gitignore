@@ -31,5 +31,7 @@ Thumbs.db
 
 *.sqlite-shm
 *.sqlite-wal
+*.sqlite
+database/*.sqlite*
 database/nativephp.sqlite*
 
