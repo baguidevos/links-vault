@@ -8,6 +8,7 @@ use App\Filament\Resources\Links\Actions\ChangeVisibilityAction;
 use App\Models\Folder;
 use App\Models\Link;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
+use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -15,46 +16,60 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\Layout\View;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 
 class LinksTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
-            ->modifyQueryUsing(function (Builder $query) {
-                $user = auth()->user();
-                $query->with(['category', 'folder', 'tags']);
+        $livewire = $table->getLivewire();
+        $isGridView = ($livewire && property_exists($livewire, 'viewMode'))
+            ? $livewire->viewMode === 'grid'
+            : session('links_view_mode', 'grid') === 'grid';
 
-                if ($user) {
-                    $query->accessibleForUser($user);
-                }
-            })
-            ->columns([
-                // ImageColumn::make('thumbnail_url')
-                //     ->label(__('thumbnail_url'))
-                //     ->circular()
-                //     ->defaultImageUrl(fn($record) => $record->favicon_url)
-                //     ->imageSize(40),
-
+        $columns = $isGridView
+            ? [
+                View::make('filament.resources.links.components.link-card'),
+            ]
+            : [
                 ImageColumn::make('thumbnail_url')
-                    ->label(__('thumbnail_url'))
-                    ->getStateUsing(fn ($record) => $record->content_type === ContentType::Youtube ? $record->getYoutubeThumbnailUrl() : $record->favicon_url)
+                    ->label(__('Aperçu'))
+                    ->getStateUsing(fn ($record) => $record->content_type === ContentType::Youtube ? $record->getYoutubeThumbnailUrl() : ($record->thumbnail_url ?: $record->favicon_url))
                     ->url(fn ($record) => $record->url)
                     ->openUrlInNewTab()
-                    ->square(),
+                    ->imageSize(44),
+                IconColumn::make('is_favorite')
+                    ->label(__('Favori'))
+                    ->boolean()
+                    ->trueIcon('heroicon-s-star')
+                    ->falseIcon('heroicon-o-star')
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->action(function (Link $record): void {
+                        $record->update(['is_favorite' => ! $record->is_favorite]);
+                        Notification::make()
+                            ->title($record->is_favorite ? __('Ajouté aux favoris ⭐') : __('Retiré des favoris'))
+                            ->success()
+                            ->send();
+                    })
+                    ->alignCenter(),
                 TextColumn::make('title')
                     ->label(__('Title'))
                     ->searchable()
                     ->sortable()
                     ->limit(50)
-                    ->weight('medium'),
+                    ->weight('medium')
+                    ->description(fn (Link $record): ?string => $record->description ? Str::limit($record->description, 45) : null),
+
                 TextColumn::make('url')
                     ->label(__('URL'))
                     ->searchable()
@@ -104,7 +119,24 @@ class LinksTable
                     ->dateTime('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ])
+            ];
+
+        return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                $user = auth()->user();
+                $query->with(['category', 'folder', 'tags']);
+
+                if ($user) {
+                    $query->accessibleForUser($user);
+                }
+            })
+            ->columns($columns)
+            ->when($isGridView, fn (Table $t) => $t->contentGrid([
+                'sm' => 1,
+                'md' => 2,
+                'lg' => 3,
+                '2xl' => 4,
+            ]))
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('folder')
@@ -143,8 +175,13 @@ class LinksTable
             ->recordActions([
                 ViewAction::make('voir')
                     ->slideOver()
-                    // ->view('filament.resources.links.pages.view')
                     ->modalWidth('2xl'),
+                Action::make('open_link')
+                    ->label(__('Ouvrir'))
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->color('gray')
+                    ->url(fn (Link $record): string => $record->url, shouldOpenInNewTab: true)
+                    ->tooltip(__('Ouvrir dans le navigateur')),
                 ChangeVisibilityAction::make(),
                 EditAction::make()
                     ->slideOver()

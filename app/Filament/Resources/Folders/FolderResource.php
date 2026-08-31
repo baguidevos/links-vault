@@ -17,6 +17,7 @@ use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class FolderResource extends Resource
 {
@@ -63,6 +64,25 @@ class FolderResource extends Resource
         return [
             //
         ];
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'description'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        /** @var Folder $record */
+        $details = [];
+
+        if ($record->category) {
+            $details['Catégorie'] = $record->category->name;
+        }
+
+        $details['Liens'] = (string) $record->links()->count();
+
+        return $details;
     }
 
     public static function getPages(): array

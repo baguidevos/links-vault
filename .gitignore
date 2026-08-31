@@ -29,11 +29,7 @@ Thumbs.db
 # EnvKit — never commit .env backups (they contain secrets)
 .env.bkp*
 
-# SQLite Databases & WAL files
-*.sqlite
-*.sqlite-wal
 *.sqlite-shm
-/database/*.sqlite*
-/database/database.sqlite*
-/database/nativephp.sqlite*
+*.sqlite-wal
+database/nativephp.sqlite*
 

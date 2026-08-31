@@ -7,12 +7,14 @@ use App\Filament\Resources\Links\Actions\ShareLinkModalAction;
 use App\Filament\Resources\Links\LinkResource;
 use App\Models\Link;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 
 class ViewLink extends ViewRecord
 {
@@ -22,12 +24,15 @@ class ViewLink extends ViewRecord
 
     public function getTitle(): string|Htmlable
     {
-        return $this->record->title ?: $this->record->url;
+        return Str::limit($this->record->title ?: $this->record->url, 45);
     }
 
-    public function getBreadcrumb(): string
+    public function getBreadcrumbs(): array
     {
-        return $this->record->title ?: __('Détails');
+        return [
+            LinkResource::getUrl('index') => __('Liens'),
+            '#' => Str::limit($this->record->title ?: $this->record->url, 30),
+        ];
     }
 
     public function mount(int|string $record): void
@@ -41,28 +46,35 @@ class ViewLink extends ViewRecord
     {
         return [
             Action::make('open_external')
-                ->label(__('Ouvrir le lien'))
+                ->label(__('Ouvrir'))
                 ->icon('heroicon-o-arrow-top-right-on-square')
                 ->color('primary')
                 ->url(fn () => $this->record->url, shouldOpenInNewTab: true)
                 ->action(fn () => $this->recordVisit()),
 
-            ShareLinkModalAction::make()
-                ->record($this->record),
-
-            ChangeVisibilityAction::make()
-                ->record($this->record),
-
             Action::make('toggle_favorite')
-                ->label(fn () => $this->record->is_favorite ? __('Retirer des favoris') : __('Ajouter aux favoris'))
+                ->label(fn () => $this->record->is_favorite ? __('Favori ⭐') : __('Favori'))
                 ->icon(fn () => $this->record->is_favorite ? 'heroicon-s-star' : 'heroicon-o-star')
                 ->color(fn () => $this->record->is_favorite ? 'warning' : 'gray')
                 ->action(fn () => $this->toggleFavorite()),
 
-            EditAction::make(),
+            EditAction::make()
+                ->label(__('Modifier')),
 
-            DeleteAction::make()
-                ->successRedirectUrl(LinkResource::getUrl('index')),
+            ActionGroup::make([
+                ShareLinkModalAction::make()
+                    ->record($this->record),
+
+                ChangeVisibilityAction::make()
+                    ->record($this->record),
+
+                DeleteAction::make()
+                    ->successRedirectUrl(LinkResource::getUrl('index')),
+            ])
+                ->label(__('Plus'))
+                ->icon('heroicon-m-ellipsis-vertical')
+                ->color('gray')
+                ->button(),
         ];
     }
 

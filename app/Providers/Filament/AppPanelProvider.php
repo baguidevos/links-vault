@@ -39,11 +39,14 @@ class AppPanelProvider extends PanelProvider
             ->passwordReset()
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
+            ->globalSearchKeyBindings(['mod+k'])
             ->brandName('LinkVault')
             ->brandLogo(fn () => view('filament.components.brand-logo'))
             ->brandLogoHeight('2.5rem')
             ->favicon(asset('favicon.ico'))
             ->renderHook(PanelsRenderHook::HEAD_START, fn () => view('filament.render_hooks.favicons'))
+            ->renderHook(PanelsRenderHook::TOPBAR_START, fn () => view('filament.components.navigation-history-buttons'))
+            ->renderHook(PanelsRenderHook::SIMPLE_PAGE_START, fn () => view('filament.components.navigation-history-buttons'))
             ->colors([
                 'primary' => Color::hex('#0099FF'),
             ])

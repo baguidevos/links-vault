@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Concerns\TeamConcerns\HasTeams;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasDefaultTenant;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -21,7 +22,7 @@ use LaravelDaily\FilaTeams\Contracts\HasTeamMembership;
 
 #[Fillable(['name', 'email', 'password', 'is_admin'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements FilamentUser, HasTeamMembership
+class User extends Authenticatable implements FilamentUser, HasDefaultTenant, HasTeamMembership
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasPlanSubscriptions, HasTeams, Notifiable;

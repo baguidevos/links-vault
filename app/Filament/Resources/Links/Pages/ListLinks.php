@@ -16,6 +16,21 @@ class ListLinks extends ListRecords
 {
     protected static string $resource = LinkResource::class;
 
+    public string $viewMode = 'grid';
+
+    public function mount(): void
+    {
+        parent::mount();
+        $this->viewMode = session('links_view_mode', 'grid');
+    }
+
+    public function toggleViewMode(): void
+    {
+        $this->viewMode = $this->viewMode === 'grid' ? 'table' : 'grid';
+        session(['links_view_mode' => $this->viewMode]);
+        $this->resetTable();
+    }
+
     public function getTitle(): string|Htmlable
     {
         return __('Liens');
@@ -34,6 +49,13 @@ class ListLinks extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('toggle_view')
+                ->label(fn () => $this->viewMode === 'grid' ? __('Vue Table') : __('Vue Grille'))
+                ->icon(fn () => $this->viewMode === 'grid' ? 'heroicon-o-table-cells' : 'heroicon-o-squares-2x2')
+                ->color('gray')
+                ->outlined()
+                ->action(fn () => $this->toggleViewMode()),
+
             CreateAction::make()
                 ->form(LinkForm::getComponents())
                 ->label(__('Nouveau lien'))

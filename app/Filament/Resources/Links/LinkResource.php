@@ -15,6 +15,9 @@ use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class LinkResource extends Resource
 {
@@ -61,6 +64,40 @@ class LinkResource extends Resource
         return [
             //
         ];
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'url', 'description', 'objective', 'content_type'];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['category', 'folder', 'tags']);
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        /** @var Link $record */
+        $details = [];
+
+        if ($record->content_type) {
+            $details['Type'] = $record->content_type->label();
+        }
+
+        if ($record->url) {
+            $details['URL'] = Str::limit($record->url, 45);
+        }
+
+        if ($record->folder) {
+            $details['Dossier'] = $record->folder->name;
+        }
+
+        if ($record->category) {
+            $details['Catégorie'] = $record->category->name;
+        }
+
+        return $details;
     }
 
     public static function getPages(): array

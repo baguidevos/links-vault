@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Actions\TeamActions;
 
+use App\Models\Team;
+use App\Models\TeamMember;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use LaravelDaily\FilaTeams\Facades\FilaTeams;
-use LaravelDaily\FilaTeams\Models\Membership;
-use LaravelDaily\FilaTeams\Models\Team;
 
 class CreateTeam
 {
@@ -23,7 +23,7 @@ class CreateTeam
                 'is_personal' => $data['is_personal'] ?? false,
             ]);
 
-            Membership::create([
+            TeamMember::create([
                 'team_id' => $team->id,
                 'user_id' => $user->id,
                 'role' => FilaTeams::ownerRole()->value,
