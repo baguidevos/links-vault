@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Links\Pages;
 use App\Actions\LinkActions\CreateLinkAction;
 use App\Filament\Resources\Links\LinkResource;
 use App\Filament\Resources\Links\Schemas\LinkForm;
+use App\Models\Link;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
@@ -29,6 +30,18 @@ class ListLinks extends ListRecords
         $this->viewMode = $this->viewMode === 'grid' ? 'table' : 'grid';
         session(['links_view_mode' => $this->viewMode]);
         $this->resetTable();
+    }
+
+    public function toggleFavoriteFromCard(int $linkId): void
+    {
+        $link = Link::find($linkId);
+        if ($link) {
+            $link->update(['is_favorite' => ! $link->is_favorite]);
+            Notification::make()
+                ->title($link->is_favorite ? __('Ajouté aux favoris ⭐') : __('Retiré des favoris'))
+                ->success()
+                ->send();
+        }
     }
 
     public function getTitle(): string|Htmlable

@@ -18,7 +18,6 @@ use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
-use Filament\Tables\Columns\Layout\View;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
@@ -36,91 +35,6 @@ class LinksTable
             ? $livewire->viewMode === 'grid'
             : session('links_view_mode', 'grid') === 'grid';
 
-        $columns = $isGridView
-            ? [
-                View::make('filament.resources.links.components.link-card'),
-            ]
-            : [
-                ImageColumn::make('thumbnail_url')
-                    ->label(__('Aperçu'))
-                    ->getStateUsing(fn ($record) => $record->content_type === ContentType::Youtube ? $record->getYoutubeThumbnailUrl() : ($record->thumbnail_url ?: $record->favicon_url))
-                    ->url(fn ($record) => $record->url)
-                    ->openUrlInNewTab()
-                    ->imageSize(44),
-                IconColumn::make('is_favorite')
-                    ->label(__('Favori'))
-                    ->boolean()
-                    ->trueIcon('heroicon-s-star')
-                    ->falseIcon('heroicon-o-star')
-                    ->trueColor('warning')
-                    ->falseColor('gray')
-                    ->action(function (Link $record): void {
-                        $record->update(['is_favorite' => ! $record->is_favorite]);
-                        Notification::make()
-                            ->title($record->is_favorite ? __('Ajouté aux favoris ⭐') : __('Retiré des favoris'))
-                            ->success()
-                            ->send();
-                    })
-                    ->alignCenter(),
-                TextColumn::make('title')
-                    ->label(__('Title'))
-                    ->searchable()
-                    ->sortable()
-                    ->limit(50)
-                    ->weight('medium')
-                    ->description(fn (Link $record): ?string => $record->description ? Str::limit($record->description, 45) : null),
-
-                TextColumn::make('url')
-                    ->label(__('URL'))
-                    ->searchable()
-                    ->sortable()
-                    ->limit(40)
-                    ->url(fn ($record) => $record->url, shouldOpenInNewTab: true),
-                TextColumn::make('folder.name')
-                    ->label(__('Dossier'))
-                    ->searchable()
-                    ->sortable()
-                    ->badge()
-                    ->color('info')
-                    ->placeholder('—'),
-                TextColumn::make('category.name')
-                    ->label(__('Category'))
-                    ->searchable()
-                    ->sortable()
-                    ->placeholder('—'),
-                TextColumn::make('content_type')
-                    ->label(__('Type'))
-                    ->badge()
-                    ->formatStateUsing(fn (ContentType $state): string => $state->label())
-                    ->color(fn (ContentType $state): string => match ($state) {
-                        ContentType::Youtube => 'danger',
-                        ContentType::GoogleDrive => 'warning',
-                        ContentType::GoogleDoc => 'warning',
-                        ContentType::GoogleSlides => 'warning',
-                        ContentType::GoogleSheet => 'warning',
-                        ContentType::GoogleForm => 'warning',
-                        ContentType::Article => 'info',
-                        ContentType::Pdf => 'gray',
-                        ContentType::Image => 'success',
-                        ContentType::Other => 'gray',
-                    }),
-                TextColumn::make('visibility')
-                    ->label(__('Visibilité'))
-                    ->badge()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('visit_count')
-                    ->label(__('Visits'))
-                    ->numeric()
-                    ->sortable()
-                    ->alignCenter(),
-                TextColumn::make('created_at')
-                    ->label(__('Created'))
-                    ->dateTime('d M Y')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ];
-
         return $table
             ->modifyQueryUsing(function (Builder $query) {
                 $user = auth()->user();
@@ -130,13 +44,90 @@ class LinksTable
                     $query->accessibleForUser($user);
                 }
             })
-            ->columns($columns)
-            ->when($isGridView, fn (Table $t) => $t->contentGrid([
-                'sm' => 1,
-                'md' => 2,
-                'lg' => 3,
-                '2xl' => 4,
-            ]))
+            ->when(
+                $isGridView,
+                fn (Table $t) => $t->content(fn () => view('filament.resources.links.components.links-grid-cards')),
+                fn (Table $t) => $t->columns([
+                    ImageColumn::make('thumbnail_url')
+                        ->label(__('Aperçu'))
+                        ->getStateUsing(fn ($record) => $record->content_type === ContentType::Youtube ? $record->getYoutubeThumbnailUrl() : ($record->thumbnail_url ?: $record->favicon_url))
+                        ->url(fn ($record) => $record->url)
+                        ->openUrlInNewTab()
+                        ->imageSize(44),
+                    IconColumn::make('is_favorite')
+                        ->label(__('Favori'))
+                        ->boolean()
+                        ->trueIcon('heroicon-s-star')
+                        ->falseIcon('heroicon-o-star')
+                        ->trueColor('warning')
+                        ->falseColor('gray')
+                        ->action(function (Link $record): void {
+                            $record->update(['is_favorite' => ! $record->is_favorite]);
+                            Notification::make()
+                                ->title($record->is_favorite ? __('Ajouté aux favoris ⭐') : __('Retiré des favoris'))
+                                ->success()
+                                ->send();
+                        })
+                        ->alignCenter(),
+                    TextColumn::make('title')
+                        ->label(__('Title'))
+                        ->searchable()
+                        ->sortable()
+                        ->limit(50)
+                        ->weight('medium')
+                        ->description(fn (Link $record): ?string => $record->description ? Str::limit($record->description, 45) : null),
+
+                    TextColumn::make('url')
+                        ->label(__('URL'))
+                        ->searchable()
+                        ->sortable()
+                        ->limit(40)
+                        ->url(fn ($record) => $record->url, shouldOpenInNewTab: true),
+                    TextColumn::make('folder.name')
+                        ->label(__('Dossier'))
+                        ->searchable()
+                        ->sortable()
+                        ->badge()
+                        ->color('info')
+                        ->placeholder('—'),
+                    TextColumn::make('category.name')
+                        ->label(__('Category'))
+                        ->searchable()
+                        ->sortable()
+                        ->placeholder('—'),
+                    TextColumn::make('content_type')
+                        ->label(__('Type'))
+                        ->badge()
+                        ->formatStateUsing(fn (ContentType $state): string => $state->label())
+                        ->color(fn (ContentType $state): string => match ($state) {
+                            ContentType::Youtube => 'danger',
+                            ContentType::GoogleDrive => 'warning',
+                            ContentType::GoogleDoc => 'warning',
+                            ContentType::GoogleSlides => 'warning',
+                            ContentType::GoogleSheet => 'warning',
+                            ContentType::GoogleForm => 'warning',
+                            ContentType::Article => 'info',
+                            ContentType::Pdf => 'gray',
+                            ContentType::Image => 'success',
+                            ContentType::Other => 'gray',
+                        }),
+                    TextColumn::make('visibility')
+                        ->label(__('Visibilité'))
+                        ->badge()
+                        ->sortable()
+                        ->toggleable(isToggledHiddenByDefault: true),
+                    TextColumn::make('visit_count')
+                        ->label(__('Visits'))
+                        ->numeric()
+                        ->sortable()
+                        ->alignCenter(),
+                    TextColumn::make('created_at')
+                        ->label(__('Created'))
+                        ->dateTime('d M Y')
+                        ->sortable()
+                        ->toggleable(isToggledHiddenByDefault: true),
+                ])
+            )
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('folder')

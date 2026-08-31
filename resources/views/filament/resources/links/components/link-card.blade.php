@@ -1,6 +1,6 @@
 @php
     /** @var \App\Models\Link $record */
-    $record = $getRecord();
+    $record = $record ?? (isset($getRecord) ? $getRecord() : null);
     if (! $record) {
         return;
     }
@@ -14,7 +14,7 @@
     $isYoutube = $record->content_type === \App\Enums\ContentType::Youtube;
 @endphp
 
-<div class="group relative flex flex-col h-full bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-primary-500/40 dark:hover:border-primary-500/40 transition-all duration-300 transform hover:-translate-y-1">
+<div class="group relative flex flex-col h-full bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-primary-500/50 dark:hover:border-primary-500/50 transition-all duration-300 transform hover:-translate-y-1">
     
     {{-- 1. Thumbnail / Media Header --}}
     <div class="relative w-full aspect-video bg-gray-100 dark:bg-gray-800/80 overflow-hidden border-b border-gray-100 dark:border-gray-800/80">
@@ -80,13 +80,16 @@
             @endif
         </div>
 
-        {{-- Bouton Favori en haut à droite --}}
+        {{-- Bouton Favori interactif en haut à droite --}}
         <div class="absolute top-2.5 right-2.5 z-10">
-            @if ($record->is_favorite)
-                <span class="flex items-center justify-center w-7 h-7 rounded-full backdrop-blur-md bg-amber-500/90 text-white shadow-xs" title="Favori">
-                    <x-filament::icon icon="heroicon-s-star" class="w-4 h-4" />
-                </span>
-            @endif
+            <button 
+                type="button"
+                wire:click.stop="toggleFavoriteFromCard({{ $record->id }})"
+                class="flex items-center justify-center w-7 h-7 rounded-full backdrop-blur-md {{ $record->is_favorite ? 'bg-amber-500 text-white' : 'bg-black/45 text-white/75 hover:text-white hover:bg-black/65' }} shadow-xs transition"
+                title="{{ $record->is_favorite ? 'Retirer des favoris' : 'Ajouter aux favoris' }}"
+            >
+                <x-filament::icon icon="{{ $record->is_favorite ? 'heroicon-s-star' : 'heroicon-o-star' }}" class="w-4 h-4" />
+            </button>
         </div>
     </div>
 
