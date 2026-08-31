@@ -1,3 +1,4 @@
+@desktop
 <div 
     x-data="{
         goBack() {
@@ -39,3 +40,4 @@
         <x-filament::icon icon="heroicon-m-arrow-path" class="w-4 h-4" />
     </button>
 </div>
+@enddesktop
