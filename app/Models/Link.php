@@ -52,6 +52,27 @@ class Link extends Model
         'last_visited_at' => 'datetime',
     ];
 
+    /**
+     * Obtenir les métadonnées sous forme de tableau garanti.
+     *
+     * @return array<string, mixed>
+     */
+    public function getSafeMetadata(): array
+    {
+        if (is_array($this->metadata)) {
+            return $this->metadata;
+        }
+
+        if (is_string($this->metadata) && ! empty($this->metadata)) {
+            $decoded = json_decode($this->metadata, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return [];
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

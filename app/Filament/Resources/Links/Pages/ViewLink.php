@@ -77,7 +77,7 @@ class ViewLink extends ViewRecord
                     $meta = $analysis['metadata'] ?? [];
                     $this->record->update([
                         'content_type' => $analysis['type'] ?? $this->record->content_type,
-                        'metadata' => array_merge($this->record->metadata ?? [], $meta),
+                        'metadata' => array_merge($this->record->getSafeMetadata(), $meta),
                         'thumbnail_url' => $meta['image'] ?? $meta['og_image'] ?? $this->record->thumbnail_url,
                         'favicon_url' => $meta['favicon'] ?? (new WebPageMetadataService)->fetchFavicon($this->record->url),
                     ]);

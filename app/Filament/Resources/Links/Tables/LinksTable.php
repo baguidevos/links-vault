@@ -201,7 +201,7 @@ class LinksTable
                                 $meta = $analysis['metadata'] ?? [];
                                 $record->update([
                                     'content_type' => $analysis['type'] ?? $record->content_type,
-                                    'metadata' => array_merge($record->metadata ?? [], $meta),
+                                    'metadata' => array_merge($record->getSafeMetadata(), $meta),
                                     'thumbnail_url' => $meta['image'] ?? $meta['og_image'] ?? $record->thumbnail_url,
                                     'favicon_url' => $meta['favicon'] ?? (new WebPageMetadataService)->fetchFavicon($record->url),
                                 ]);
@@ -243,73 +243,74 @@ class LinksTable
                             }),
                     ])
                     ->toolbarActions([
-                        BulkActionGroup::make([
-                            BulkAction::make('refresh_metadata_bulk')
-                                ->label(__('Actualiser les miniatures'))
-                                ->icon('heroicon-o-arrow-path')
-                                ->color('gray')
-                                ->action(function (Collection $records): void {
-                                    $detection = app(ContentDetectionService::class);
-                                    $metaService = new WebPageMetadataService;
-                                    foreach ($records as $record) {
-                                        $analysis = $detection->analyze($record->url);
-                                        $meta = $analysis['metadata'] ?? [];
-                                        $record->update([
-                                            'content_type' => $analysis['type'] ?? $record->content_type,
-                                            'metadata' => array_merge($record->metadata ?? [], $meta),
-                                            'thumbnail_url' => $meta['image'] ?? $meta['og_image'] ?? $record->thumbnail_url,
-                                            'favicon_url' => $meta['favicon'] ?? $metaService->fetchFavicon($record->url),
-                                        ]);
-                                    }
-                                    Notification::make()
-                                        ->title(__(':count liens actualisés avec succès !', ['count' => $records->count()]))
-                                        ->success()
-                                        ->send();
-                                })
-                                ->deselectRecordsAfterCompletion(),
+                        BulkAction::make('refresh_metadata_bulk')
+                            ->label(__('Actualiser les miniatures'))
+                            ->icon('heroicon-o-arrow-path')
+                            ->color('gray')
+                            ->action(function (Collection $records): void {
+                                $detection = app(ContentDetectionService::class);
+                                $metaService = new WebPageMetadataService;
+                                foreach ($records as $record) {
+                                    $analysis = $detection->analyze($record->url);
+                                    $meta = $analysis['metadata'] ?? [];
+                                    $record->update([
+                                        'content_type' => $analysis['type'] ?? $record->content_type,
+                                        'metadata' => array_merge($record->getSafeMetadata(), $meta),
+                                        'thumbnail_url' => $meta['image'] ?? $meta['og_image'] ?? $record->thumbnail_url,
+                                        'favicon_url' => $meta['favicon'] ?? $metaService->fetchFavicon($record->url),
+                                    ]);
+                                }
+                                Notification::make()
+                                    ->title(__(':count liens actualisés avec succès !', ['count' => $records->count()]))
+                                    ->success()
+                                    ->send();
+                            })
+                            ->deselectRecordsAfterCompletion(),
 
-                            BulkAction::make('assign_to_folder')
-                                ->label(__('Assigner à un dossier'))
-                                ->icon(TablerIcon::FolderPlus)
-                                ->color('primary')
-                                ->form([
-                                    Select::make('folder_id')
-                                        ->label(__('Dossier de destination'))
-                                        ->options(function () {
-                                            $user = auth()->user();
-                                            $query = Folder::query();
-                                            if ($user) {
-                                                $query->accessibleForUser($user);
-                                            }
-
-                                            return $query->pluck('name', 'id');
-                                        })
-                                        ->searchable()
-                                        ->preload()
-                                        ->placeholder(__('Retirer du dossier actuel'))
-                                        ->helperText(__('Sélectionnez un dossier pour déplacer les liens ou laissez vide pour les isoler/retirer du dossier.')),
-                                ])
-                                ->action(function (Collection $records, array $data): void {
-                                    $folderId = ! empty($data['folder_id']) ? (int) $data['folder_id'] : null;
-                                    $folder = $folderId ? Folder::find($folderId) : null;
-
-                                    $count = 0;
-                                    foreach ($records as $record) {
-                                        $updateData = ['folder_id' => $folderId];
-                                        if ($folder && $folder->category_id && empty($record->category_id)) {
-                                            $updateData['category_id'] = $folder->category_id;
+                        BulkAction::make('assign_to_folder')
+                            ->label(__('Assigner à un dossier'))
+                            ->icon(TablerIcon::FolderPlus)
+                            ->color('primary')
+                            ->form([
+                                Select::make('folder_id')
+                                    ->label(__('Dossier de destination'))
+                                    ->options(function () {
+                                        $user = auth()->user();
+                                        $query = Folder::query();
+                                        if ($user) {
+                                            $query->accessibleForUser($user);
                                         }
-                                        $record->update($updateData);
-                                        $count++;
-                                    }
 
-                                    Notification::make()
-                                        ->title(__('Liens mis à jour'))
-                                        ->body(__(':count lien(s) assigné(s) au dossier.', ['count' => $count]))
-                                        ->success()
-                                        ->send();
-                                })
-                                ->deselectRecordsAfterCompletion(),
+                                        return $query->pluck('name', 'id');
+                                    })
+                                    ->searchable()
+                                    ->preload()
+                                    ->placeholder(__('Retirer du dossier actuel'))
+                                    ->helperText(__('Sélectionnez un dossier pour déplacer les liens ou laissez vide pour les isoler/retirer du dossier.')),
+                            ])
+                            ->action(function (Collection $records, array $data): void {
+                                $folderId = ! empty($data['folder_id']) ? (int) $data['folder_id'] : null;
+                                $folder = $folderId ? Folder::find($folderId) : null;
+
+                                $count = 0;
+                                foreach ($records as $record) {
+                                    $updateData = ['folder_id' => $folderId];
+                                    if ($folder && $folder->category_id && empty($record->category_id)) {
+                                        $updateData['category_id'] = $folder->category_id;
+                                    }
+                                    $record->update($updateData);
+                                    $count++;
+                                }
+
+                                Notification::make()
+                                    ->title(__('Liens mis à jour'))
+                                    ->body(__(':count lien(s) assigné(s) au dossier.', ['count' => $count]))
+                                    ->success()
+                                    ->send();
+                            })
+                            ->deselectRecordsAfterCompletion(),
+                        BulkActionGroup::make([
+
                             DeleteBulkAction::make(),
                         ]),
                     ])
