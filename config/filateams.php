@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Models\Team;
+use App\Models\TeamMember;
 use LaravelDaily\FilaTeams\Enums\TeamPermission;
 use LaravelDaily\FilaTeams\Enums\TeamRole;
-use LaravelDaily\FilaTeams\Models\Membership;
-use LaravelDaily\FilaTeams\Models\Team;
 use LaravelDaily\FilaTeams\Models\TeamInvitation;
 
 return [
@@ -15,7 +15,7 @@ return [
     ],
     'models' => [
         'team' => Team::class,
-        'membership' => Membership::class,
+        'membership' => TeamMember::class,
         'invitation' => TeamInvitation::class,
     ],
     'invitation' => [

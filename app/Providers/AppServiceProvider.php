@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Listeners\CreatePersonalTeam;
+use Filament\Auth\Events\Registered as FilamentRegistered;
+use Illuminate\Auth\Events\Registered as LaravelRegistered;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Event::listen(FilamentRegistered::class, CreatePersonalTeam::class);
+        Event::listen(LaravelRegistered::class, CreatePersonalTeam::class);
     }
 }

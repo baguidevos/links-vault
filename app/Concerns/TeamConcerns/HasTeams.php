@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Concerns\TeamConcerns;
 
+use App\Models\Team;
 use App\Models\TeamMember;
 use BackedEnum;
 use Filament\Facades\Filament;
@@ -15,15 +16,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use LaravelDaily\FilaTeams\Contracts\TeamPermissionContract;
 use LaravelDaily\FilaTeams\Facades\FilaTeams;
-use LaravelDaily\FilaTeams\Models\Membership;
-use LaravelDaily\FilaTeams\Models\Team;
 
 trait HasTeams
 {
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class, 'team_members')
-            ->using(Membership::class)
+            ->using(TeamMember::class)
             ->withPivot('role')
             ->withTimestamps();
     }
@@ -140,5 +139,10 @@ trait HasTeams
     public function canAccessTenant(Model $tenant): bool
     {
         return $this->belongsToTeam($tenant);
+    }
+
+    public function getDefaultTenant(Panel $panel): ?Model
+    {
+        return $this->currentTeam ?? $this->personalTeam() ?? $this->teams()->first();
     }
 }

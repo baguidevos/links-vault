@@ -38,7 +38,7 @@
                     </div>
                     <div class="flex items-center gap-4">
                         @auth
-                            <a href="{{ url('/dashboard') }}" class="px-5 py-2.5 text-sm font-medium bg-white/10 hover:bg-white/15 rounded-full transition-all border border-white/10">
+                            <a href="{{ url('/app') }}" class="px-5 py-2.5 text-sm font-medium bg-white/10 hover:bg-white/15 rounded-full transition-all border border-white/10">
                                 Dashboard
                             </a>
                         @else

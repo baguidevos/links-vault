@@ -28,3 +28,8 @@ Thumbs.db
 
 # EnvKit — never commit .env backups (they contain secrets)
 .env.bkp*
+
+*.sqlite-shm
+*.sqlite-wal
+database/nativephp.sqlite*
+
