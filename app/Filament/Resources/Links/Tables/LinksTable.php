@@ -12,8 +12,10 @@ use App\Services\ContentDetectionService;
 use App\Services\WebPageMetadataService;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -176,70 +178,88 @@ class LinksTable
                             ->toggleable(isToggledHiddenByDefault: true),
                     ])
                     ->recordActions([
+                        Action::make('open_link')
+                            ->label(__('Ouvrir'))
+                            ->icon('heroicon-o-arrow-top-right-on-square')
+                            ->color('gray')
+                            ->iconButton()
+                            ->tooltip(__('Ouvrir dans le navigateur'))
+                            ->url(fn (Link $record): string => $record->url, shouldOpenInNewTab: true),
+
                         ViewAction::make('voir')
+                            ->label(__('Aperçu'))
+                            ->icon('heroicon-o-eye')
+                            ->iconButton()
+                            ->tooltip(__('Aperçu détaillé'))
                             ->slideOver()
                             ->modalWidth('2xl'),
+
                         Action::make('generate_ai_summary')
                             ->label(__('Résumé IA'))
                             ->icon('heroicon-m-sparkles')
                             ->color('primary')
+                            ->iconButton()
+                            ->tooltip(__('Générer le résumé IA & tags'))
                             ->action(function (Link $record): void {
                                 GenerateAiSummaryAction::execute($record);
                                 Notification::make()
                                     ->title(__('Résumé IA généré avec succès !'))
                                     ->success()
                                     ->send();
-                            })
-                            ->tooltip(__('Générer le résumé IA et les tags')),
-                        Action::make('refresh_metadata')
-                            ->label(__('Actualiser miniature'))
-                            ->icon('heroicon-o-arrow-path')
-                            ->color('gray')
-                            ->action(function (Link $record): void {
-                                $analysis = app(ContentDetectionService::class)->analyze($record->url);
-                                $meta = $analysis['metadata'] ?? [];
-                                $record->update([
-                                    'content_type' => $analysis['type'] ?? $record->content_type,
-                                    'metadata' => array_merge($record->getSafeMetadata(), $meta),
-                                    'thumbnail_url' => $meta['image'] ?? $meta['og_image'] ?? $record->thumbnail_url,
-                                    'favicon_url' => $meta['favicon'] ?? (new WebPageMetadataService)->fetchFavicon($record->url),
-                                ]);
-                                Notification::make()
-                                    ->title(__('Miniature et métadonnées actualisées !'))
-                                    ->success()
-                                    ->send();
-                            })
-                            ->tooltip(__('Re-scanner la page web pour récupérer la miniature')),
-                        Action::make('open_link')
-                            ->label(__('Ouvrir'))
-                            ->icon('heroicon-o-arrow-top-right-on-square')
-                            ->color('gray')
-                            ->url(fn (Link $record): string => $record->url, shouldOpenInNewTab: true)
-                            ->tooltip(__('Ouvrir dans le navigateur')),
-                        ChangeVisibilityAction::make(),
-                        EditAction::make()
-                            ->slideOver()
-                            ->modalWidth('2xl')
-                            ->after(function (Link $record, array $data) {
-                                $vis = $record->visibility instanceof LinkVisibility
-                                    ? $record->visibility->value
-                                    : (string) $record->visibility;
-
-                                if ($vis === LinkVisibility::Restricted->value) {
-                                    $membersData = $data['members_data'] ?? [];
-
-                                    $syncData = [];
-                                    foreach ($membersData as $item) {
-                                        if (! empty($item['user_id'])) {
-                                            $syncData[] = (int) $item['user_id'];
-                                        }
-                                    }
-
-                                    $record->members()->sync($syncData);
-                                } else {
-                                    $record->members()->detach();
-                                }
                             }),
+
+                        ActionGroup::make([
+                            Action::make('refresh_metadata')
+                                ->label(__('Actualiser miniature'))
+                                ->icon('heroicon-o-arrow-path')
+                                ->color('gray')
+                                ->action(function (Link $record): void {
+                                    $analysis = app(ContentDetectionService::class)->analyze($record->url);
+                                    $meta = $analysis['metadata'] ?? [];
+                                    $record->update([
+                                        'content_type' => $analysis['type'] ?? $record->content_type,
+                                        'metadata' => array_merge($record->getSafeMetadata(), $meta),
+                                        'thumbnail_url' => $meta['image'] ?? $meta['og_image'] ?? $record->thumbnail_url,
+                                        'favicon_url' => $meta['favicon'] ?? (new WebPageMetadataService)->fetchFavicon($record->url),
+                                    ]);
+                                    Notification::make()
+                                        ->title(__('Miniature et métadonnées actualisées !'))
+                                        ->success()
+                                        ->send();
+                                })
+                                ->tooltip(__('Re-scanner la page web pour récupérer la miniature')),
+
+                            ChangeVisibilityAction::make(),
+
+                            EditAction::make()
+                                ->slideOver()
+                                ->modalWidth('2xl')
+                                ->after(function (Link $record, array $data) {
+                                    $vis = $record->visibility instanceof LinkVisibility
+                                        ? $record->visibility->value
+                                        : (string) $record->visibility;
+
+                                    if ($vis === LinkVisibility::Restricted->value) {
+                                        $membersData = $data['members_data'] ?? [];
+
+                                        $syncData = [];
+                                        foreach ($membersData as $item) {
+                                            if (! empty($item['user_id'])) {
+                                                $syncData[] = (int) $item['user_id'];
+                                            }
+                                        }
+
+                                        $record->members()->sync($syncData);
+                                    } else {
+                                        $record->members()->detach();
+                                    }
+                                }),
+
+                            DeleteAction::make(),
+                        ])
+                            ->icon('heroicon-m-ellipsis-vertical')
+                            ->color('gray')
+                            ->tooltip(__('Plus d\'actions')),
                     ])
                     ->toolbarActions([
                         BulkAction::make('refresh_metadata_bulk')
