@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\LinkActions;
 
 use App\Enums\LinkVisibility;
+use App\Jobs\GenerateLinkAiSummaryJob;
 use App\Models\Link;
 use App\Services\ContentDetectionService;
 
@@ -12,8 +13,8 @@ class CreateLinkAction
 {
     public static function execute(array $data): Link
     {
-        $membersData = $data['members_data'] ?? [];
-        unset($data['members_data']);
+        $generateAiSummary = ! empty($data['generate_ai_summary']);
+        unset($data['generate_ai_summary'], $data['members_data']);
 
         $contentDetection = app(ContentDetectionService::class);
         $analysis = $contentDetection->analyze($data['url']);
@@ -52,6 +53,7 @@ class CreateLinkAction
             'url_hash' => hash('sha256', $data['url']),
             'content_type' => $data['content_type'] ?? $analysis['type'],
             'metadata' => $metadata,
+            'ai_summary_status' => $generateAiSummary ? 'pending' : 'pending',
         ]);
 
         // Synchronisation des membres restreints si applicable
@@ -67,6 +69,10 @@ class CreateLinkAction
                 }
             }
             $link->members()->sync($syncData);
+        }
+
+        if ($generateAiSummary) {
+            GenerateLinkAiSummaryJob::dispatch($link);
         }
 
         return $link;

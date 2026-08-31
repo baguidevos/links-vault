@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Links\Pages;
 
+use App\Actions\LinkActions\GenerateAiSummaryAction;
 use App\Filament\Resources\Links\Actions\ChangeVisibilityAction;
 use App\Filament\Resources\Links\Actions\ShareLinkModalAction;
 use App\Filament\Resources\Links\LinkResource;
@@ -51,6 +52,19 @@ class ViewLink extends ViewRecord
                 ->color('primary')
                 ->url(fn () => $this->record->url, shouldOpenInNewTab: true)
                 ->action(fn () => $this->recordVisit()),
+
+            Action::make('generate_ai_summary')
+                ->label(fn () => $this->record->ai_summary ? __('Régénérer IA ✨') : __('Analyser IA ✨'))
+                ->icon('heroicon-m-sparkles')
+                ->color('primary')
+                ->action(function () {
+                    GenerateAiSummaryAction::execute($this->record);
+                    $this->record->refresh();
+                    Notification::make()
+                        ->title(__('Résumé IA généré avec succès !'))
+                        ->success()
+                        ->send();
+                }),
 
             Action::make('toggle_favorite')
                 ->label(fn () => $this->record->is_favorite ? __('Favori ⭐') : __('Favori'))

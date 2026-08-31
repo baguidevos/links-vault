@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Links\Tables;
 
+use App\Actions\LinkActions\GenerateAiSummaryAction;
 use App\Enums\ContentType;
 use App\Enums\LinkVisibility;
 use App\Filament\Resources\Links\Actions\ChangeVisibilityAction;
@@ -177,6 +178,18 @@ class LinksTable
                         ViewAction::make('voir')
                             ->slideOver()
                             ->modalWidth('2xl'),
+                        Action::make('generate_ai_summary')
+                            ->label(__('Résumé IA'))
+                            ->icon('heroicon-m-sparkles')
+                            ->color('primary')
+                            ->action(function (Link $record): void {
+                                GenerateAiSummaryAction::execute($record);
+                                Notification::make()
+                                    ->title(__('Résumé IA généré avec succès !'))
+                                    ->success()
+                                    ->send();
+                            })
+                            ->tooltip(__('Générer le résumé IA et les tags')),
                         Action::make('open_link')
                             ->label(__('Ouvrir'))
                             ->icon('heroicon-o-arrow-top-right-on-square')

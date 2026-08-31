@@ -321,24 +321,60 @@
                     </div>
                 </div>
 
-                {{-- Carte Résumé IA --}}
-                @if ($record->ai_summary)
-                    <div class="p-6 bg-white border border-gray-200 shadow-xs rounded-2xl dark:bg-gray-900 dark:border-gray-800 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                <x-filament::icon icon="heroicon-m-sparkles" class="w-4 h-4 text-primary-500" />
-                                <span>Résumé IA</span>
-                            </h2>
-                            <span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">
-                                Automatique
+                {{-- Carte Résumé & Analyse IA --}}
+                <div class="p-6 bg-white border border-gray-200 shadow-xs rounded-2xl dark:bg-gray-900 dark:border-gray-800 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <x-filament::icon icon="heroicon-m-sparkles" class="w-4 h-4 text-primary-500" />
+                            <span>Résumé IA</span>
+                        </h2>
+                        
+                        @if ($record->ai_summary_status === 'completed')
+                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
+                                ✓ Synthétisé
                             </span>
-                        </div>
+                        @elseif ($record->ai_summary_status === 'processing')
+                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 animate-pulse">
+                                ⏳ En cours...
+                            </span>
+                        @elseif ($record->ai_summary_status === 'failed')
+                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300">
+                                Échec
+                            </span>
+                        @else
+                            <span class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                                En attente
+                            </span>
+                        @endif
+                    </div>
 
-                        <div class="text-sm leading-relaxed text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
+                    @if ($record->ai_summary)
+                        <div class="text-sm leading-relaxed text-gray-700 dark:text-gray-200 prose prose-sm dark:prose-invert max-w-none bg-gradient-to-br from-primary-50/40 via-transparent to-purple-50/20 dark:from-primary-950/20 dark:to-purple-950/10 p-4 rounded-xl border border-primary-100/60 dark:border-primary-900/40">
                             {!! nl2br(e($record->ai_summary)) !!}
                         </div>
-                    </div>
-                @endif
+                    @elseif ($record->ai_summary_status === 'processing')
+                        <div class="flex flex-col items-center justify-center p-6 text-center space-y-2 bg-gray-50 dark:bg-gray-800/40 rounded-xl">
+                            <div class="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Analyse IA en cours de traitement...</p>
+                        </div>
+                    @else
+                        <div class="flex flex-col items-center justify-center p-6 text-center space-y-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                            <x-filament::icon icon="heroicon-o-sparkles" class="w-8 h-8 text-gray-400" />
+                            <div class="space-y-1">
+                                <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Aucun résumé IA généré</p>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400">Obtenez un TL;DR et des points clés en 1 clic.</p>
+                            </div>
+                            <button 
+                                type="button" 
+                                wire:click="mountAction('generate_ai_summary')"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-500 rounded-lg shadow-xs transition"
+                            >
+                                <x-filament::icon icon="heroicon-m-sparkles" class="w-3.5 h-3.5" />
+                                <span>Générer le résumé IA</span>
+                            </button>
+                        </div>
+                    @endif
+                </div>
 
                 {{-- Carte Ressources Similaires --}}
                 @php

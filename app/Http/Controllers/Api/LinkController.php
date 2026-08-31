@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\PreviewLinkRequest;
 use App\Http\Requests\Api\StoreLinkRequest;
+use App\Jobs\GenerateLinkAiSummaryJob;
 use App\Models\Folder;
 use App\Models\Link;
 use App\Models\Tag;
@@ -178,13 +179,9 @@ class LinkController extends Controller
             }
         }
 
-        // Trigger AI summary if requested
+        // Trigger AI summary in background queue if requested
         if (! empty($data['generate_ai_summary'])) {
-            try {
-                $this->aiService->generateSummary($link);
-            } catch (\Throwable $e) {
-                // Keep link saved even if AI summary fails
-            }
+            GenerateLinkAiSummaryJob::dispatch($link);
         }
 
         $link->load('tags', 'category', 'folder', 'team');
