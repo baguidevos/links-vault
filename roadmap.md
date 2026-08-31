@@ -28,7 +28,7 @@ graph LR
 | **Phase 2** | **Extension Clipper** | Capture 1-clic, extraction OpenGraph/YouTube, Token Sanctum, Popup WebExtension | 🟢 **Terminé (100%)** |
 | **Phase 3** | **Organisation & UX** | Vues Grille/Table, Favoris ⭐, Palette Ctrl+K, Recherche instantanée, SPA wire:navigate | 🟢 **Terminé (100%)** |
 | **Phase 4** | **IA & Intelligence** | Résumés automatiques, points clés, auto-tagging (Laravel AI SDK) | 🟢 **Terminé (100%)** |
-| **Phase 5** | **Import/Export & SaaS** | Import/Export (Chrome, Pocket, JSON, CSV), Monétisation SaaS (Subbase/Stripe), Quotas | 🟡 **En cours (65%)** |
+| **Phase 5** | **Import/Export, Cloud & SaaS** | Import/Export, Sauvegardes Cloud (S3/GDrive/Dropbox), Monétisation (Subbase/Stripe) | 🟡 **En cours (80%)** |
 
 ---
 
@@ -39,7 +39,7 @@ graph LR
 - [x] **Authentification & Permissions** : Filament v5 Auth, rôles (Propriétaire, Admin, Membre).
 - [x] **NativePHP Desktop** : Configuration de la fenêtre Electron, persistance des états, MenuBar System Tray.
 - [x] **Directives Blade par Plateforme** : `@desktop`, `@web`, `@mobile`, `@windows`, `@mac`.
-- [x] **Suite de tests automatisés** : 40 tests unitaires et fonctionnels passants (167 assertions).
+- [x] **Suite de tests automatisés** : 45 tests unitaires et fonctionnels passants (193 assertions).
 - [x] **Identité visuelle** : Intégration du logo HD sur tous les panels et fenêtres.
 
 ---
@@ -74,9 +74,15 @@ graph LR
 
 ---
 
-### 🔹 Phase 5 : Import/Export, Collaboration & Monétisation SaaS 🟡
+### 🔹 Phase 5 : Import/Export, Sauvegardes Cloud & SaaS 🟡
 - [x] **Importateur universel (`BookmarksImportService`)** : Import de signets Netscape HTML (Chrome, Firefox, Safari, Edge, Pocket, Raindrop.io), JSON et CSV avec détection automatique des dossiers et tags.
 - [x] **Exportation complète (`BookmarksExportService`)** : Téléchargement instantané aux formats HTML Netscape, JSON structuré et CSV.
 - [x] **Extraction et actualisation automatique des miniatures / favicons**.
+- [x] **Connecteurs de Sauvegarde Cloud Externe (`VaultBackupService`)** :
+  - [x] AWS S3, Cloudflare R2, MinIO, Wasabi (S3 Compatible).
+  - [x] Google Drive & Dropbox.
+  - [x] Stockage Local & Réseau.
+  - [x] Automatisation programmée (`vault:backup-cloud`) et politique de rétention.
+  - [x] Restauration complète en 1 clic (`VaultRestoreService`).
+  - [x] Page Filament dédiée `ManageCloudBackups`.
 - [ ] **Gestion des Abonnements SaaS (Subbase / Stripe)** : Plans *Free / Pro / Team*, limitations de quotas (liens & requêtes IA).
-- [ ] **Sauvegarde & Synchronisation Cloud** : Connecteurs de backup automatisés.

@@ -177,12 +177,22 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 | **Option IA à l'importation** | Possibilité de lancer l'analyse et la synthèse IA en tâche de fond pour chaque lien importé. | 🟢 Terminé |
 | **Exportateur Universel (`BookmarksExportService`)** | Export instantané en 1 clic au format standard Netscape Bookmark HTML, JSON structuré ou CSV (Excel). | 🟢 Terminé |
 
+### 2.9 Sauvegardes Cloud Multi-Connecteurs & Restauration Universelle
+
+| Fonctionnalité | Description Technique & Fonctionnelle | Statut |
+| :--- | :--- | :---: |
+| **Multi-Connecteurs Cloud Hybrides** | Prise en charge d'AWS S3, Cloudflare R2, MinIO, Wasabi (S3-compatible), Google Drive (OAuth2 app folder), Dropbox (API v2) et Stockage Local/Réseau. | 🟢 Terminé |
+| **Générateur d'Archives Zip Exhaustives (`VaultBackupService`)** | Packaging complet : `manifest.json`, `links.json` (avec métadonnées et résumés IA), `bookmarks.html` (Netscape), `links.csv`, `folders.json`, `categories.json`, `tags.json`. | 🟢 Terminé |
+| **Moteur de Restauration en 1 Clic (`VaultRestoreService`)** | Restauration intelligente et récursive de toute l'arborescence (dossiers, catégories, tags, liens) depuis n'importe quelle archive cloud ou fichier local. | 🟢 Terminé |
+| **Automatisation & Politique de Rétention** | Planification automatique quotidienne à 03h00 (`vault:backup-cloud`) avec élagage automatique des sauvegardes excédentaires (rétention de $N$ sauvegardes). | 🟢 Terminé |
+| **Interface Filament Dédiée (`ManageCloudBackups`)** | Tableau de bord avec métriques de volume cloud, statuts des connecteurs, historique, boutons « Sauvegarder maintenant », téléchargement direct `.zip` et restauration. | 🟢 Terminé |
+
 ---
 
-### 2.9 Qualité & Suite de Tests Automatisés
+### 2.10 Qualité & Suite de Tests Automatisés
 
 - **Outil de test** : Pest PHP 4 / PHPUnit 12
-- **Couverture actuelle** : **40 tests automatisés passants (167 assertions)**
+- **Couverture actuelle** : **45 tests automatisés passants (193 assertions)**
 - **Domaines testés** :
   - Inscription d'utilisateur & création automatique d'espace personnel.
   - Connexion & authentification Filament / Sanctum.
@@ -190,18 +200,18 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
   - Gestion du CRUD des liens et validation des permissions.
   - Agents IA `LinkSummaryAgent::fake()`, actions et jobs de file d'attente.
   - Importateur et exportateur universel Netscape HTML, JSON et CSV avec vérification de ré-importation et gestion des doublons.
+  - Génération d'archive ZIP de sauvegarde, upload sur connecteurs, purge de rétention et restauration complète (`CloudBackupTest`).
 
 ---
 
 ## 3. Feuille de Route des Fonctionnalités Futures
 
-### 3.1 Phase 5 : Monétisation SaaS & Collaboration
+### 3.1 Phase 5 : Monétisation SaaS (Subbase / Stripe)
 
 | Fonctionnalité Prévue | Objectif Technique | Impact Utilisateur |
 | :--- | :--- | :--- |
 | **Gestion des Abonnements (Subbase / Stripe)** | Gestion des plans tarifaires (*Free, Pro, Team*) avec portail de facturation et gestion des cartes bancaires. | Modèle de monétisation SaaS clé en main. |
 | **Système de Quotas & Limites** | Restriction sur le nombre maximal de liens et de requêtes de résumés IA par mois selon le plan souscrit. | Conversion vers les offres payantes. |
-| **Sauvegarde & Synchronisation Cloud** | Intégration de connecteurs Cloud (Google Drive, Dropbox, AWS S3) pour sauvegarde automatique des métadonnées et captures d'écran. | Sécurité maximale et redondance des sauvegardes. |
 
 ---
 
