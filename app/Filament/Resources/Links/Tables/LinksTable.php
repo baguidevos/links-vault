@@ -18,6 +18,7 @@ use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\Layout\View;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
@@ -30,16 +31,16 @@ class LinksTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
-            ->modifyQueryUsing(function (Builder $query) {
-                $user = auth()->user();
-                $query->with(['category', 'folder', 'tags']);
+        $livewire = $table->getLivewire();
+        $isGridView = ($livewire && property_exists($livewire, 'viewMode'))
+            ? $livewire->viewMode === 'grid'
+            : session('links_view_mode', 'grid') === 'grid';
 
-                if ($user) {
-                    $query->accessibleForUser($user);
-                }
-            })
-            ->columns([
+        $columns = $isGridView
+            ? [
+                View::make('filament.resources.links.components.link-card'),
+            ]
+            : [
                 ImageColumn::make('thumbnail_url')
                     ->label(__('Aperçu'))
                     ->getStateUsing(fn ($record) => $record->content_type === ContentType::Youtube ? $record->getYoutubeThumbnailUrl() : ($record->thumbnail_url ?: $record->favicon_url))
@@ -118,7 +119,24 @@ class LinksTable
                     ->dateTime('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ])
+            ];
+
+        return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                $user = auth()->user();
+                $query->with(['category', 'folder', 'tags']);
+
+                if ($user) {
+                    $query->accessibleForUser($user);
+                }
+            })
+            ->columns($columns)
+            ->when($isGridView, fn (Table $t) => $t->contentGrid([
+                'sm' => 1,
+                'md' => 2,
+                'lg' => 3,
+                '2xl' => 4,
+            ]))
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('folder')
