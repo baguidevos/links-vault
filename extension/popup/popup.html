@@ -49,6 +49,7 @@
           <label for="auth-server-url">URL du serveur Links Vault</label>
           <input type="url" id="auth-server-url" placeholder="http://127.0.0.1:8100" value="http://127.0.0.1:8100">
           <div class="server-presets">
+            <button type="button" class="preset-pill" onclick="document.getElementById('auth-server-url').value='https://links-vault.test'">🌐 Web (links-vault.test)</button>
             <button type="button" class="preset-pill" onclick="document.getElementById('auth-server-url').value='http://127.0.0.1:8100'">🖥️ Desktop (8100)</button>
             <button type="button" class="preset-pill" onclick="document.getElementById('auth-server-url').value='http://localhost:8000'">🌐 Web (8000)</button>
           </div>
