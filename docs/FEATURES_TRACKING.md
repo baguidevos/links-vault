@@ -163,27 +163,40 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 
 ---
 
-### 2.8 Qualité & Suite de Tests Automatisés
+### 2.8 Importation & Exportation Universelle de Données
+
+| Fonctionnalité | Description Technique & Fonctionnelle | Statut |
+| :--- | :--- | :---: |
+| **Importateur HTML Netscape (`BookmarksImportService`)** | Parser de signets compatible avec Chrome, Firefox, Safari, Edge, Brave, Pocket et Raindrop.io avec reconstitution automatique de l'arborescence des dossiers et des tags. | 🟢 Terminé |
+| **Importateur JSON & CSV** | Support des fichiers de signets JSON et tabulaires CSV avec détection automatique des colonnes et délimiteurs. | 🟢 Terminé |
+| **Détection et Protection anti-doublons** | Calcul de hash SHA-256 pour ignorer silencieusement les doublons déjà présents dans l'espace. | 🟢 Terminé |
+| **Option IA à l'importation** | Possibilité de lancer l'analyse et la synthèse IA en tâche de fond pour chaque lien importé. | 🟢 Terminé |
+| **Exportateur Universel (`BookmarksExportService`)** | Export instantané en 1 clic au format standard Netscape Bookmark HTML, JSON structuré ou CSV (Excel). | 🟢 Terminé |
+
+---
+
+### 2.9 Qualité & Suite de Tests Automatisés
 
 - **Outil de test** : Pest PHP 4 / PHPUnit 12
-- **Couverture actuelle** : **36 tests automatisés passants (130 assertions)**
+- **Couverture actuelle** : **40 tests automatisés passants (167 assertions)**
 - **Domaines testés** :
   - Inscription d'utilisateur & création automatique d'espace personnel.
   - Connexion & authentification Filament / Sanctum.
   - Isolation stricte des données entre locataires (Multi-Tenancy security).
   - Gestion du CRUD des liens et validation des permissions.
   - Agents IA `LinkSummaryAgent::fake()`, actions et jobs de file d'attente.
+  - Importateur et exportateur universel Netscape HTML, JSON et CSV avec vérification de ré-importation et gestion des doublons.
 
 ---
 
 ## 3. Feuille de Route des Fonctionnalités Futures
 
-### 3.1 Phase 5 : Import/Export, Collaboration & Monétisation SaaS
+### 3.1 Phase 5 : Collaboration & Monétisation SaaS
 
 | Fonctionnalité Prévue | Objectif Technique | Impact Utilisateur |
 | :--- | :--- | :--- |
-| **Importateur Universel de Signets** | Parser HTML / JSON pour importer des signets depuis Chrome, Firefox, Safari, Pocket, Raindrop.io et fichiers CSV. | Onboarding instantané des nouveaux utilisateurs sans perte d'historique. |
-| **Exportateur Complet Standardisé** | Générateur d'export aux formats Netscape HTML Bookmark et JSON structuré. | Réassurance de souveraineté des données (zéro enfermement propriétaire). |
+| **Gestion des Abonnements (Subbase / Stripe)** | Gestion des plans tarifaires (*Free, Pro, Team*) avec quotas sur le nombre de liens et l'usage des fonctionnalités IA. | Modèle de monétisation SaaS clé en main. |
+| **Sauvegarde & Synchronisation Cloud** | Intégration de connecteurs Cloud (Google Drive, Dropbox, AWS S3) pour sauvegarde automatique des métadonnées et captures d'écran. | Sécurité maximale et redondance des sauvegardes. |
 | **Gestion des Abonnements (Subbase / Stripe)** | Gestion des plans tarifaires (*Free, Pro, Team*) avec quotas sur le nombre de liens et l'usage des fonctionnalités IA. | Modèle de monétisation SaaS clé en main. |
 | **Sauvegarde & Synchronisation Cloud** | Intégration de connecteurs Cloud (Google Drive, Dropbox, AWS S3) pour sauvegarde automatique des métadonnées et captures d'écran. | Sécurité maximale et redondance des sauvegardes. |
 
