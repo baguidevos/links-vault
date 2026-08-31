@@ -4,9 +4,9 @@
 
 <div class="flex items-center gap-2.5 py-1">
     <img 
-        src="{{ asset('favicon-96x96.png') }}" 
-        alt="LinkVault" 
-        class="w-8 h-8 rounded-lg shrink-0 object-contain shadow-xs"
+        src="{{ asset('apple-touch-icon.png') }}" 
+        alt="LinksVault" 
+        class="w-8 h-8 rounded-lg shrink-0 object-contain shadow-xs ring-1 ring-white/10"
     />
     <div class="flex items-center gap-1.5">
         <span class="text-xl font-black tracking-tight bg-gradient-to-r from-[#0099FF] via-sky-400 to-indigo-500 dark:from-[#38bdf8] dark:via-[#60a5fa] dark:to-cyan-300 bg-clip-text text-transparent select-none">
