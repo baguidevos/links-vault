@@ -2,7 +2,7 @@
 
 > **Document de référence pour la rédaction des futures documentations techniques et utilisateurs.**  
 > *Dernière mise à jour : 31 Août 2026*  
-> *Statut du projet : Phase 1 (100%), Phase 2 (100%), Phase 3 (95%), Phase 4 & 5 (Planifiées)*
+> *Statut du projet : Phase 1 (100%), Phase 2 (100%), Phase 3 (100%), Phase 4 (100%), Phase 5 (65% — Import/Export Universel & Miniatures terminés)*
 
 ---
 
@@ -16,10 +16,11 @@
    - [2.4 Application Desktop Native (NativePHP / Electron)](#24-application-desktop-native-nativephp--electron)
    - [2.5 Extension Navigateur Web Clipper (Manifest V3)](#25-extension-navigateur-web-clipper-manifest-v3)
    - [2.6 API REST & Sécurité (Laravel Sanctum)](#26-api-rest--s%C3%A9curit%C3%A9-laravel-sanctum)
-   - [2.7 Qualité & Suite de Tests Automatisés](#27-qualit%C3%A9--suite-de-tests-automatis%C3%A9s)
+   - [2.7 Intelligence Artificielle & Automatisation (Laravel AI SDK)](#27-intelligence-artificielle--automatisation-laravel-ai-sdk)
+   - [2.8 Importation & Exportation Universelle de Données](#28-importation--exportation-universelle-de-donn%C3%A9es)
+   - [2.9 Qualité & Suite de Tests Automatisés](#29-qualit%C3%A9--suite-de-tests-automatis%C3%A9s)
 3. [Feuille de Route des Fonctionnalités Futures](#3-feuille-de-route-des-fonctionnalit%C3%A9s-futures)
-   - [3.1 Phase 4 : Intelligence Artificielle (Laravel AI SDK)](#31-phase-4--intelligence-artificielle-laravel-ai-sdk)
-   - [3.2 Phase 5 : Import/Export, Collaboration & Monétisation SaaS](#32-phase-5--importexport-collaboration--mon%C3%A9tisation-saas)
+   - [3.1 Phase 5 : Monétisation SaaS & Collaboration](#31-phase-5--mon%C3%A9tisation-saas--collaboration)
 4. [Guide de Rédaction pour les Futures Documentations](#4-guide-de-r%C3%A9daction-pour-les-futures-documentations)
 
 ---
@@ -60,6 +61,7 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 - **Moteur Desktop** : NativePHP Desktop (Electron Windows/macOS)
 - **Extension Navigateur** : WebExtension Manifest V3 (Vanilla JS, CSS moderne)
 - **Sécurité API** : Laravel Sanctum (Tokens personnels révocables)
+- **Intelligence Artificielle** : Laravel AI SDK (`laravel/ai`)
 - **Tests** : Pest PHP 4 / PHPUnit 12
 
 ---
@@ -101,12 +103,12 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 | :--- | :--- | :---: |
 | **Vue Grille Visuelle (Cards Grid)** | Affichage en cartes modernes responsives (1 à 4 colonnes) avec aperçu média 16:9, badges frosted-glass, favicon, dossier, catégorie et tags. | 🟢 Terminé |
 | **Vue Table Tabulaire Classique** | Tableau complet pour gestion dense : tri sur colonnes, sélection multiple et actions en masse. | 🟢 Terminé |
+| **Actions de Ligne Épurées & Icon-Only** | Boutons d'actions compacts avec infobulles (*Tooltips*) pour ouvrir, voir et générer l'IA, accompagnés d'un menu déroulant `ActionGroup` pour les actions secondaires. | 🟢 Terminé |
 | **Bascule Dynamique Grille / Table** | Bouton de bascule en en-tête avec persistance du mode préféré en session utilisateur (`links_view_mode`). | 🟢 Terminé |
 | **Moteur de Recherche Global de Table** | Recherche plein texte instantanée sur `title`, `url`, `description`, `objective`, `folder.name`, `category.name` avec délai de frappe optimisé (debounce `300ms`). | 🟢 Terminé |
-| **Filtres Avancés Above Content** | Barre de filtrage multi-critères positionnée au-dessus des cartes (par dossier, catégorie, type de média, favoris, visibilité, archives). | 🟢 Terminé |
+| **Filtres Avancés After Content Collapsible** | Barre de filtrage multi-critères (par dossier, catégorie, type de média, favoris, visibilité, archives). | 🟢 Terminé |
 | **Palette de Commandes Globale (`Ctrl + K`)** | Modal de recherche rapide universelle pour trouver n'importe quel lien, dossier ou commande au clavier. | 🟢 Terminé |
 | **Navigation SPA Instantanée (`wire:navigate`)** | Navigation ultra-rapide sans rechargement complet de la page sur l'ensemble des boutons et liens de cartes. | 🟢 Terminé |
-| **Responsive Mobile-First & Vue Détails Épurée** | Adaptation aux petits écrans : troncature élégante des longs titres, breadcrumbs condensés, regroupement des actions secondaires dans un menu dropdown « Plus » (`ActionGroup`). | 🟢 Terminé |
 | **Directives Blade Multi-Plateformes** | Directives sur-mesure enregistrées dans `AppServiceProvider` : `@desktop`, `@web`, `@mobile`, `@windows`, `@mac` pour conditionner les vues selon l'environnement. | 🟢 Terminé |
 
 ---
@@ -155,7 +157,7 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 
 | Fonctionnalité | Description Technique & Fonctionnelle | Statut |
 | :--- | :--- | :---: |
-| **Agent de Résumé Structuré (`LinkSummaryAgent`)** | Agent exploitant `Laravel\Ai` avec `HasStructuredOutput` produisant un TL;DR, 3 points clés et des tags pertinents. | 🟢 Terminé |
+| **Agent de Résumé Structuré (`LinkSummaryAgent`)** | Agent exploitant `Laravel\Ai` avec `HasStructuredOutput` produisant un TL;DR, 3 points clés, une catégorie et des tags suggérés. | 🟢 Terminé |
 | **Action & Job Asynchrone (`GenerateLinkAiSummaryJob`)** | File d'attente pour générer les résumés en arrière-plan sans ralentir la capture depuis l'extension ou le web. | 🟢 Terminé |
 | **Cycle de Vie du Statut IA** | Gestion des transitions d'état : `pending` ➔ `processing` (indicateur pulsé) ➔ `completed` / `failed` (tolérant aux pannes). | 🟢 Terminé |
 | **Auto-Tagging Intelligent** | Si un lien n'a pas de tags, l'IA lui attribue automatiquement les 3 à 5 tags les plus pertinents. | 🟢 Terminé |
@@ -169,6 +171,8 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 | :--- | :--- | :---: |
 | **Importateur HTML Netscape (`BookmarksImportService`)** | Parser de signets compatible avec Chrome, Firefox, Safari, Edge, Brave, Pocket et Raindrop.io avec reconstitution automatique de l'arborescence des dossiers et des tags. | 🟢 Terminé |
 | **Importateur JSON & CSV** | Support des fichiers de signets JSON et tabulaires CSV avec détection automatique des colonnes et délimiteurs. | 🟢 Terminé |
+| **Extraction Automatique des Miniatures & Favicons** | Scraping OpenGraph haute résolution et favicons officiels lors de l'import et de la création. | 🟢 Terminé |
+| **Actions d'Actualisation des Miniatures** | Action individuelle et action groupée en masse (*Bulk Action*) pour enrichir ou actualiser les images de liens existants. | 🟢 Terminé |
 | **Détection et Protection anti-doublons** | Calcul de hash SHA-256 pour ignorer silencieusement les doublons déjà présents dans l'espace. | 🟢 Terminé |
 | **Option IA à l'importation** | Possibilité de lancer l'analyse et la synthèse IA en tâche de fond pour chaque lien importé. | 🟢 Terminé |
 | **Exportateur Universel (`BookmarksExportService`)** | Export instantané en 1 clic au format standard Netscape Bookmark HTML, JSON structuré ou CSV (Excel). | 🟢 Terminé |
@@ -191,13 +195,12 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 
 ## 3. Feuille de Route des Fonctionnalités Futures
 
-### 3.1 Phase 5 : Collaboration & Monétisation SaaS
+### 3.1 Phase 5 : Monétisation SaaS & Collaboration
 
 | Fonctionnalité Prévue | Objectif Technique | Impact Utilisateur |
 | :--- | :--- | :--- |
-| **Gestion des Abonnements (Subbase / Stripe)** | Gestion des plans tarifaires (*Free, Pro, Team*) avec quotas sur le nombre de liens et l'usage des fonctionnalités IA. | Modèle de monétisation SaaS clé en main. |
-| **Sauvegarde & Synchronisation Cloud** | Intégration de connecteurs Cloud (Google Drive, Dropbox, AWS S3) pour sauvegarde automatique des métadonnées et captures d'écran. | Sécurité maximale et redondance des sauvegardes. |
-| **Gestion des Abonnements (Subbase / Stripe)** | Gestion des plans tarifaires (*Free, Pro, Team*) avec quotas sur le nombre de liens et l'usage des fonctionnalités IA. | Modèle de monétisation SaaS clé en main. |
+| **Gestion des Abonnements (Subbase / Stripe)** | Gestion des plans tarifaires (*Free, Pro, Team*) avec portail de facturation et gestion des cartes bancaires. | Modèle de monétisation SaaS clé en main. |
+| **Système de Quotas & Limites** | Restriction sur le nombre maximal de liens et de requêtes de résumés IA par mois selon le plan souscrit. | Conversion vers les offres payantes. |
 | **Sauvegarde & Synchronisation Cloud** | Intégration de connecteurs Cloud (Google Drive, Dropbox, AWS S3) pour sauvegarde automatique des métadonnées et captures d'écran. | Sécurité maximale et redondance des sauvegardes. |
 
 ---
