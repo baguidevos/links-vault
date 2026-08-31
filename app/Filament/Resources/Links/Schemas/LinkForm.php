@@ -359,7 +359,7 @@ class LinkForm
 
             TagsInput::make('tags')
                 ->label(__('Tags'))
-                ->default(['fzrf', 'fzezrge']),
+                ->placeholder(__('Ajouter un tag...')),
             Grid::make(2)
                 ->components([
                     Toggle::make('is_favorite')

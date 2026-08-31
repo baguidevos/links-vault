@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Native\Desktop\Contracts\ProvidesPhpIni;
 use Native\Desktop\Facades\Menu;
+use Native\Desktop\Facades\MenuBar;
 use Native\Desktop\Facades\Window;
 
 class NativeAppServiceProvider implements ProvidesPhpIni
@@ -14,7 +15,22 @@ class NativeAppServiceProvider implements ProvidesPhpIni
      */
     public function boot(): void
     {
-        Menu::default();
+        Menu::new()
+            ->appMenu()
+            ->editMenu()
+            ->viewMenu()
+            ->windowMenu()
+            ->register();
+
+        MenuBar::create()
+            ->icon(public_path('favicon-96x96.png'))
+            ->tooltip('Links Vault')
+            ->contextMenu(
+                Menu::new()
+                    ->link(url('/app'), 'Ouvrir LinksVault')
+                    ->separator()
+                    ->quit()
+            );
 
         Window::open('main')
             ->title('Links Vault')
