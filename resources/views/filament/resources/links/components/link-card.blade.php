@@ -1,6 +1,6 @@
 @php
-    /** @var \App\Models\Link $record */
-    $record = $getRecord();
+    /** @var \App\Models\Link|null $record */
+    $record = $record ?? null;
     if (! $record) {
         return;
     }
@@ -80,13 +80,24 @@
             @endif
         </div>
 
-        {{-- Bouton Favori en haut à droite --}}
+        {{-- Bouton Favori interactif (Toujours visible en bouton d'icône) --}}
         <div class="absolute top-2.5 right-2.5 z-10">
-            @if ($record->is_favorite)
-                <span class="flex items-center justify-center w-7 h-7 rounded-full backdrop-blur-md bg-amber-500/90 text-white shadow-xs" title="Favori">
-                    <x-filament::icon icon="heroicon-s-star" class="w-4 h-4" />
-                </span>
-            @endif
+            <button 
+                type="button"
+                wire:click.stop="toggleFavoriteFromCard({{ $record->id }})"
+                @class([
+                    'flex items-center justify-center w-8 h-8 rounded-full shadow-md backdrop-blur-md transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer',
+                    'bg-amber-500 hover:bg-amber-600 text-white ring-2 ring-amber-400/40 shadow-amber-500/20' => $record->is_favorite,
+                    'bg-white/90 hover:bg-white dark:bg-gray-900/90 dark:hover:bg-gray-800 text-gray-600 hover:text-amber-500 dark:text-gray-400 dark:hover:text-amber-400 border border-gray-200/80 dark:border-gray-700/80' => ! $record->is_favorite,
+                ])
+                title="{{ $record->is_favorite ? __('Retirer des favoris') : __('Ajouter aux favoris') }}"
+            >
+                @if ($record->is_favorite)
+                    <x-filament::icon icon="heroicon-s-star" class="w-4 h-4 text-white" />
+                @else
+                    <x-filament::icon icon="heroicon-o-star" class="w-4 h-4" />
+                @endif
+            </button>
         </div>
     </div>
 
