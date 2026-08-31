@@ -28,7 +28,7 @@ graph LR
 | **Phase 2** | **Extension Clipper** | Capture 1-clic, extraction OpenGraph/YouTube, Token Sanctum, Popup WebExtension | 🟢 **Terminé (100%)** |
 | **Phase 3** | **Organisation & UX** | Vues Grille/Table, Favoris ⭐, Palette Ctrl+K, Recherche instantanée, SPA wire:navigate | 🟢 **Terminé (100%)** |
 | **Phase 4** | **IA & Intelligence** | Résumés automatiques, points clés, auto-tagging (Laravel AI SDK) | 🟢 **Terminé (100%)** |
-| **Phase 5** | **Collaboration & SaaS** | Subbase Abonnements, Export/Import (Pocket/Chrome), Sync Cloud | 🟡 **Prochaine étape** |
+| **Phase 5** | **Import/Export & SaaS** | Import/Export (Chrome, Pocket, JSON, CSV), Monétisation SaaS (Subbase/Stripe), Quotas | 🟡 **En cours (65%)** |
 
 ---
 
@@ -39,13 +39,13 @@ graph LR
 - [x] **Authentification & Permissions** : Filament v5 Auth, rôles (Propriétaire, Admin, Membre).
 - [x] **NativePHP Desktop** : Configuration de la fenêtre Electron, persistance des états, MenuBar System Tray.
 - [x] **Directives Blade par Plateforme** : `@desktop`, `@web`, `@mobile`, `@windows`, `@mac`.
-- [x] **Suite de tests automatisés** : 36 tests unitaires et fonctionnels passants (130 assertions).
+- [x] **Suite de tests automatisés** : 40 tests unitaires et fonctionnels passants (167 assertions).
 - [x] **Identité visuelle** : Intégration du logo HD sur tous les panels et fenêtres.
 
 ---
 
 ### 🔹 Phase 2 : Extension Navigateur & Moteur de Capture 🟢
-- [x] **API Backend Sanctum** : Endpoints `/api/user/teams`, `/api/folders`, `/api/links`.
+- [x] **API Backend Sanctum** : Endpoints `/api/auth/token`, `/api/context`, `/api/links`.
 - [x] **Interface Popup WebExtension** : Formulaire de capture, sélecteur d'espace et de dossier.
 - [x] **Capture intelligente des métadonnées** : Extraction automatique : Titre, Favicon, Description, Image OpenGraph, Détecteur YouTube HD.
 - [x] **Tests & Packaging Navigateur** : Chargement dans Chrome/Brave/Edge et validation de bout en bout.
@@ -56,7 +56,7 @@ graph LR
 ### 🔹 Phase 3 : Organisation Avancée & Expérience Utilisateur (UI/UX) 🟢
 - [x] **Vues dynamiques personnalisables** :
   - [x] **Vue Cartes (Grid)** avec aperçus 16:9, badges et favoris interactifs.
-  - [x] **Vue Table classique** pour la gestion tabulaire et les actions en masse.
+  - [x] **Vue Table classique** épurée avec boutons icônes, tooltips et regroupement d'actions.
   - [x] **Bascule dynamique Grille / Table** avec mémorisation de l'état.
 - [x] **Bouton Favoris ⭐ interactif** : Bascule instantanée sans rechargement.
 - [x] **Palette de Commandes globale (`Ctrl + K`)** : Recherche rapide et navigation clavier.
@@ -74,7 +74,9 @@ graph LR
 
 ---
 
-### 🔹 Phase 5 : Collaboration, Import/Export & Monétisation 🟡 *(Prochaine étape)*
-- [ ] **Importateur universel** : Import des signets Chrome, Firefox, Safari, Pocket, Raindrop.io et CSV.
-- [ ] **Exportation complète** : Formats JSON et HTML Netscape standard.
-- [ ] **Gestion des Abonnements (Subbase)** : Plans Gratuit / Pro / Équipe.
+### 🔹 Phase 5 : Import/Export, Collaboration & Monétisation SaaS 🟡
+- [x] **Importateur universel (`BookmarksImportService`)** : Import de signets Netscape HTML (Chrome, Firefox, Safari, Edge, Pocket, Raindrop.io), JSON et CSV avec détection automatique des dossiers et tags.
+- [x] **Exportation complète (`BookmarksExportService`)** : Téléchargement instantané aux formats HTML Netscape, JSON structuré et CSV.
+- [x] **Extraction et actualisation automatique des miniatures / favicons**.
+- [ ] **Gestion des Abonnements SaaS (Subbase / Stripe)** : Plans *Free / Pro / Team*, limitations de quotas (liens & requêtes IA).
+- [ ] **Sauvegarde & Synchronisation Cloud** : Connecteurs de backup automatisés.
