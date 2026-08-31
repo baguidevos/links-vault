@@ -51,6 +51,7 @@
                 href="{{ $viewUrl }}" 
                 class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors"
                 title="Regarder la vidéo"
+                wire:navigate
             >
                 <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-600/90 text-white shadow-lg group-hover:scale-110 transition-transform">
                     <x-filament::icon icon="heroicon-s-play" class="w-6 h-6 ml-0.5" />
@@ -61,6 +62,7 @@
                 href="{{ $viewUrl }}" 
                 class="absolute inset-0"
                 title="{{ $record->title }}"
+                wire:navigate
             ></a>
         @endif
 
@@ -120,6 +122,7 @@
                     href="{{ \App\Filament\Resources\Folders\FolderResource::getUrl('view', ['record' => $record->folder->id]) }}" 
                     class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 hover:bg-blue-100 transition truncate max-w-[130px]"
                     title="Dossier : {{ $record->folder->name }}"
+                    wire:navigate
                 >
                     <x-filament::icon icon="heroicon-m-folder" class="w-3 h-3 shrink-0" />
                     <span class="truncate">{{ $record->folder->name }}</span>
@@ -129,7 +132,7 @@
 
         {{-- Titre --}}
         <h3 class="font-bold text-sm sm:text-base leading-snug text-gray-900 dark:text-white line-clamp-2 hover:text-primary-600 dark:hover:text-primary-400 transition">
-            <a href="{{ $viewUrl }}">
+            <a href="{{ $viewUrl }}" wire:navigate>
                 {{ $record->title ?: $record->url }}
             </a>
         </h3>
@@ -182,6 +185,7 @@
                     target="_blank" 
                     class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 dark:bg-primary-950/40 dark:text-primary-300 dark:hover:bg-primary-900/50 transition duration-150"
                     title="Ouvrir le lien dans un nouvel onglet"
+                    wire:navigate
                 >
                     <span>Ouvrir</span>
                     <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="w-3.5 h-3.5" />
@@ -191,7 +195,7 @@
                     href="{{ $viewUrl }}" 
                     class="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                     title="Voir les détails"
-                >
+                    wire:navigate>
                     <x-filament::icon icon="heroicon-m-eye" class="w-4 h-4" />
                 </a>
 
@@ -199,6 +203,7 @@
                     href="{{ $editUrl }}" 
                     class="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                     title="Modifier"
+                    wire:navigate
                 >
                     <x-filament::icon icon="heroicon-m-pencil-square" class="w-4 h-4" />
                 </a>
