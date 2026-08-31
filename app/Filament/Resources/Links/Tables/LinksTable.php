@@ -8,6 +8,8 @@ use App\Enums\LinkVisibility;
 use App\Filament\Resources\Links\Actions\ChangeVisibilityAction;
 use App\Models\Folder;
 use App\Models\Link;
+use App\Services\ContentDetectionService;
+use App\Services\WebPageMetadataService;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -190,6 +192,25 @@ class LinksTable
                                     ->send();
                             })
                             ->tooltip(__('Générer le résumé IA et les tags')),
+                        Action::make('refresh_metadata')
+                            ->label(__('Actualiser miniature'))
+                            ->icon('heroicon-o-arrow-path')
+                            ->color('gray')
+                            ->action(function (Link $record): void {
+                                $analysis = app(ContentDetectionService::class)->analyze($record->url);
+                                $meta = $analysis['metadata'] ?? [];
+                                $record->update([
+                                    'content_type' => $analysis['type'] ?? $record->content_type,
+                                    'metadata' => array_merge($record->metadata ?? [], $meta),
+                                    'thumbnail_url' => $meta['image'] ?? $meta['og_image'] ?? $record->thumbnail_url,
+                                    'favicon_url' => $meta['favicon'] ?? (new WebPageMetadataService)->fetchFavicon($record->url),
+                                ]);
+                                Notification::make()
+                                    ->title(__('Miniature et métadonnées actualisées !'))
+                                    ->success()
+                                    ->send();
+                            })
+                            ->tooltip(__('Re-scanner la page web pour récupérer la miniature')),
                         Action::make('open_link')
                             ->label(__('Ouvrir'))
                             ->icon('heroicon-o-arrow-top-right-on-square')
@@ -223,6 +244,30 @@ class LinksTable
                     ])
                     ->toolbarActions([
                         BulkActionGroup::make([
+                            BulkAction::make('refresh_metadata_bulk')
+                                ->label(__('Actualiser les miniatures'))
+                                ->icon('heroicon-o-arrow-path')
+                                ->color('gray')
+                                ->action(function (Collection $records): void {
+                                    $detection = app(ContentDetectionService::class);
+                                    $metaService = new WebPageMetadataService;
+                                    foreach ($records as $record) {
+                                        $analysis = $detection->analyze($record->url);
+                                        $meta = $analysis['metadata'] ?? [];
+                                        $record->update([
+                                            'content_type' => $analysis['type'] ?? $record->content_type,
+                                            'metadata' => array_merge($record->metadata ?? [], $meta),
+                                            'thumbnail_url' => $meta['image'] ?? $meta['og_image'] ?? $record->thumbnail_url,
+                                            'favicon_url' => $meta['favicon'] ?? $metaService->fetchFavicon($record->url),
+                                        ]);
+                                    }
+                                    Notification::make()
+                                        ->title(__(':count liens actualisés avec succès !', ['count' => $records->count()]))
+                                        ->success()
+                                        ->send();
+                                })
+                                ->deselectRecordsAfterCompletion(),
+
                             BulkAction::make('assign_to_folder')
                                 ->label(__('Assigner à un dossier'))
                                 ->icon(TablerIcon::FolderPlus)

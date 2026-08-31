@@ -214,7 +214,10 @@ class BookmarksImportService
 
                 try {
                     $analysis = $this->contentDetection->analyze($url);
+                    $meta = $analysis['metadata'] ?? [];
                     $contentType = $analysis['type'] ?? 'other';
+                    $thumbnailUrl = $meta['image'] ?? $meta['og_image'] ?? null;
+                    $faviconUrl = $icon ?: ($meta['favicon'] ?? (new WebPageMetadataService)->fetchFavicon($url));
 
                     $link = Link::create([
                         'user_id' => $user->id,
@@ -224,7 +227,9 @@ class BookmarksImportService
                         'title' => Str::limit($title, 255),
                         'content_type' => $contentType,
                         'folder_id' => $folderId,
-                        'favicon_url' => $icon,
+                        'metadata' => $meta,
+                        'thumbnail_url' => $thumbnailUrl,
+                        'favicon_url' => $faviconUrl,
                         'ai_summary_status' => 'pending',
                     ]);
 
@@ -331,6 +336,9 @@ class BookmarksImportService
 
             try {
                 $analysis = $this->contentDetection->analyze($url);
+                $meta = $analysis['metadata'] ?? [];
+                $thumbnailUrl = $item['thumbnail_url'] ?? ($meta['image'] ?? $meta['og_image'] ?? null);
+                $faviconUrl = $item['favicon_url'] ?? ($meta['favicon'] ?? (new WebPageMetadataService)->fetchFavicon($url));
 
                 $link = Link::create([
                     'user_id' => $user->id,
@@ -341,6 +349,9 @@ class BookmarksImportService
                     'description' => $description,
                     'content_type' => $item['content_type'] ?? ($analysis['type'] ?? 'other'),
                     'folder_id' => $folderId,
+                    'metadata' => $meta,
+                    'thumbnail_url' => $thumbnailUrl,
+                    'favicon_url' => $faviconUrl,
                     'is_favorite' => ! empty($item['is_favorite']),
                     'ai_summary_status' => 'pending',
                 ]);
@@ -460,6 +471,9 @@ class BookmarksImportService
 
             try {
                 $analysis = $this->contentDetection->analyze($url);
+                $meta = $analysis['metadata'] ?? [];
+                $thumbnailUrl = $meta['image'] ?? $meta['og_image'] ?? null;
+                $faviconUrl = $meta['favicon'] ?? (new WebPageMetadataService)->fetchFavicon($url);
 
                 $link = Link::create([
                     'user_id' => $user->id,
@@ -470,6 +484,9 @@ class BookmarksImportService
                     'description' => $description,
                     'content_type' => $analysis['type'] ?? 'other',
                     'folder_id' => $folderId,
+                    'metadata' => $meta,
+                    'thumbnail_url' => $thumbnailUrl,
+                    'favicon_url' => $faviconUrl,
                     'ai_summary_status' => 'pending',
                 ]);
 

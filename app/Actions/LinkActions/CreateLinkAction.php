@@ -8,6 +8,7 @@ use App\Enums\LinkVisibility;
 use App\Jobs\GenerateLinkAiSummaryJob;
 use App\Models\Link;
 use App\Services\ContentDetectionService;
+use App\Services\WebPageMetadataService;
 
 class CreateLinkAction
 {
@@ -47,12 +48,17 @@ class CreateLinkAction
             $data['tags'] = implode(',', array_filter($data['tags']));
         }
 
+        $faviconUrl = $data['favicon_url'] ?? ($metadata['favicon'] ?? (new WebPageMetadataService)->fetchFavicon($data['url']));
+        $thumbnailUrl = $data['thumbnail_url'] ?? ($metadata['image'] ?? $metadata['og_image'] ?? null);
+
         $link = Link::create([
             ...$data,
             'title' => $title,
             'url_hash' => hash('sha256', $data['url']),
             'content_type' => $data['content_type'] ?? $analysis['type'],
             'metadata' => $metadata,
+            'favicon_url' => $faviconUrl,
+            'thumbnail_url' => $thumbnailUrl,
             'ai_summary_status' => $generateAiSummary ? 'pending' : 'pending',
         ]);
 

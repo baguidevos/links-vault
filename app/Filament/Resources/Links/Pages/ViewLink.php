@@ -7,6 +7,8 @@ use App\Filament\Resources\Links\Actions\ChangeVisibilityAction;
 use App\Filament\Resources\Links\Actions\ShareLinkModalAction;
 use App\Filament\Resources\Links\LinkResource;
 use App\Models\Link;
+use App\Services\ContentDetectionService;
+use App\Services\WebPageMetadataService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
@@ -62,6 +64,26 @@ class ViewLink extends ViewRecord
                     $this->record->refresh();
                     Notification::make()
                         ->title(__('Résumé IA généré avec succès !'))
+                        ->success()
+                        ->send();
+                }),
+
+            Action::make('refresh_metadata')
+                ->label(__('Actualiser miniature'))
+                ->icon('heroicon-o-arrow-path')
+                ->color('gray')
+                ->action(function () {
+                    $analysis = app(ContentDetectionService::class)->analyze($this->record->url);
+                    $meta = $analysis['metadata'] ?? [];
+                    $this->record->update([
+                        'content_type' => $analysis['type'] ?? $this->record->content_type,
+                        'metadata' => array_merge($this->record->metadata ?? [], $meta),
+                        'thumbnail_url' => $meta['image'] ?? $meta['og_image'] ?? $this->record->thumbnail_url,
+                        'favicon_url' => $meta['favicon'] ?? (new WebPageMetadataService)->fetchFavicon($this->record->url),
+                    ]);
+                    $this->record->refresh();
+                    Notification::make()
+                        ->title(__('Miniature et métadonnées actualisées !'))
                         ->success()
                         ->send();
                 }),
