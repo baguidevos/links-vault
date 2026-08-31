@@ -91,4 +91,14 @@ class Team extends Model
     {
         return $this->hasMany(GoogleDrive::class);
     }
+
+    public function cloudBackups(): HasMany
+    {
+        return $this->hasMany(CloudBackup::class);
+    }
+
+    public function cloudStorageConfigs(): HasMany
+    {
+        return $this->hasMany(CloudStorageConfig::class);
+    }
 }
