@@ -15,21 +15,18 @@ class NativeAppServiceProvider implements ProvidesPhpIni
      */
     public function boot(): void
     {
-        Menu::new()
-            ->appMenu()
-            ->editMenu()
-            ->viewMenu()
-            ->windowMenu()
-            ->register();
+        Menu::default();
 
         MenuBar::create()
             ->icon(public_path('favicon-96x96.png'))
             ->tooltip('Links Vault')
-            ->contextMenu(
-                Menu::new()
-                    ->link(url('/app'), 'Ouvrir LinksVault')
-                    ->separator()
-                    ->quit()
+            ->onlyShowContextMenu()
+            ->withContextMenu(
+                Menu::make(
+                    Menu::link(url('/app'), 'Ouvrir LinksVault'),
+                    Menu::separator(),
+                    Menu::quit('Quitter')
+                )
             );
 
         Window::open('main')
