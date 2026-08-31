@@ -231,17 +231,6 @@ class ListLinks extends ListRecords
         ];
     }
 
-    protected function getTableHeaderActions(): array
-    {
-        return [
-            Action::make('create_link')
-                ->label(__('Nouveau lien'))
-                ->icon(TablerIcon::Plus)
-                ->url(LinkResource::getUrl('create'))
-                ->color('primary'),
-        ];
-    }
-
     public function notifications(): void
     {
         Notification::make()

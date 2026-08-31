@@ -90,7 +90,7 @@ class LinksTable
                     ->label(__('Visibilité'))
                     ->options(collect(LinkVisibility::cases())->mapWithKeys(fn ($case) => [$case->value => $case->getLabel()])->toArray())
                     ->searchable(),
-            ], FiltersLayout::AboveContent)
+            ], FiltersLayout::AfterContentCollapsible)
             ->when(
                 $isGridView,
                 fn (Table $t) => $t->content(fn () => view('filament.resources.links.components.links-grid-cards')),
@@ -175,7 +175,6 @@ class LinksTable
                             ->sortable()
                             ->toggleable(isToggledHiddenByDefault: true),
                     ])
-                    ->recordAction('view')
                     ->recordActions([
                         ViewAction::make('voir')
                             ->slideOver()
