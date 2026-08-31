@@ -21,25 +21,24 @@ class BookmarksImportService
     ) {}
 
     /**
-     * Importe des signets depuis un fichier (HTML Netscape, JSON ou CSV).
+     * Importe des signets depuis une chaîne de contenu (HTML Netscape, JSON ou CSV).
      *
      * @return array{imported_count: int, skipped_count: int, folders_created: int, errors: array<string>}
      */
-    public function importFromFile(
-        string $filePath,
+    public function importFromContent(
+        string $content,
         string $originalExtension,
         User $user,
         int $teamId,
         ?int $defaultFolderId = null,
         bool $generateAiSummary = false
     ): array {
-        $content = file_get_contents($filePath);
-        if ($content === false || empty(trim($content))) {
+        if (empty(trim($content))) {
             return [
                 'imported_count' => 0,
                 'skipped_count' => 0,
                 'folders_created' => 0,
-                'errors' => ['Le fichier est vide ou illisible.'],
+                'errors' => ['Le contenu est vide ou illisible.'],
             ];
         }
 
@@ -58,6 +57,41 @@ class BookmarksImportService
         }
 
         return $this->importFromNetscapeHtml($content, $user, $teamId, $defaultFolderId, $generateAiSummary);
+    }
+
+    /**
+     * Importe des signets depuis un fichier sur le disque.
+     *
+     * @return array{imported_count: int, skipped_count: int, folders_created: int, errors: array<string>}
+     */
+    public function importFromFile(
+        string $filePath,
+        string $originalExtension,
+        User $user,
+        int $teamId,
+        ?int $defaultFolderId = null,
+        bool $generateAiSummary = false
+    ): array {
+        if (! file_exists($filePath)) {
+            return [
+                'imported_count' => 0,
+                'skipped_count' => 0,
+                'folders_created' => 0,
+                'errors' => ["Fichier introuvable sur le disque : {$filePath}"],
+            ];
+        }
+
+        $content = file_get_contents($filePath);
+        if ($content === false) {
+            return [
+                'imported_count' => 0,
+                'skipped_count' => 0,
+                'folders_created' => 0,
+                'errors' => ['Impossible de lire le contenu du fichier.'],
+            ];
+        }
+
+        return $this->importFromContent($content, $originalExtension, $user, $teamId, $defaultFolderId, $generateAiSummary);
     }
 
     /**

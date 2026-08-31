@@ -20,6 +20,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Facades\Storage;
 
 class ListLinks extends ListRecords
 {
@@ -175,22 +176,39 @@ class ListLinks extends ListRecords
                     $user = auth()->user();
                     $tenant = Filament::getTenant();
                     $teamId = (int) ($tenant ? $tenant->id : $user->current_team_id);
-                    $filePath = storage_path('app/'.$data['file']);
-                    $ext = pathinfo($filePath, PATHINFO_EXTENSION);
+                    $relativeFile = $data['file'];
 
-                    $res = $importer->importFromFile(
-                        $filePath,
+                    // Récupération multi-environnements (Web, Desktop NativePHP, Storage local/public)
+                    $content = null;
+                    $disk = Storage::disk('local');
+
+                    if ($disk->exists($relativeFile)) {
+                        $content = $disk->get($relativeFile);
+                        $disk->delete($relativeFile);
+                    } elseif (Storage::disk('public')->exists($relativeFile)) {
+                        $content = Storage::disk('public')->get($relativeFile);
+                        Storage::disk('public')->delete($relativeFile);
+                    } elseif (file_exists($relativeFile)) {
+                        $content = file_get_contents($relativeFile);
+                        @unlink($relativeFile);
+                    } elseif (file_exists(storage_path('app/'.$relativeFile))) {
+                        $content = file_get_contents(storage_path('app/'.$relativeFile));
+                        @unlink(storage_path('app/'.$relativeFile));
+                    } elseif (file_exists(storage_path('app/private/'.$relativeFile))) {
+                        $content = file_get_contents(storage_path('app/private/'.$relativeFile));
+                        @unlink(storage_path('app/private/'.$relativeFile));
+                    }
+
+                    $ext = pathinfo($relativeFile, PATHINFO_EXTENSION);
+
+                    $res = $importer->importFromContent(
+                        (string) ($content ?? ''),
                         $ext,
                         $user,
                         $teamId,
                         ! empty($data['folder_id']) ? (int) $data['folder_id'] : null,
                         ! empty($data['generate_ai_summary'])
                     );
-
-                    // Nettoyer le fichier temporaire
-                    if (file_exists($filePath)) {
-                        @unlink($filePath);
-                    }
 
                     Notification::make()
                         ->title(__('Importation terminée !'))
