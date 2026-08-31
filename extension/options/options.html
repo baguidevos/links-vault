@@ -31,10 +31,14 @@
         <div class="form-group">
           <label for="server-url">URL du Serveur</label>
           <div class="input-with-action">
-            <input type="url" id="server-url" placeholder="http://localhost:8000" required>
+            <input type="url" id="server-url" placeholder="http://127.0.0.1:8100" required>
             <button type="button" id="btn-test-connection" class="btn btn-secondary">Tester la connexion</button>
           </div>
-          <span class="hint">Exemple : <code>http://localhost:8000</code> ou <code>https://links.mon-domaine.com</code></span>
+          <div class="server-presets">
+            <button type="button" class="preset-pill" onclick="document.getElementById('server-url').value='http://127.0.0.1:8100'">🖥️ Application Desktop (http://127.0.0.1:8100)</button>
+            <button type="button" class="preset-pill" onclick="document.getElementById('server-url').value='http://localhost:8000'">🌐 Serveur Web Local (http://localhost:8000)</button>
+          </div>
+          <span class="hint">Exemple : <code>http://127.0.0.1:8100</code> pour l'app Desktop ou <code>http://localhost:8000</code> pour le web</span>
         </div>
       </section>
 

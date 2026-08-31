@@ -33,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->passwordReset()
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
+            ->globalSearchKeyBindings(['mod+k'])
             ->brandName('LinkVault Admin')
             ->brandLogo(fn () => view('filament.components.brand-logo', ['isAdmin' => true]))
             ->brandLogoHeight('2.5rem')

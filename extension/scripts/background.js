@@ -27,7 +27,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const stored = await chrome.storage.sync.get(['serverUrl', 'apiToken']);
-  const serverUrl = (stored.serverUrl || 'http://localhost:8000').replace(/\/+$/, '');
+  const serverUrl = (stored.serverUrl || 'http://127.0.0.1:8100').replace(/\/+$/, '');
   const apiToken = stored.apiToken;
 
   if (!apiToken) {
