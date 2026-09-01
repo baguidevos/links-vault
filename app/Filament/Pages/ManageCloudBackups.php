@@ -7,7 +7,7 @@ namespace App\Filament\Pages;
 use App\Models\CloudBackup;
 use App\Models\CloudStorageConfig;
 use App\Services\CloudBackup\CloudStorageManager;
-use App\Services\CloudBackup\Connectors\S3CompatibleConnector;
+use App\Services\CloudBackup\Connectors\GoogleDriveConnector;
 use App\Services\CloudBackup\VaultBackupService;
 use App\Services\CloudBackup\VaultRestoreService;
 use BackedEnum;
@@ -24,6 +24,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -41,9 +42,9 @@ class ManageCloudBackups extends Page implements HasTable
 
     protected static string|BackedEnum|null $navigationIcon = TablerIcon::CloudUpload;
 
-    protected static ?string $navigationLabel = 'Sauvegardes Cloud';
+    protected static ?string $navigationLabel = 'Sauvegardes & Google Drive';
 
-    protected static ?string $title = 'Sauvegardes Cloud & Restauration';
+    protected static ?string $title = 'Sauvegardes Google Drive & Stockage Local';
 
     protected static ?int $navigationSort = 95;
 
@@ -51,122 +52,109 @@ class ManageCloudBackups extends Page implements HasTable
 
     public function getHeading(): string|Htmlable
     {
-        return 'Sauvegardes Cloud & Restauration';
+        return 'Sauvegardes Google Drive & Restauration';
     }
 
     public function getSubheading(): string|Htmlable|null
     {
-        return 'Protégez vos liens, dossiers et résumés IA grâce aux sauvegardes automatiques sur Google Drive, AWS S3, Cloudflare R2, Dropbox et stockage local.';
+        return 'Protégez l\'ensemble de vos liens, dossiers et métadonnées en automatisant vos sauvegardes sur Google Drive et sur stockage local.';
     }
 
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('configure_s3')
-                ->label('Configurer S3 / R2')
-                ->icon(TablerIcon::BrandAmazon)
-                ->color('gray')
+            Action::make('configure_google_drive')
+                ->label('Configurer Google Drive')
+                ->icon(TablerIcon::BrandGoogleDrive)
+                ->color('primary')
                 ->slideOver()
                 ->modalWidth('lg')
                 ->fillForm(function (): array {
                     $team = Filament::getTenant() ?? Auth::user()->personalTeam();
                     $config = CloudStorageConfig::where('team_id', $team?->id)
-                        ->where('provider', 's3')
+                        ->where('provider', 'google_drive')
                         ->first();
 
                     $creds = $config?->credentials ?? [];
 
                     return [
-                        'is_active' => $config?->is_active ?? false,
-                        'auto_backup_enabled' => $config?->auto_backup_enabled ?? false,
-                        'frequency' => $config?->frequency ?? 'weekly',
-                        'retention_count' => $config?->retention_count ?? 10,
-                        'key' => $creds['key'] ?? '',
-                        'secret' => $creds['secret'] ?? '',
-                        'bucket' => $creds['bucket'] ?? '',
-                        'region' => $creds['region'] ?? 'auto',
-                        'endpoint' => $creds['endpoint'] ?? '',
-                        'prefix' => $creds['prefix'] ?? 'linksvault-backups/',
-                        'use_path_style_endpoint' => $creds['use_path_style_endpoint'] ?? false,
+                        'is_active' => $config?->is_active ?? true,
+                        'auto_backup_enabled' => $config?->auto_backup_enabled ?? true,
+                        'frequency' => $config?->frequency ?? 'daily',
+                        'retention_count' => $config?->retention_count ?? 15,
+                        'client_id' => $creds['client_id'] ?? config('services.google.client_id', ''),
+                        'client_secret' => $creds['client_secret'] ?? config('services.google.client_secret', ''),
+                        'refresh_token' => $creds['refresh_token'] ?? '',
+                        'folder_name' => $creds['folder_name'] ?? 'LinksVault_Backups',
                     ];
                 })
                 ->form([
                     Toggle::make('is_active')
-                        ->label('Activer le stockage S3 / R2')
-                        ->helperText('Permet d\'envoyer les sauvegardes vers ce stockage.')
+                        ->label('Activer la destination Google Drive')
+                        ->helperText('Permet d\'envoyer automatiquement et manuellement les sauvegardes vers Google Drive.')
                         ->default(true),
 
                     Toggle::make('auto_backup_enabled')
                         ->label('Sauvegardes automatiques programmées')
-                        ->helperText('Exécute automatiquement la sauvegarde selon la fréquence choisie.'),
+                        ->helperText('Exécute automatiquement la sauvegarde selon la fréquence choisie.')
+                        ->default(true),
 
-                    Select::make('frequency')
-                        ->label('Fréquence de sauvegarde')
-                        ->options([
-                            'daily' => 'Quotidienne (Tous les jours à 03h00)',
-                            'weekly' => 'Hebdomadaire (Tous les lundis)',
-                            'monthly' => 'Mensuelle (Le 1er du mois)',
-                        ])
-                        ->default('weekly'),
+                    Grid::make(2)->schema([
+                        Select::make('frequency')
+                            ->label('Fréquence de sauvegarde')
+                            ->options([
+                                'daily' => 'Quotidienne (Tous les jours à 03h00)',
+                                'weekly' => 'Hebdomadaire (Tous les lundis)',
+                                'monthly' => 'Mensuelle (Le 1er du mois)',
+                            ])
+                            ->default('daily'),
 
-                    TextInput::make('retention_count')
-                        ->label('Nombre de sauvegardes à conserver')
-                        ->numeric()
-                        ->default(10)
-                        ->helperText('Les sauvegardes plus anciennes seront automatiquement purgées du bucket.'),
+                        TextInput::make('retention_count')
+                            ->label('Nombre de sauvegardes à conserver')
+                            ->numeric()
+                            ->default(15)
+                            ->helperText('Les archives plus anciennes seront purgées automatiquement.'),
+                    ]),
 
-                    Section::make('Identifiants Cloud S3 / Cloudflare R2 / MinIO')
+                    Section::make('Identifiants & Configuration Google Drive')
+                        ->description('Configurez vos accès OAuth2 Google Drive ou utilisez le compte lié.')
+                        ->icon(TablerIcon::Key)
                         ->schema([
-                            TextInput::make('key')
-                                ->label('Access Key ID')
-                                ->required()
+                            TextInput::make('folder_name')
+                                ->label('Nom du dossier racine sur Google Drive')
+                                ->default('LinksVault_Backups')
+                                ->helperText('Le dossier sera créé automatiquement s\'il n\'existe pas encore.')
+                                ->required(),
+
+                            TextInput::make('client_id')
+                                ->label('Google Client ID')
+                                ->placeholder('123456789-abc.apps.googleusercontent.com')
+                                ->helperText('Laissé vide pour utiliser la configuration globale du projet.'),
+
+                            TextInput::make('client_secret')
+                                ->label('Google Client Secret')
                                 ->password()
                                 ->revealable(),
 
-                            TextInput::make('secret')
-                                ->label('Secret Access Key')
-                                ->required()
+                            TextInput::make('refresh_token')
+                                ->label('Refresh Token OAuth2 (Optionnel)')
                                 ->password()
-                                ->revealable(),
-
-                            TextInput::make('bucket')
-                                ->label('Nom du Bucket')
-                                ->required()
-                                ->placeholder('Ex: mon-vault-backups'),
-
-                            TextInput::make('region')
-                                ->label('Région')
-                                ->default('auto')
-                                ->placeholder('Ex: us-east-1, eu-west-1, auto'),
-
-                            TextInput::make('endpoint')
-                                ->label('Endpoint URL (Optionnel pour Cloudflare R2 / MinIO / Wasabi)')
-                                ->placeholder('Ex: https://<account_id>.r2.cloudflarestorage.com')
-                                ->url(),
-
-                            TextInput::make('prefix')
-                                ->label('Dossier dans le bucket')
-                                ->default('linksvault-backups/'),
-
-                            Checkbox::make('use_path_style_endpoint')
-                                ->label('Utiliser Path Style Endpoint (requis pour MinIO)'),
+                                ->revealable()
+                                ->helperText('Permet à LinksVault de renouveler les accès automatiquement.'),
                         ]),
                 ])
                 ->extraModalFooterActions(fn (Action $action): array => [
-                    Action::make('test_s3')
-                        ->label('Tester la connexion')
+                    Action::make('test_gdrive')
+                        ->label('Tester la connexion Drive')
                         ->icon(TablerIcon::Plug)
                         ->color('info')
                         ->action(function (array $data) {
                             $team = Filament::getTenant() ?? Auth::user()->personalTeam();
-                            $connector = new S3CompatibleConnector((int) $team?->id, [
-                                'key' => $data['key'] ?? '',
-                                'secret' => $data['secret'] ?? '',
-                                'bucket' => $data['bucket'] ?? '',
-                                'region' => $data['region'] ?? 'auto',
-                                'endpoint' => $data['endpoint'] ?? '',
-                                'use_path_style_endpoint' => ! empty($data['use_path_style_endpoint']),
-                                'prefix' => $data['prefix'] ?? '',
+                            $connector = new GoogleDriveConnector((int) $team?->id, Auth::user(), [
+                                'client_id' => $data['client_id'] ?? '',
+                                'client_secret' => $data['client_secret'] ?? '',
+                                'refresh_token' => $data['refresh_token'] ?? '',
+                                'folder_name' => $data['folder_name'] ?? 'LinksVault_Backups',
                             ]);
 
                             $res = $connector->testConnection();
@@ -181,84 +169,89 @@ class ManageCloudBackups extends Page implements HasTable
                     $team = Filament::getTenant() ?? Auth::user()->personalTeam();
                     CloudStorageConfig::updateOrCreate([
                         'team_id' => $team?->id,
-                        'provider' => 's3',
+                        'provider' => 'google_drive',
                     ], [
                         'is_active' => ! empty($data['is_active']),
                         'auto_backup_enabled' => ! empty($data['auto_backup_enabled']),
-                        'frequency' => $data['frequency'] ?? 'weekly',
-                        'retention_count' => (int) ($data['retention_count'] ?? 10),
+                        'frequency' => $data['frequency'] ?? 'daily',
+                        'retention_count' => (int) ($data['retention_count'] ?? 15),
                         'credentials' => [
-                            'key' => $data['key'] ?? '',
-                            'secret' => $data['secret'] ?? '',
-                            'bucket' => $data['bucket'] ?? '',
-                            'region' => $data['region'] ?? 'auto',
-                            'endpoint' => $data['endpoint'] ?? '',
-                            'prefix' => $data['prefix'] ?? 'linksvault-backups/',
-                            'use_path_style_endpoint' => ! empty($data['use_path_style_endpoint']),
+                            'client_id' => $data['client_id'] ?? '',
+                            'client_secret' => $data['client_secret'] ?? '',
+                            'refresh_token' => $data['refresh_token'] ?? '',
+                            'folder_name' => $data['folder_name'] ?? 'LinksVault_Backups',
                         ],
                     ]);
 
                     Notification::make()
-                        ->title('Configuration S3 / R2 enregistrée avec succès !')
+                        ->title('Configuration Google Drive enregistrée avec succès !')
                         ->success()
                         ->send();
                 }),
 
-            Action::make('configure_dropbox')
-                ->label('Configurer Dropbox')
-                ->icon(TablerIcon::BrandDropbox)
+            Action::make('configure_local')
+                ->label('Sauvegarde Locale')
+                ->icon(TablerIcon::DeviceFloppy)
                 ->color('gray')
                 ->slideOver()
                 ->modalWidth('md')
                 ->fillForm(function (): array {
                     $team = Filament::getTenant() ?? Auth::user()->personalTeam();
                     $config = CloudStorageConfig::where('team_id', $team?->id)
-                        ->where('provider', 'dropbox')
+                        ->where('provider', 'local')
                         ->first();
 
                     return [
-                        'is_active' => $config?->is_active ?? false,
-                        'access_token' => $config?->credentials['access_token'] ?? '',
-                        'folder' => $config?->credentials['folder'] ?? '/LinksVault_Backups',
+                        'is_active' => $config?->is_active ?? true,
+                        'auto_backup_enabled' => $config?->auto_backup_enabled ?? true,
+                        'frequency' => $config?->frequency ?? 'weekly',
+                        'retention_count' => $config?->retention_count ?? 10,
                     ];
                 })
                 ->form([
                     Toggle::make('is_active')
-                        ->label('Activer le stockage Dropbox')
+                        ->label('Activer la sauvegarde locale sur disque')
                         ->default(true),
 
-                    TextInput::make('access_token')
-                        ->label('Jeton d\'accès (Access Token / App Token)')
-                        ->required()
-                        ->password()
-                        ->revealable()
-                        ->helperText('Générez un Access Token depuis la console Dropbox Developers.'),
+                    Toggle::make('auto_backup_enabled')
+                        ->label('Sauvegardes automatiques locales')
+                        ->default(true),
 
-                    TextInput::make('folder')
-                        ->label('Dossier distant')
-                        ->default('/LinksVault_Backups'),
+                    Select::make('frequency')
+                        ->label('Fréquence')
+                        ->options([
+                            'daily' => 'Quotidienne (03h00)',
+                            'weekly' => 'Hebdomadaire',
+                            'monthly' => 'Mensuelle',
+                        ])
+                        ->default('weekly'),
+
+                    TextInput::make('retention_count')
+                        ->label('Nombre de sauvegardes locales à conserver')
+                        ->numeric()
+                        ->default(10),
                 ])
                 ->action(function (array $data): void {
                     $team = Filament::getTenant() ?? Auth::user()->personalTeam();
                     CloudStorageConfig::updateOrCreate([
                         'team_id' => $team?->id,
-                        'provider' => 'dropbox',
+                        'provider' => 'local',
                     ], [
                         'is_active' => ! empty($data['is_active']),
-                        'credentials' => [
-                            'access_token' => $data['access_token'] ?? '',
-                            'folder' => $data['folder'] ?? '/LinksVault_Backups',
-                        ],
+                        'auto_backup_enabled' => ! empty($data['auto_backup_enabled']),
+                        'frequency' => $data['frequency'] ?? 'weekly',
+                        'retention_count' => (int) ($data['retention_count'] ?? 10),
+                        'credentials' => [],
                     ]);
 
                     Notification::make()
-                        ->title('Configuration Dropbox enregistrée avec succès !')
+                        ->title('Configuration du stockage local enregistrée !')
                         ->success()
                         ->send();
                 }),
 
             Action::make('restore_zip_file')
-                ->label('Restaurer depuis un fichier .zip')
+                ->label('Restaurer (.zip)')
                 ->icon(TablerIcon::Restore)
                 ->color('warning')
                 ->form([
@@ -312,11 +305,9 @@ class ManageCloudBackups extends Page implements HasTable
                     Radio::make('destination')
                         ->label('Destination de la sauvegarde')
                         ->options([
-                            'all' => 'Tous les stockages actifs configurés',
+                            'all' => 'Google Drive & Stockage Local',
+                            'google_drive' => 'Google Drive uniquement',
                             'local' => 'Stockage local uniquement (Téléchargeable)',
-                            's3' => 'AWS S3 / Cloudflare R2',
-                            'google_drive' => 'Google Drive',
-                            'dropbox' => 'Dropbox',
                         ])
                         ->default('all')
                         ->required(),
@@ -331,16 +322,15 @@ class ManageCloudBackups extends Page implements HasTable
                         $backups = $backupService->backupTeam($team, $provider, $user);
 
                         $successCount = count(array_filter($backups, fn ($b) => $b->status === 'completed'));
-                        $failCount = count($backups) - $successCount;
 
                         if ($successCount > 0) {
                             Notification::make()
                                 ->title('Sauvegarde générée avec succès !')
-                                ->body("{$successCount} archive(s) envoyée(s) vers le cloud. Vous pouvez les télécharger ci-dessous.")
+                                ->body("{$successCount} archive(s) enregistrée(s) avec succès. Vous pouvez la télécharger ci-dessous.")
                                 ->success()
                                 ->send();
                         } else {
-                            $firstError = $backups[0]->error_message ?? 'Erreur inconnue';
+                            $firstError = $backups[0]->error_message ?? 'Erreur inconnue lors de l\'envoi vers le stockage.';
                             Notification::make()
                                 ->title('Échec de la sauvegarde')
                                 ->body($firstError)
@@ -378,13 +368,13 @@ class ManageCloudBackups extends Page implements HasTable
                     ->icon(TablerIcon::Calendar),
 
                 TextColumn::make('provider')
-                    ->label('Fournisseur')
+                    ->label('Destination')
                     ->badge()
                     ->formatStateUsing(fn (CloudBackup $record) => $record->provider_label)
                     ->color(fn (CloudBackup $record) => $record->provider_color),
 
                 TextColumn::make('filename')
-                    ->label('Fichier Archive')
+                    ->label('Nom de l\'Archive')
                     ->searchable()
                     ->copyable()
                     ->icon(TablerIcon::FileZip),
@@ -433,7 +423,7 @@ class ManageCloudBackups extends Page implements HasTable
 
                             if (empty($content)) {
                                 Notification::make()
-                                    ->title('Impossible de récupérer le fichier depuis le stockage distant.')
+                                    ->title('Impossible de récupérer le fichier depuis le stockage.')
                                     ->danger()
                                     ->send();
 
@@ -448,42 +438,38 @@ class ManageCloudBackups extends Page implements HasTable
                         }),
 
                     Action::make('restore_this')
-                        ->label('Restaurer ce Vault')
+                        ->label('Restaurer cette archive (1-clic)')
                         ->icon(TablerIcon::Restore)
                         ->color('warning')
                         ->requiresConfirmation()
-                        ->modalHeading('Confirmer la restauration du Vault')
-                        ->modalDescription('Cette action va importer l\'intégralité des liens, dossiers et tags contenus dans cette archive.')
+                        ->modalHeading(fn (CloudBackup $record) => "Restaurer le Vault depuis l'archive : {$record->filename}")
+                        ->modalDescription('Cette action analysera le contenu du fichier .zip et restaurera l\'intégralité des liens, dossiers, catégories et tags.')
                         ->form([
                             Checkbox::make('overwrite')
-                                ->label('Écraser / Mettre à jour les liens déjà présents'),
+                                ->label('Écraser / Mettre à jour les liens déjà existants'),
                         ])
                         ->action(function (CloudBackup $record, array $data, CloudStorageManager $storageManager, VaultRestoreService $restoreService): void {
                             $team = Filament::getTenant() ?? Auth::user()->personalTeam();
                             $user = Auth::user();
-                            $connector = $storageManager->getConnector($team, $record->provider, $user);
-                            $content = $connector->download($record->remote_path ?: $record->filename);
-
-                            if (empty($content)) {
-                                Notification::make()
-                                    ->title('Fichier de sauvegarde introuvable sur le cloud.')
-                                    ->danger()
-                                    ->send();
-
-                                return;
-                            }
 
                             try {
+                                $connector = $storageManager->getConnector($team, $record->provider, $user);
+                                $content = $connector->download($record->remote_path ?: $record->filename);
+
+                                if (empty($content)) {
+                                    throw new \RuntimeException('Le fichier archive est inaccessible ou vide.');
+                                }
+
                                 $res = $restoreService->restoreFromZip($content, $team, $user, ! empty($data['overwrite']));
 
                                 Notification::make()
-                                    ->title('Restauration effectuée avec succès !')
-                                    ->body("{$res['imported_links']} liens importés, {$res['folders_created']} dossiers créés.")
+                                    ->title('Restauration 1-clic réussie !')
+                                    ->body("{$res['imported_links']} liens restaurés, {$res['folders_created']} dossiers créés.")
                                     ->success()
                                     ->send();
                             } catch (Throwable $e) {
                                 Notification::make()
-                                    ->title('Erreur lors de la restauration')
+                                    ->title('Échec de la restauration')
                                     ->body($e->getMessage())
                                     ->danger()
                                     ->send();
@@ -491,9 +477,8 @@ class ManageCloudBackups extends Page implements HasTable
                         }),
 
                     DeleteAction::make()
-                        ->label('Supprimer')
-                        ->icon(TablerIcon::Trash)
-                        ->before(function (CloudBackup $record, CloudStorageManager $storageManager): void {
+                        ->label('Supprimer l\'archive')
+                        ->before(function (CloudBackup $record, CloudStorageManager $storageManager) {
                             try {
                                 $team = Filament::getTenant() ?? Auth::user()->personalTeam();
                                 $connector = $storageManager->getConnector($team, $record->provider, Auth::user());
@@ -501,16 +486,13 @@ class ManageCloudBackups extends Page implements HasTable
                                     $connector->delete($record->remote_path);
                                 }
                             } catch (Throwable) {
-                                // Ignorer les erreurs de suppression distante
+                                // Continue deleting record even if remote file is already removed
                             }
                         }),
-                ])
-                    ->icon(TablerIcon::DotsVertical)
-                    ->color('gray')
-                    ->tooltip('Actions'),
+                ]),
             ])
-            ->emptyStateHeading('Aucune sauvegarde Cloud enregistrée')
-            ->emptyStateDescription('Cliquez sur « 🚀 Sauvegarder maintenant » pour créer votre première archive sécurisée.')
+            ->emptyStateHeading('Aucune sauvegarde pour le moment')
+            ->emptyStateDescription('Cliquez sur "Sauvegarder maintenant" pour créer votre première archive Google Drive ou Stockage Local.')
             ->emptyStateIcon(TablerIcon::CloudUpload);
     }
 }

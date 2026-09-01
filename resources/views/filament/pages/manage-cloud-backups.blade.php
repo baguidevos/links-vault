@@ -6,9 +6,10 @@
         $totalBytes = \App\Models\CloudBackup::where('team_id', $teamId)->where('status', 'completed')->sum('file_size');
         $lastBackup = \App\Models\CloudBackup::where('team_id', $teamId)->where('status', 'completed')->latest()->first();
         
-        $s3Config = \App\Models\CloudStorageConfig::where('team_id', $teamId)->where('provider', 's3')->first();
-        $dropboxConfig = \App\Models\CloudStorageConfig::where('team_id', $teamId)->where('provider', 'dropbox')->first();
+        $gdriveConfig = \App\Models\CloudStorageConfig::where('team_id', $teamId)->where('provider', 'google_drive')->first();
+        $localConfig = \App\Models\CloudStorageConfig::where('team_id', $teamId)->where('provider', 'local')->first();
         $gdriveModel = \App\Models\GoogleDrive::where('team_id', $teamId)->orWhere('user_id', auth()->id())->first();
+        $hasGdriveToken = !empty($gdriveModel?->access_token) || !empty($gdriveConfig?->credentials['refresh_token'] ?? null);
         
         $formatBytes = function ($bytes) {
             if ($bytes <= 0) return '0 B';
@@ -20,14 +21,14 @@
     @endphp
 
     {{-- Top Overview Stats --}}
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {{-- Total Backups Card --}}
         <div class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 shadow-xs flex items-center gap-4">
             <div class="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center text-primary-600 dark:text-primary-400">
                 <x-filament::icon icon="heroicon-o-archive-box" class="w-6 h-6" />
             </div>
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Sauvegardes</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Total Sauvegardes</p>
                 <h3 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $totalBackups }}</h3>
             </div>
         </div>
@@ -38,7 +39,7 @@
                 <x-filament::icon icon="heroicon-o-circle-stack" class="w-6 h-6" />
             </div>
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Volume Cloud</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Volume Total</p>
                 <h3 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $formatBytes($totalBytes) }}</h3>
             </div>
         </div>
@@ -56,22 +57,21 @@
             </div>
         </div>
 
-        {{-- Active Providers Status --}}
+        {{-- Active Providers Status (Google Drive & Local) --}}
         <div class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 shadow-xs flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-950/50 flex items-center justify-center text-purple-600 dark:text-purple-400">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
                 <x-filament::icon icon="heroicon-o-cloud" class="w-6 h-6" />
             </div>
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Connecteurs</p>
-                <div class="flex items-center gap-1.5 mt-1">
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ ($s3Config && $s3Config->is_active) ? 'bg-success-100 text-success-800 dark:bg-success-950 dark:text-success-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
-                        S3/R2
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Destinations Actives</p>
+                <div class="flex items-center gap-1.5 mt-1.5">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium {{ ($gdriveConfig?->is_active ?? true) ? 'bg-success-100 text-success-800 dark:bg-success-950 dark:text-success-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+                        <span class="w-1.5 h-1.5 rounded-full {{ ($gdriveConfig?->is_active ?? true) ? 'bg-success-500' : 'bg-gray-400' }}"></span>
+                        Google Drive
                     </span>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ ($dropboxConfig && $dropboxConfig->is_active) ? 'bg-success-100 text-success-800 dark:bg-success-950 dark:text-success-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
-                        Dropbox
-                    </span>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ ($gdriveModel && !empty($gdriveModel->access_token)) ? 'bg-success-100 text-success-800 dark:bg-success-950 dark:text-success-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
-                        GDrive
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium {{ ($localConfig?->is_active ?? true) ? 'bg-success-100 text-success-800 dark:bg-success-950 dark:text-success-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+                        <span class="w-1.5 h-1.5 rounded-full {{ ($localConfig?->is_active ?? true) ? 'bg-success-500' : 'bg-gray-400' }}"></span>
+                        Stockage Local
                     </span>
                 </div>
             </div>

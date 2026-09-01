@@ -5,20 +5,19 @@ namespace App\Models;
 use App\Concerns\TeamConcerns\GeneratesUniqueTeamSlugs;
 use App\FilaTeams;
 use Database\Factories\TeamFactory;
+use Filament\Models\Contracts\HasCurrentTenantLabel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-// class Team extends \LaravelDaily\FilaTeams\Models\Team
-class Team extends Model
+class Team extends Model implements HasCurrentTenantLabel
 {
     /** @use HasFactory<TeamFactory> */
     use GeneratesUniqueTeamSlugs;
 
     use HasFactory;
-    use SoftDeletes;
     use SoftDeletes;
 
     protected $fillable = [

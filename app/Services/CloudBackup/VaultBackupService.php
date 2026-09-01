@@ -14,6 +14,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Services\BookmarksExportService;
 use App\Services\CloudBackup\Contracts\CloudStorageConnectorInterface;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Throwable;
 use ZipArchive;
@@ -30,7 +31,7 @@ class VaultBackupService
      *
      * @return array<CloudBackup>
      */
-    public function backupTeam(Team $team, ?string $provider = null, ?User $user = null): array
+    public function backupTeam(Model|Team $team, ?string $provider = null, ?User $user = null): array
     {
         $backupData = $this->generateBackupArchive($team, $user);
         $zipContent = $backupData['content'];
@@ -107,10 +108,10 @@ class VaultBackupService
      *
      * @return array{content: string, filename: string, manifest: array<string, mixed>}
      */
-    public function generateBackupArchive(Team $team, ?User $user = null): array
+    public function generateBackupArchive(Model|Team $team, ?User $user = null): array
     {
         $timestamp = now()->format('Y-m-d_His');
-        $slug = Str::slug($team->name);
+        $slug = Str::slug($team->name ?? 'vault');
         $filename = "linksvault_{$slug}_{$timestamp}.zip";
 
         $tempPath = tempnam(sys_get_temp_dir(), 'lv_backup_');
@@ -136,8 +137,8 @@ class VaultBackupService
             'exported_at' => now()->toIso8601String(),
             'team' => [
                 'id' => $team->id,
-                'name' => $team->name,
-                'slug' => $team->slug,
+                'name' => $team->name ?? 'Vault',
+                'slug' => $team->slug ?? 'vault',
             ],
             'exported_by' => [
                 'id' => $user?->id,
@@ -217,7 +218,7 @@ class VaultBackupService
     /**
      * Purge les sauvegardes les plus anciennes selon le nombre de rétention défini.
      */
-    protected function pruneOldBackups(Team $team, string $provider, CloudStorageConnectorInterface $connector): void
+    protected function pruneOldBackups(Model|Team $team, string $provider, CloudStorageConnectorInterface $connector): void
     {
         $config = CloudStorageConfig::where('team_id', $team->id)
             ->where('provider', $provider)

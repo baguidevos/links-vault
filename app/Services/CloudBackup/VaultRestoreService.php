@@ -10,6 +10,7 @@ use App\Models\Link;
 use App\Models\Tag;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Throwable;
 use ZipArchive;
@@ -30,7 +31,7 @@ class VaultRestoreService
      */
     public function restoreFromZip(
         string $zipBinaryContent,
-        Team $targetTeam,
+        Model|Team $targetTeam,
         User $user,
         bool $overwrite = false
     ): array {

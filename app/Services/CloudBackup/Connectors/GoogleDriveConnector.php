@@ -16,34 +16,46 @@ class GoogleDriveConnector implements CloudStorageConnectorInterface
 {
     public function __construct(
         protected int $teamId,
-        protected ?User $user = null
+        protected ?User $user = null,
+        protected array $credentials = []
     ) {}
 
     protected function getClient(): ?Client
     {
-        $driveModel = GoogleDriveModel::where('team_id', $this->teamId)
-            ->when($this->user, fn ($q) => $q->orWhere('user_id', $this->user->id))
-            ->first();
+        $clientId = $this->credentials['client_id'] ?? config('services.google.client_id', '');
+        $clientSecret = $this->credentials['client_secret'] ?? config('services.google.client_secret', '');
+        $refreshToken = $this->credentials['refresh_token'] ?? null;
 
-        if (! $driveModel || empty($driveModel->access_token)) {
+        $driveModel = null;
+        if (! $refreshToken) {
+            $driveModel = GoogleDriveModel::where('team_id', $this->teamId)
+                ->when($this->user, fn ($q) => $q->orWhere('user_id', $this->user->id))
+                ->first();
+
+            $refreshToken = $driveModel?->refresh_token;
+        }
+
+        if (empty($clientId) || (empty($refreshToken) && (! $driveModel || empty($driveModel->access_token)))) {
             return null;
         }
 
         $client = new Client;
-        $client->setClientId(config('services.google.client_id', ''));
-        $client->setClientSecret(config('services.google.client_secret', ''));
-        $client->setAccessToken($driveModel->access_token);
+        $client->setClientId($clientId);
+        $client->setClientSecret($clientSecret);
 
-        if ($client->isAccessTokenExpired()) {
-            if (! empty($driveModel->refresh_token)) {
-                $newToken = $client->fetchAccessTokenWithRefreshToken($driveModel->refresh_token);
-                if (! isset($newToken['error'])) {
+        if ($refreshToken) {
+            $newToken = $client->fetchAccessTokenWithRefreshToken($refreshToken);
+            if (! isset($newToken['error'])) {
+                $client->setAccessToken($newToken);
+                if ($driveModel) {
                     $driveModel->update([
                         'access_token' => $newToken,
                         'expires_at' => now()->addSeconds($newToken['expires_in'] ?? 3600),
                     ]);
                 }
             }
+        } elseif ($driveModel?->access_token) {
+            $client->setAccessToken($driveModel->access_token);
         }
 
         return $client;
@@ -162,7 +174,7 @@ class GoogleDriveConnector implements CloudStorageConnectorInterface
 
     protected function getOrCreateBackupsFolder(Drive $service): string
     {
-        $folderName = 'LinksVault_Backups';
+        $folderName = $this->credentials['folder_name'] ?? 'LinksVault_Backups';
         $query = "mimeType='application/vnd.google-apps.folder' and name='{$folderName}' and trashed=false";
 
         $results = $service->files->listFiles([
