@@ -24,7 +24,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {{-- Total Backups Card --}}
         <div class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 shadow-xs flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center text-primary-600 dark:text-primary-400">
+            <div class="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center text-primary-600 dark:text-primary-400 shrink-0">
                 <x-filament::icon icon="heroicon-o-archive-box" class="w-6 h-6" />
             </div>
             <div>
@@ -35,7 +35,7 @@
 
         {{-- Total Storage Size --}}
         <div class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 shadow-xs flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-info-50 dark:bg-info-950/50 flex items-center justify-center text-info-600 dark:text-info-400">
+            <div class="w-12 h-12 rounded-xl bg-info-50 dark:bg-info-950/50 flex items-center justify-center text-info-600 dark:text-info-400 shrink-0">
                 <x-filament::icon icon="heroicon-o-circle-stack" class="w-6 h-6" />
             </div>
             <div>
@@ -46,7 +46,7 @@
 
         {{-- Last Backup Time --}}
         <div class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 shadow-xs flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-success-50 dark:bg-success-950/50 flex items-center justify-center text-success-600 dark:text-success-400">
+            <div class="w-12 h-12 rounded-xl bg-success-50 dark:bg-success-950/50 flex items-center justify-center text-success-600 dark:text-success-400 shrink-0">
                 <x-filament::icon icon="heroicon-o-check-badge" class="w-6 h-6" />
             </div>
             <div>
@@ -59,12 +59,12 @@
 
         {{-- Active Providers Status (Google Drive & Local) --}}
         <div class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 shadow-xs flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
                 <x-filament::icon icon="heroicon-o-cloud" class="w-6 h-6" />
             </div>
             <div>
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Destinations Actives</p>
-                <div class="flex items-center gap-1.5 mt-1.5">
+                <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $hasGdriveToken ? 'bg-success-100 text-success-800 dark:bg-success-950 dark:text-success-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
                         <span class="w-1.5 h-1.5 rounded-full {{ $hasGdriveToken ? 'bg-success-500 animate-pulse' : 'bg-gray-400' }}"></span>
                         Google Drive {{ $gdriveModel?->email ? "({$gdriveModel->email})" : ($hasGdriveToken ? '(Connecté)' : '(Non lié)') }}

@@ -32,6 +32,7 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -59,6 +60,11 @@ class ManageCloudBackups extends Page implements HasTable
     public function getSubheading(): string|Htmlable|null
     {
         return 'Sauvegardez automatiquement vos liens et dossiers sur votre compte Google Drive personnel et en local.';
+    }
+
+    public function getHeader(): ?View
+    {
+        return view('filament.pages.manage-cloud-backups-header');
     }
 
     protected function getHeaderActions(): array
@@ -177,7 +183,7 @@ class ManageCloudBackups extends Page implements HasTable
                             ->send();
                     })
                 : Action::make('connect_google_drive')
-                    ->label('🔗 Lier mon compte Google Drive')
+                    ->label('Lier mon compte Google Drive')
                     ->icon(TablerIcon::BrandGoogleDrive)
                     ->color('primary')
                     ->action(function () use ($teamId) {
@@ -309,7 +315,7 @@ class ManageCloudBackups extends Page implements HasTable
 
             // 4. Action Sauvegarder maintenant
             Action::make('create_backup_now')
-                ->label('🚀 Sauvegarder maintenant')
+                ->label('Sauvegarder maintenant')
                 ->icon(TablerIcon::CloudUpload)
                 ->color('primary')
                 ->form([

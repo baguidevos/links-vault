@@ -46,6 +46,10 @@ class AppPanelProvider extends PanelProvider
             ->brandLogo(fn () => view('filament.components.brand-logo'))
             ->brandLogoHeight('2.5rem')
             ->favicon(asset('favicon.ico'))
+            ->icons([
+                'panels::sidebar.collapse-button' => 'heroicon-o-arrows-pointing-in',
+                'panels::sidebar.expand-button' => 'heroicon-o-chevron-double-right',
+            ])
             ->renderHook(PanelsRenderHook::HEAD_START, fn () => view('filament.render_hooks.favicons'))
             ->renderHook(PanelsRenderHook::TOPBAR_START, fn () => view('filament.components.navigation-history-buttons'))
             ->renderHook(PanelsRenderHook::SIMPLE_PAGE_START, fn () => view('filament.components.navigation-history-buttons'))
