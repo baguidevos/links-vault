@@ -209,10 +209,22 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 
 ---
 
-### 2.11 Qualité & Suite de Tests Automatisés
+### 2.11 Scanner de Santé des Liens & Détection des Liens Morts
+
+| Fonctionnalité | Description Technique & Fonctionnelle | Statut |
+| :--- | :--- | :---: |
+| **Enum d'État de Santé (`LinkHealthStatus`)** | `healthy` (🟢 200 OK), `redirect` (🟡 301/302), `broken` (🔴 404/500/Timeout), `unknown` (⚪ Non vérifié). | 🟢 Terminé |
+| **Moteur HTTP Résilient (`LinkHealthService`)** | Vérifications `HEAD` avec repli sur `GET` partiel (`Range: bytes=0-1024`), User-Agent navigateur et gestion des redirections cibles. | 🟢 Terminé |
+| **Job Asynchrone (`CheckLinkHealthJob`)** | Exécution des vérifications en tâche de fond dans la file d'attente (Queue). | 🟢 Terminé |
+| **Commande Artisan (`links:check-health`)** | Commande CLI avec barre de progression et tableau récapitulatif pour les cron serveurs. | 🟢 Terminé |
+| **Affichage & Actions Filament** | Colonne badge dans `LinksTable`, filtre dédié, actions 1-clic de test, action groupée (Bulk), modale d'en-tête « Scanner la santé » dans `ListLinks`, badges sur cartes `link-card` et vue détaillée `ViewLink`. | 🟢 Terminé |
+
+---
+
+### 2.12 Qualité & Suite de Tests Automatisés
 
 - **Outil de test** : Pest PHP 4 / PHPUnit 12
-- **Couverture actuelle** : **55 tests automatisés passants (231 assertions)**
+- **Couverture actuelle** : **63 tests automatisés passants (263 assertions)**
 - **Domaines testés** :
   - Inscription d'utilisateur & création automatique d'espace personnel.
   - Connexion & authentification Filament / Sanctum.
@@ -224,6 +236,7 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
   - Génération d'archive ZIP de sauvegarde, upload sur Google Drive et Local, purge de rétention et restauration complète (`CloudBackupTest`).
   - Flux OAuth2 Google Drive avec génération d'URL, scopes et déconnexion (`GoogleDriveOAuthTest`).
   - Tracking des clics directs, redirections et cycle de vie des liens partagés (`LinkTrackingTest`).
+  - Détection complète des codes HTTP (200, 301, 404, 500), timeouts réseau, job asynchrone et commande CLI (`LinkHealthTest`).
 
 ---
 
