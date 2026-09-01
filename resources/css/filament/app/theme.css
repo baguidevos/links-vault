@@ -4,6 +4,18 @@
 @source '../../../../resources/views/filament/**/*';
 
 /* Amélioration de la réactivité des en-têtes Filament sur petits/moyens écrans */
+.fi-page-header {
+    flex-wrap: wrap !important;
+    gap: 1rem !important;
+}
+
+.fi-page-header > div:first-child {
+    min-width: 240px;
+    flex: 1 1 auto;
+}
+
 .fi-header-actions-ctn {
-    flex-wrap: wrap;
+    flex-wrap: wrap !important;
+    align-items: center;
+    gap: 0.5rem !important;
 }
