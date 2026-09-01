@@ -38,8 +38,8 @@ graph LR
 | **Phase 4** | **IA & Intelligence** | Résumés automatiques, points clés, auto-tagging (Laravel AI SDK) | 🟢 **Terminé (100%)** |
 | **Phase 5** | **Cloud & Sauvegardes** | Google Drive OAuth 1-clic, Sauvegarde locale chiffrée, Restauration 1-clic, Tracking | 🟢 **Terminé (100%)** |
 | **Phase 6** | **Santé des Liens (Health)** | Détecteur de liens morts (HTTP 200/404/500, timeouts, redirections), Badges, Filtres & Scan en masse | 🟢 **Terminé (100%)** |
-| **Phase 7** | **Monétisation SaaS** | Plans tarifaires (*Free/Pro/Team*), Gestion des quotas & limites (Subbase/Stripe) | 🔵 **À venir (Prochaine Étape)** |
-| **Phase 8** | **Recherche Sémantique** | Embeddings vectoriels, Recherche par concept / intention (`laravel/ai` vectors) | 🟣 **À venir (Priorité 2)** |
+| **Phase 7** | **Monétisation SaaS** | Plans tarifaires (*Free/Pro/Team*), Gestion des quotas & limites (Subbase/Stripe/Mobile Money) | 🟢 **Terminé (100%)** |
+| **Phase 8** | **Recherche Sémantique** | Embeddings vectoriels, Recherche par concept / intention (`laravel/ai` vectors) | 🟣 **À venir (Prochaine Étape)** |
 | **Phase 9** | **Distribution Finale** | Package Chrome/Firefox Store, Builds installateurs Windows (`.exe`) & macOS (`.dmg`) | 🔴 **À venir (Phase Finale)** |
 
 ---
@@ -119,30 +119,37 @@ graph LR
 
 ---
 
+### 🔹 Phase 7 : Monétisation SaaS & Gestion des Quotas (Subbase) 🟢
+- [x] **Seeder des Plans & Fonctionnalités (`PlanSeeder`)** :
+  - **Plan Gratuit (Free)** : 0 € / 0 FCFA — 100 liens max, 10 résumés IA/mois, sauvegarde locale, 1 membre.
+  - **Plan Pro** : 4.99 € (3 000 FCFA) / mois — Liens illimités, 500 résumés IA/mois, Google Drive sync, 3 membres.
+  - **Plan Team** : 14.99 € (9 000 FCFA) / mois — Liens illimités, 2000 résumés IA/mois, Google Drive multi-comptes, 20 membres.
+- [x] **Service Centralisé de Quotas (`SubscriptionQuotaService`)** :
+  - Gestion automatique de la souscription par défaut (`Free`).
+  - Vérification des limites de création de liens, de résumés IA mensuels et d'accès cloud.
+  - Calcul dynamique des jauges et pourcentages de consommation pour le tableau de bord.
+- [x] **Page Filament de Gestion d'Abonnement (`ManageSubscription`)** :
+  - Bandeau d'état et barres de progression visuelles en temps réel (Liens, Résumés IA, Membres, Cloud).
+  - Sélecteur de fréquence (Mensuel / Annuel -20%) et sélecteur multi-devises (EUR, XOF FCFA, USD).
+  - 3 cartes de tarifs dynamiques avec comparatif complet et bascule 1-clic.
+- [x] **Application des Quotas dans le Workflow** :
+  - Blocage de création de lien dans `CreateLinkAction` et API Sanctum (`QUOTA_EXCEEDED`).
+  - Décompte et vérification des résumés IA dans `GenerateAiSummaryAction`.
+- [x] **Suite de Tests Pest Dédiée (`SubscriptionQuotaTest.php`)** : 7 tests passants couvrant 100% des règles d'abonnements et quotas.
+- [x] **Suite Globale** : **70 tests passants (285 assertions)**.
+
+---
+
 ## 🚀 Le Reste de la Roadmap (Prochaines Étapes)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          PROCHAINES PRIORITÉS                               │
 └─────────────────────────────────────────────────────────────────────────────┘
-  1. 💳 Phase 6 : Monétisation SaaS & Abonnements (Subbase / Stripe)
-  2. 🧠 Phase 7 : Recherche Sémantique & Embeddings IA (Vector Search)
-  3. 🩺 Phase 8 : Détecteur de Liens Morts & Dashboard Analytics
-  4. 📦 Phase 9 : Packaging Final & Déploiement Stores
+  1. 🧠 Phase 8 : Recherche Sémantique & Embeddings IA (Vector Search)
+  2. 📊 Graphiques & Analytics Visuels Avancés
+  3. 📦 Phase 9 : Packaging Final & Déploiement Stores
 ```
-
----
-
-### 🔹 Phase 6 : Monétisation SaaS & Gestion des Quotas (Priorité 1) 🔵
-> *Les tables de données (`plans`, `plan_features`, `plan_subscriptions`, `plan_subscription_usage`) sont déjà en place dans la base de données.*
-
-- [ ] **Définition des Plans Tarifaires** :
-  - **Plan Free** : Jusqu'à 100 liens, 10 résumés IA / mois, 1 sauvegarde locale.
-  - **Plan Pro** : Liens illimités, 200 résumés IA / mois, Sauvegardes Google Drive illimitées, Support prioritaire.
-  - **Plan Team** : Liens illimités, Résumés IA illimités, Espaces collaboratifs avancés, Rôles personnalisés.
-- [ ] **Page de Tarifs & Souscription (Filament)** :
-  - Interface visuelle de comparaison des plans avec badges *Populaire / Recommandé*.
-  - Sélecteur de facturation Mensuelle / Annuelle (avec réduction -20%).
 - [ ] **Middleware & Vérification des Quotas** :
   - Contrôle avant création de lien (`CanCreateLink` check).
   - Contrôle avant génération de résumé IA (`CanUseAiSummary` check).

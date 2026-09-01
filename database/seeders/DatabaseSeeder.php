@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(PlanSeeder::class);
+
         $webmaster = User::firstOrCreate(
             ['email' => 'webmaster@gmail.com'],
             [

@@ -7,13 +7,28 @@ namespace App\Actions\LinkActions;
 use App\Enums\LinkVisibility;
 use App\Jobs\GenerateLinkAiSummaryJob;
 use App\Models\Link;
+use App\Models\Team;
+use App\Models\User;
 use App\Services\ContentDetectionService;
+use App\Services\SubscriptionQuotaService;
 use App\Services\WebPageMetadataService;
+use Illuminate\Validation\ValidationException;
 
 class CreateLinkAction
 {
     public static function execute(array $data): Link
     {
+        $user = auth()->user() ?? (isset($data['user_id']) ? User::find($data['user_id']) : null);
+        if ($user) {
+            $quotaService = app(SubscriptionQuotaService::class);
+            $team = isset($data['team_id']) ? Team::find($data['team_id']) : null;
+            if (! $quotaService->canCreateLink($user, $team)) {
+                throw ValidationException::withMessages([
+                    'url' => [__('Limite de liens atteinte pour votre plan actuel (:limit liens max). Veuillez passer au plan supérieur pour continuer à ajouter des liens.', ['limit' => $quotaService->getLinksLimit($user)])],
+                ]);
+            }
+        }
+
         $generateAiSummary = ! empty($data['generate_ai_summary']);
         unset($data['generate_ai_summary'], $data['members_data']);
 

@@ -7,6 +7,7 @@ namespace App\Actions\LinkActions;
 use App\Ai\Agents\LinkSummaryAgent;
 use App\Models\Link;
 use App\Models\Tag;
+use App\Services\SubscriptionQuotaService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
@@ -18,6 +19,19 @@ class GenerateAiSummaryAction
      */
     public static function execute(Link $link): Link
     {
+        $user = $link->user ?? auth()->user();
+        if ($user) {
+            $quotaService = app(SubscriptionQuotaService::class);
+            if (! $quotaService->canGenerateAiSummary($user)) {
+                $link->update([
+                    'ai_summary_status' => 'failed',
+                ]);
+                Log::warning("AI Summary generation skipped: Monthly quota exceeded for user {$user->id}");
+
+                return $link;
+            }
+        }
+
         $link->update([
             'ai_summary_status' => 'processing',
         ]);
@@ -110,6 +124,10 @@ class GenerateAiSummaryAction
                 if (! empty($tagIds)) {
                     $link->tags()->sync($tagIds);
                 }
+            }
+
+            if ($user) {
+                app(SubscriptionQuotaService::class)->consumeAiSummary($user);
             }
 
             return $link;

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Laravelcm\Subscriptions\Models\Feature;
-use Laravelcm\Subscriptions\Models\Plan;
-use Laravelcm\Subscriptions\Models\Subscription;
-use Laravelcm\Subscriptions\Models\SubscriptionUsage;
+use Nafiswatsiq\Subbase\Models\Feature;
+use Nafiswatsiq\Subbase\Models\Plan;
+use Nafiswatsiq\Subbase\Models\Subscription;
+use Nafiswatsiq\Subbase\Models\SubscriptionUsage;
 
 return [
 

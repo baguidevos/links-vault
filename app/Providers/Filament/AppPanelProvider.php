@@ -41,6 +41,7 @@ class AppPanelProvider extends PanelProvider
             ->profile(EditProfile::class)
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
+            ->sidebarCollapsibleOnDesktop()
             ->globalSearchKeyBindings(['mod+k'])
             ->brandName('LinkVault')
             ->brandLogo(fn () => view('filament.components.brand-logo'))

@@ -9,8 +9,10 @@ use App\Jobs\GenerateLinkAiSummaryJob;
 use App\Models\Folder;
 use App\Models\Link;
 use App\Models\Tag;
+use App\Models\Team;
 use App\Services\AIService;
 use App\Services\ContentDetectionService;
+use App\Services\SubscriptionQuotaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 
@@ -73,6 +75,16 @@ class LinkController extends Controller
         if (! $teamId) {
             $firstTeam = $user->teams()->first();
             $teamId = $firstTeam?->id;
+        }
+
+        // Quota check
+        $quotaService = app(SubscriptionQuotaService::class);
+        $team = $teamId ? Team::find($teamId) : null;
+        if (! $quotaService->canCreateLink($user, $team)) {
+            return response()->json([
+                'message' => "Limite de liens atteinte pour votre plan ({$quotaService->getLinksLimit($user)} liens max). Passez au plan Pro pour un stockage illimité.",
+                'code' => 'QUOTA_EXCEEDED',
+            ], 403);
         }
 
         // Check for duplicate
