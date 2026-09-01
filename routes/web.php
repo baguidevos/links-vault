@@ -4,6 +4,7 @@ use App\Ai\Agents\TagFinderAgent;
 use App\Http\Controllers\AcceptInvitationController;
 use App\Http\Controllers\ExtensionDownloadController;
 use App\Http\Controllers\GlmController;
+use App\Http\Controllers\GoogleDriveAuthController;
 use App\Http\Controllers\LinkShareController;
 use App\Services\GlmService;
 use App\Services\WebPageMetadataService;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::redirect('/login', '/app/login')->name('login');
 
 // Téléchargement du package de l'extension Chrome
 Route::get('/extension/download', ExtensionDownloadController::class)
@@ -60,6 +63,16 @@ Route::get('/share/{token}', [LinkShareController::class, 'redirect'])
 Route::get('/team-invitations/{code}/accept', AcceptInvitationController::class)
     ->middleware(['web', 'signed'])
     ->name('filateams.invitations.accept');
+
+// Routes OAuth Google Drive
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/auth/google-drive/redirect', [GoogleDriveAuthController::class, 'redirect'])
+        ->name('auth.google-drive.redirect');
+    Route::get('/auth/google-drive/callback', [GoogleDriveAuthController::class, 'callback'])
+        ->name('auth.google-drive.callback');
+    Route::post('/auth/google-drive/disconnect', [GoogleDriveAuthController::class, 'disconnect'])
+        ->name('auth.google-drive.disconnect');
+});
 
 Route::get('/test', function () {
 

@@ -6,6 +6,7 @@ namespace App\Filament\Pages;
 
 use App\Models\CloudBackup;
 use App\Models\CloudStorageConfig;
+use App\Models\GoogleDrive;
 use App\Services\CloudBackup\CloudStorageManager;
 use App\Services\CloudBackup\Connectors\GoogleDriveConnector;
 use App\Services\CloudBackup\VaultBackupService;
@@ -25,7 +26,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Section;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -57,147 +57,134 @@ class ManageCloudBackups extends Page implements HasTable
 
     public function getSubheading(): string|Htmlable|null
     {
-        return 'Protégez l\'ensemble de vos liens, dossiers et métadonnées en automatisant vos sauvegardes sur Google Drive et sur stockage local.';
+        return 'Sauvegardez automatiquement vos liens et dossiers sur votre compte Google Drive personnel et en local.';
     }
 
     protected function getHeaderActions(): array
     {
+        $team = Filament::getTenant() ?? Auth::user()?->personalTeam();
+        $teamId = $team?->id ?? 0;
+        $gdrive = GoogleDrive::where('team_id', $teamId)->first() ?? GoogleDrive::where('user_id', Auth::id())->first();
+        $isConnected = ! empty($gdrive?->access_token);
+        $connectedEmail = $gdrive?->email;
+
         return [
-            Action::make('configure_google_drive')
-                ->label('Configurer Google Drive')
-                ->icon(TablerIcon::BrandGoogleDrive)
-                ->color('primary')
-                ->slideOver()
-                ->modalWidth('lg')
-                ->fillForm(function (): array {
-                    $team = Filament::getTenant() ?? Auth::user()->personalTeam();
-                    $config = CloudStorageConfig::where('team_id', $team?->id)
-                        ->where('provider', 'google_drive')
-                        ->first();
+            // 1. Bouton Connexion Google Drive 1-Clic OAuth
+            $isConnected
+                ? Action::make('google_drive_status')
+                    ->label($connectedEmail ? "Drive : {$connectedEmail} ✓" : 'Google Drive Connecté ✓')
+                    ->icon(TablerIcon::BrandGoogleDrive)
+                    ->color('success')
+                    ->modalHeading('Compte Google Drive Connecté')
+                    ->modalDescription($connectedEmail ? "Votre espace est connecté au compte Google **{$connectedEmail}**." : 'Votre espace est connecté à Google Drive.')
+                    ->modalWidth('md')
+                    ->fillForm(function () use ($teamId): array {
+                        $config = CloudStorageConfig::where('team_id', $teamId)
+                            ->where('provider', 'google_drive')
+                            ->first();
 
-                    $creds = $config?->credentials ?? [];
+                        return [
+                            'auto_backup_enabled' => $config?->auto_backup_enabled ?? true,
+                            'frequency' => $config?->frequency ?? 'daily',
+                            'retention_count' => $config?->retention_count ?? 15,
+                        ];
+                    })
+                    ->form([
+                        Toggle::make('auto_backup_enabled')
+                            ->label('Sauvegardes automatiques vers Google Drive')
+                            ->helperText('Exécute automatiquement la sauvegarde selon la fréquence choisie.')
+                            ->default(true),
 
-                    return [
-                        'is_active' => $config?->is_active ?? true,
-                        'auto_backup_enabled' => $config?->auto_backup_enabled ?? true,
-                        'frequency' => $config?->frequency ?? 'daily',
-                        'retention_count' => $config?->retention_count ?? 15,
-                        'client_id' => $creds['client_id'] ?? config('services.google.client_id', ''),
-                        'client_secret' => $creds['client_secret'] ?? config('services.google.client_secret', ''),
-                        'refresh_token' => $creds['refresh_token'] ?? '',
-                        'folder_name' => $creds['folder_name'] ?? 'LinksVault_Backups',
-                    ];
-                })
-                ->form([
-                    Toggle::make('is_active')
-                        ->label('Activer la destination Google Drive')
-                        ->helperText('Permet d\'envoyer automatiquement et manuellement les sauvegardes vers Google Drive.')
-                        ->default(true),
+                        Grid::make(2)->schema([
+                            Select::make('frequency')
+                                ->label('Fréquence')
+                                ->options([
+                                    'daily' => 'Quotidienne (03h00)',
+                                    'weekly' => 'Hebdomadaire',
+                                    'monthly' => 'Mensuelle',
+                                ])
+                                ->default('daily'),
 
-                    Toggle::make('auto_backup_enabled')
-                        ->label('Sauvegardes automatiques programmées')
-                        ->helperText('Exécute automatiquement la sauvegarde selon la fréquence choisie.')
-                        ->default(true),
-
-                    Grid::make(2)->schema([
-                        Select::make('frequency')
-                            ->label('Fréquence de sauvegarde')
-                            ->options([
-                                'daily' => 'Quotidienne (Tous les jours à 03h00)',
-                                'weekly' => 'Hebdomadaire (Tous les lundis)',
-                                'monthly' => 'Mensuelle (Le 1er du mois)',
-                            ])
-                            ->default('daily'),
-
-                        TextInput::make('retention_count')
-                            ->label('Nombre de sauvegardes à conserver')
-                            ->numeric()
-                            ->default(15)
-                            ->helperText('Les archives plus anciennes seront purgées automatiquement.'),
-                    ]),
-
-                    Section::make('Identifiants & Configuration Google Drive')
-                        ->description('Configurez vos accès OAuth2 Google Drive ou utilisez le compte lié.')
-                        ->icon(TablerIcon::Key)
-                        ->schema([
-                            TextInput::make('folder_name')
-                                ->label('Nom du dossier racine sur Google Drive')
-                                ->default('LinksVault_Backups')
-                                ->helperText('Le dossier sera créé automatiquement s\'il n\'existe pas encore.')
-                                ->required(),
-
-                            TextInput::make('client_id')
-                                ->label('Google Client ID')
-                                ->placeholder('123456789-abc.apps.googleusercontent.com')
-                                ->helperText('Laissé vide pour utiliser la configuration globale du projet.'),
-
-                            TextInput::make('client_secret')
-                                ->label('Google Client Secret')
-                                ->password()
-                                ->revealable(),
-
-                            TextInput::make('refresh_token')
-                                ->label('Refresh Token OAuth2 (Optionnel)')
-                                ->password()
-                                ->revealable()
-                                ->helperText('Permet à LinksVault de renouveler les accès automatiquement.'),
+                            TextInput::make('retention_count')
+                                ->label('Rétention')
+                                ->numeric()
+                                ->default(15)
+                                ->helperText('Archives conservées sur Drive'),
                         ]),
-                ])
-                ->extraModalFooterActions(fn (Action $action): array => [
-                    Action::make('test_gdrive')
-                        ->label('Tester la connexion Drive')
-                        ->icon(TablerIcon::Plug)
-                        ->color('info')
-                        ->action(function (array $data) {
-                            $team = Filament::getTenant() ?? Auth::user()->personalTeam();
-                            $connector = new GoogleDriveConnector((int) $team?->id, Auth::user(), [
-                                'client_id' => $data['client_id'] ?? '',
-                                'client_secret' => $data['client_secret'] ?? '',
-                                'refresh_token' => $data['refresh_token'] ?? '',
-                                'folder_name' => $data['folder_name'] ?? 'LinksVault_Backups',
-                            ]);
+                    ])
+                    ->extraModalFooterActions(fn (): array => [
+                        Action::make('test_connection')
+                            ->label('Tester l\'accès Drive')
+                            ->icon(TablerIcon::Plug)
+                            ->color('info')
+                            ->action(function () use ($teamId) {
+                                $connector = new GoogleDriveConnector((int) $teamId, Auth::user());
+                                $res = $connector->testConnection();
+                                if ($res['success']) {
+                                    Notification::make()->title($res['message'])->success()->send();
+                                } else {
+                                    Notification::make()->title($res['message'])->danger()->send();
+                                }
+                            }),
 
-                            $res = $connector->testConnection();
-                            if ($res['success']) {
-                                Notification::make()->title($res['message'])->success()->send();
-                            } else {
-                                Notification::make()->title($res['message'])->danger()->send();
-                            }
-                        }),
-                ])
-                ->action(function (array $data): void {
-                    $team = Filament::getTenant() ?? Auth::user()->personalTeam();
-                    CloudStorageConfig::updateOrCreate([
-                        'team_id' => $team?->id,
-                        'provider' => 'google_drive',
-                    ], [
-                        'is_active' => ! empty($data['is_active']),
-                        'auto_backup_enabled' => ! empty($data['auto_backup_enabled']),
-                        'frequency' => $data['frequency'] ?? 'daily',
-                        'retention_count' => (int) ($data['retention_count'] ?? 15),
-                        'credentials' => [
-                            'client_id' => $data['client_id'] ?? '',
-                            'client_secret' => $data['client_secret'] ?? '',
-                            'refresh_token' => $data['refresh_token'] ?? '',
-                            'folder_name' => $data['folder_name'] ?? 'LinksVault_Backups',
-                        ],
-                    ]);
+                        Action::make('reconnect')
+                            ->label('Changer de compte Google')
+                            ->icon(TablerIcon::SwitchHorizontal)
+                            ->color('gray')
+                            ->url(fn () => route('auth.google-drive.redirect', ['team_id' => $teamId])),
 
-                    Notification::make()
-                        ->title('Configuration Google Drive enregistrée avec succès !')
-                        ->success()
-                        ->send();
-                }),
+                        Action::make('disconnect')
+                            ->label('Déconnecter')
+                            ->icon(TablerIcon::Unlink)
+                            ->color('danger')
+                            ->requiresConfirmation()
+                            ->action(function () use ($teamId) {
+                                if (Auth::check()) {
+                                    GoogleDrive::where('user_id', Auth::id())->delete();
+                                }
+                                if ($teamId) {
+                                    CloudStorageConfig::where('team_id', $teamId)
+                                        ->where('provider', 'google_drive')
+                                        ->update(['is_active' => false]);
+                                }
 
+                                Notification::make()
+                                    ->title('Google Drive déconnecté avec succès')
+                                    ->info()
+                                    ->send();
+                            }),
+                    ])
+                    ->action(function (array $data) use ($teamId): void {
+                        CloudStorageConfig::updateOrCreate([
+                            'team_id' => $teamId,
+                            'provider' => 'google_drive',
+                        ], [
+                            'is_active' => true,
+                            'auto_backup_enabled' => ! empty($data['auto_backup_enabled']),
+                            'frequency' => $data['frequency'] ?? 'daily',
+                            'retention_count' => (int) ($data['retention_count'] ?? 15),
+                        ]);
+
+                        Notification::make()
+                            ->title('Paramètres Google Drive mis à jour !')
+                            ->success()
+                            ->send();
+                    })
+                : Action::make('connect_google_drive')
+                    ->label('🔗 Lier mon compte Google Drive')
+                    ->icon(TablerIcon::BrandGoogleDrive)
+                    ->color('primary')
+                    ->url(fn () => route('auth.google-drive.redirect', ['team_id' => $teamId])),
+
+            // 2. Action Sauvegarde Locale
             Action::make('configure_local')
                 ->label('Sauvegarde Locale')
                 ->icon(TablerIcon::DeviceFloppy)
                 ->color('gray')
                 ->slideOver()
                 ->modalWidth('md')
-                ->fillForm(function (): array {
-                    $team = Filament::getTenant() ?? Auth::user()->personalTeam();
-                    $config = CloudStorageConfig::where('team_id', $team?->id)
+                ->fillForm(function () use ($teamId): array {
+                    $config = CloudStorageConfig::where('team_id', $teamId)
                         ->where('provider', 'local')
                         ->first();
 
@@ -231,10 +218,9 @@ class ManageCloudBackups extends Page implements HasTable
                         ->numeric()
                         ->default(10),
                 ])
-                ->action(function (array $data): void {
-                    $team = Filament::getTenant() ?? Auth::user()->personalTeam();
+                ->action(function (array $data) use ($teamId): void {
                     CloudStorageConfig::updateOrCreate([
-                        'team_id' => $team?->id,
+                        'team_id' => $teamId,
                         'provider' => 'local',
                     ], [
                         'is_active' => ! empty($data['is_active']),
@@ -250,6 +236,7 @@ class ManageCloudBackups extends Page implements HasTable
                         ->send();
                 }),
 
+            // 3. Action Restaurer (.zip)
             Action::make('restore_zip_file')
                 ->label('Restaurer (.zip)')
                 ->icon(TablerIcon::Restore)
@@ -266,8 +253,7 @@ class ManageCloudBackups extends Page implements HasTable
                     Checkbox::make('overwrite')
                         ->label('Écraser / Mettre à jour les liens existants s\'ils existent déjà'),
                 ])
-                ->action(function (array $data, VaultRestoreService $restoreService): void {
-                    $team = Filament::getTenant() ?? Auth::user()->personalTeam();
+                ->action(function (array $data, VaultRestoreService $restoreService) use ($team): void {
                     $user = Auth::user();
 
                     $filePath = $data['zip_file'];
@@ -297,6 +283,7 @@ class ManageCloudBackups extends Page implements HasTable
                     }
                 }),
 
+            // 4. Action Sauvegarder maintenant
             Action::make('create_backup_now')
                 ->label('🚀 Sauvegarder maintenant')
                 ->icon(TablerIcon::CloudUpload)
@@ -312,8 +299,7 @@ class ManageCloudBackups extends Page implements HasTable
                         ->default('all')
                         ->required(),
                 ])
-                ->action(function (array $data, VaultBackupService $backupService): void {
-                    $team = Filament::getTenant() ?? Auth::user()->personalTeam();
+                ->action(function (array $data, VaultBackupService $backupService) use ($team): void {
                     $user = Auth::user();
 
                     $provider = $data['destination'] === 'all' ? null : $data['destination'];

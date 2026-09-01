@@ -65,9 +65,9 @@
             <div>
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Destinations Actives</p>
                 <div class="flex items-center gap-1.5 mt-1.5">
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium {{ ($gdriveConfig?->is_active ?? true) ? 'bg-success-100 text-success-800 dark:bg-success-950 dark:text-success-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
-                        <span class="w-1.5 h-1.5 rounded-full {{ ($gdriveConfig?->is_active ?? true) ? 'bg-success-500' : 'bg-gray-400' }}"></span>
-                        Google Drive
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $hasGdriveToken ? 'bg-success-100 text-success-800 dark:bg-success-950 dark:text-success-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+                        <span class="w-1.5 h-1.5 rounded-full {{ $hasGdriveToken ? 'bg-success-500 animate-pulse' : 'bg-gray-400' }}"></span>
+                        Google Drive {{ $gdriveModel?->email ? "({$gdriveModel->email})" : ($hasGdriveToken ? '(Connecté)' : '(Non lié)') }}
                     </span>
                     <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium {{ ($localConfig?->is_active ?? true) ? 'bg-success-100 text-success-800 dark:bg-success-950 dark:text-success-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
                         <span class="w-1.5 h-1.5 rounded-full {{ ($localConfig?->is_active ?? true) ? 'bg-success-500' : 'bg-gray-400' }}"></span>
