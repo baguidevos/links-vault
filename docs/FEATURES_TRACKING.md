@@ -1,8 +1,8 @@
 # 📚 LinksVault — Registre Global & Suivi des Fonctionnalités
 
 > **Document de référence pour la rédaction des futures documentations techniques et utilisateurs.**  
-> *Dernière mise à jour : 31 Août 2026*  
-> *Statut du projet : Phase 1 (100%), Phase 2 (100%), Phase 3 (100%), Phase 4 (100%), Phase 5 (65% — Import/Export Universel & Miniatures terminés)*
+> *Dernière mise à jour : 1er Septembre 2026*  
+> *Statut du projet : Phase 1 (100%), Phase 2 (100%), Phase 3 (100%), Phase 4 (100%), Phase 5 (85% — Google Drive OAuth 1-clic, Profil Multi-Tenant & Tracking Visites/Partages terminés)*
 
 ---
 
@@ -10,7 +10,7 @@
 
 1. [Architecture & Déclinaisons du Projet](#1-architecture--d%C3%A9clinaisons-du-projet)
 2. [Recensement Exhaustif des Fonctionnalités Développées](#2-recensement-exhaustif-des-fonctionnalit%C3%A9s-d%C3%A9velopp%C3%A9es)
-   - [2.1 Multi-Tenancy, Authentification & Espaces Collaboratifs](#21-multi-tenancy-authentification--espaces-collaboratifs)
+   - [2.1 Multi-Tenancy, Authentification & Profil Utilisateur](#21-multi-tenancy-authentification--profil-utilisateur)
    - [2.2 Gestion & Modélisation des Liens & Connaissances](#22-gestion--mod%C3%A9lisation-des-liens--connaissances)
    - [2.3 Interface Utilisateur, Vues & Expérience (UI/UX)](#23-interface-utilisateur-vues--exp%C3%A9rience-uiux)
    - [2.4 Application Desktop Native (NativePHP / Electron)](#24-application-desktop-native-nativephp--electron)
@@ -18,7 +18,9 @@
    - [2.6 API REST & Sécurité (Laravel Sanctum)](#26-api-rest--s%C3%A9curit%C3%A9-laravel-sanctum)
    - [2.7 Intelligence Artificielle & Automatisation (Laravel AI SDK)](#27-intelligence-artificielle--automatisation-laravel-ai-sdk)
    - [2.8 Importation & Exportation Universelle de Données](#28-importation--exportation-universelle-de-donn%C3%A9es)
-   - [2.9 Qualité & Suite de Tests Automatisés](#29-qualit%C3%A9--suite-de-tests-automatis%C3%A9s)
+   - [2.9 Sauvegardes Google Drive 1-Clic & Stockage Local](#29-sauvegardes-google-drive-1-clic--stockage-local)
+   - [2.10 Tracking & Statistiques des Visites et Partages](#210-tracking--statistiques-des-visites-et-partages)
+   - [2.11 Qualité & Suite de Tests Automatisés](#211-qualit%C3%A9--suite-de-tests-automatis%C3%A9s)
 3. [Feuille de Route des Fonctionnalités Futures](#3-feuille-de-route-des-fonctionnalit%C3%A9s-futures)
    - [3.1 Phase 5 : Monétisation SaaS & Collaboration](#31-phase-5--mon%C3%A9tisation-saas--collaboration)
 4. [Guide de Rédaction pour les Futures Documentations](#4-guide-de-r%C3%A9daction-pour-les-futures-documentations)
@@ -55,20 +57,21 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 
 ### 🛠️ Stack Technologique Fondamentale :
 - **Backend** : PHP 8.4+, Laravel 13
-- **Administration & Back-office** : Filament v5 (Panels, Tables, Forms, Infolists, Notifications)
+- **Administration & Back-office** : Filament v5 (Panels, Tables, Forms, Infolists, Notifications, Actions)
 - **Réactivité Frontend** : Livewire v4, Alpine.js, Tailwind CSS v4
-- **Multi-Tenancy** : FilaTeams (équipes personnelles & collaboratives)
-- **Moteur Desktop** : NativePHP Desktop (Electron Windows/macOS)
+- **Multi-Tenancy** : FilaTeams (espaces personnels & d'équipe collaboratifs)
+- **Moteur Desktop** : NativePHP Desktop v2.2 (Electron Windows/macOS avec base `nativephp.sqlite`)
 - **Extension Navigateur** : WebExtension Manifest V3 (Vanilla JS, CSS moderne)
 - **Sécurité API** : Laravel Sanctum (Tokens personnels révocables)
-- **Intelligence Artificielle** : Laravel AI SDK (`laravel/ai`)
+- **Intelligence Artificielle** : Laravel AI SDK (`laravel/ai` avec GLM / Groq / OpenAI)
+- **Sauvegarde Cloud** : Google OAuth2 API (`google/apiclient`) + Stockage Local chiffré
 - **Tests** : Pest PHP 4 / PHPUnit 12
 
 ---
 
 ## 2. Recensement Exhaustif des Fonctionnalités Développées
 
-### 2.1 Multi-Tenancy, Authentification & Espaces Collaboratifs
+### 2.1 Multi-Tenancy, Authentification & Profil Utilisateur
 
 | Fonctionnalité | Description Technique & Fonctionnelle | Statut |
 | :--- | :--- | :---: |
@@ -76,7 +79,8 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 | **Multi-Tenancy avec FilaTeams** | Séparation étanche des données par espace (`team_id`). Chaque ressource (Liens, Dossiers, Catégories, Tags) appartient strictement au tenant actif. | 🟢 Terminé |
 | **Gestion des Rôles & Permissions** | Support des rôles d'équipe : *Propriétaire (Owner)*, *Administrateur (Admin)*, *Membre (Member)* avec politiques d'accès (`TeamPolicy`). | 🟢 Terminé |
 | **Bascule Rapide d'Espace (Tenant Switcher)** | Sélecteur de tenant intégré dans la barre latérale Filament permettant de passer d'un espace personnel à un espace d'équipe sans se reconnecter. | 🟢 Terminé |
-| **Pages d'Inscription & Connexion Personnalisées** | Formulaires Filament v5 personnalisés avec branding LinksVault, logos vectoriels et gestion des mots de passe sécurisés. | 🟢 Terminé |
+| **Page Profil Utilisateur Pleine Page (`EditProfile`)** | Page de profil sur-mesure compatible multi-tenant (`Width::Full`) permettant la modification du Nom, Email (avec unicité), Fuseau horaire, Langue (Français/English), mot de passe avec vérification de l'actuel et badge de statut. | 🟢 Terminé |
+| **Pages d'Inscription & Connexion Personnalisées** | Formulaires Filament v5 personnalisés avec branding LinksVault, logos vectoriels et redirection sécurisée. | 🟢 Terminé |
 
 ---
 
@@ -86,7 +90,7 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 | :--- | :--- | :---: |
 | **Métadonnées Exhaustives** | Enregistrement de : `url`, `title`, `description`, `objective` (objectif personnel/pro), `reading_time`, `author`, `published_at`, `favicon_url`, `thumbnail_url`. | 🟢 Terminé |
 | **Détection Automatique des Types de Contenu** | Enum `ContentType` avec détection automatique : `Youtube`, `GoogleDrive`, `GoogleDoc`, `GoogleSheet`, `GoogleSlides`, `GoogleForm`, `Article`, `Pdf`, `Image`, `Other`. | 🟢 Terminé |
-| **Détecteur Spécialisé YouTube** | Extraction automatique de l'ID vidéo, résolution de la vignette haute résolution (`hqdefault.jpg`), affichage d'un bouton Play overlay interactif. | 🟢 Terminé |
+| **Détecteur Spécialisé YouTube** | Extraction automatique de l'ID vidéo, résolution de la vignette haute résolution (`hqdefault.jpg`), affichage d'un player embed iframe intégré et bouton Play overlay. | 🟢 Terminé |
 | **Organisation par Dossiers (`Folder`)** | Classement des liens dans des dossiers avec icônes personnalisées, description et liaison optionnelle avec une catégorie. | 🟢 Terminé |
 | **Catégorisation (`Category`)** | Classement thématique transversal (ex: *Développement, Design, Marketing, IA*). | 🟢 Terminé |
 | **Système de Tags / Étiquettes** | Association multiple de tags à chaque lien avec chips colorées et filtrage rapide. | 🟢 Terminé |
@@ -119,6 +123,7 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 | :--- | :--- | :---: |
 | **Fenêtre Electron Native** | Fenêtre desktop autonome avec configuration des dimensions minimales, titre et icônes d'application. | 🟢 Terminé |
 | **Persistance des États & Base Interne** | Sauvegarde locale des états, gestion des sessions et support de base de données SQLite locale (`nativephp.sqlite`). | 🟢 Terminé |
+| **Migrations Synchronisées Desktop** | L'ensemble des 35+ migrations est exécuté et synchronisé sur la base desktop locale. | 🟢 Terminé |
 | **MenuBar / System Tray** | Icône dans la barre des tâches / zone de notification avec menu contextuel d'accès rapide. | 🟢 Terminé |
 | **Boutons d'Historique Dédiés au Desktop** | Flèches de navigation (← Précédent, → Suivant, ⟳ Actualiser) affichées uniquement sur l'application Desktop grâce à la directive `@desktop`. | 🟢 Terminé |
 
@@ -143,7 +148,7 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 ### 2.6 API REST & Sécurité (Laravel Sanctum)
 
 | Endpoint | Méthode | Rôle & Fonction |
-| :--- | :---: | :--- |
+| :--- | :--- :---: | :--- |
 | `/api/auth/token` | `POST` | Authentifie l'utilisateur et émet un Personal Access Token Sanctum avec nom de périphérique. |
 | `/api/auth/revoke` | `POST` | Révoque le jeton d'accès actuel (déconnexion sécurisée). |
 | `/api/me` | `GET` | Renvoie les informations de l'utilisateur connecté et valide le jeton. |
@@ -177,30 +182,48 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 | **Option IA à l'importation** | Possibilité de lancer l'analyse et la synthèse IA en tâche de fond pour chaque lien importé. | 🟢 Terminé |
 | **Exportateur Universel (`BookmarksExportService`)** | Export instantané en 1 clic au format standard Netscape Bookmark HTML, JSON structuré ou CSV (Excel). | 🟢 Terminé |
 
-### 2.9 Sauvegardes Cloud Multi-Connecteurs & Restauration Universelle
+---
+
+### 2.9 Sauvegardes Google Drive 1-Clic & Stockage Local
 
 | Fonctionnalité | Description Technique & Fonctionnelle | Statut |
 | :--- | :--- | :---: |
-| **Multi-Connecteurs Cloud Hybrides** | Prise en charge d'AWS S3, Cloudflare R2, MinIO, Wasabi (S3-compatible), Google Drive (OAuth2 app folder), Dropbox (API v2) et Stockage Local/Réseau. | 🟢 Terminé |
-| **Générateur d'Archives Zip Exhaustives (`VaultBackupService`)** | Packaging complet : `manifest.json`, `links.json` (avec métadonnées et résumés IA), `bookmarks.html` (Netscape), `links.csv`, `folders.json`, `categories.json`, `tags.json`. | 🟢 Terminé |
-| **Moteur de Restauration en 1 Clic (`VaultRestoreService`)** | Restauration intelligente et récursive de toute l'arborescence (dossiers, catégories, tags, liens) depuis n'importe quelle archive cloud ou fichier local. | 🟢 Terminé |
-| **Automatisation & Politique de Rétention** | Planification automatique quotidienne à 03h00 (`vault:backup-cloud`) avec élagage automatique des sauvegardes excédentaires (rétention de $N$ sauvegardes). | 🟢 Terminé |
-| **Interface Filament Dédiée (`ManageCloudBackups`)** | Tableau de bord avec métriques de volume cloud, statuts des connecteurs, historique, boutons « Sauvegarder maintenant », téléchargement direct `.zip` et restauration. | 🟢 Terminé |
+| **Connexion Google Drive 1-Clic (OAuth2)** | Flux OAuth officiel Google avec sélection de compte (`select_account`), demande d'autorisation pour le dossier LinksVault et liaison automatique en 1 clic. | 🟢 Terminé |
+| **Sécurité & Chiffrement des Jetons** | Les `access_token` (structure tableau) et `refresh_token` sont chiffrés en base de données avec le cast natif Laravel `encrypted:array`. | 🟢 Terminé |
+| **Sauvegardes Locales sur Disque** | Archivage dans le stockage privé sécurisé `storage/app/private/vault-backups/{team_id}/` avec téléchargement direct en `.zip`. | 🟢 Terminé |
+| **Générateur d'Archives Zip Exhaustives (`VaultBackupService`)** | Packaging complet : `manifest.json`, `links.json` (avec métadonnées, tags et résumés IA), `bookmarks.html` (Netscape), `links.csv`, `folders.json`, `categories.json`, `tags.json`. | 🟢 Terminé |
+| **Restauration Universelle en 1 Clic (`VaultRestoreService`)** | Restauration intelligente et récursive de toute l'arborescence depuis Google Drive ou depuis l'import d'un fichier `.zip` avec option anti-doublons ou écrasement. | 🟢 Terminé |
+| **Automatisation & Politique de Rétention** | Planification automatique configurable (Quotidienne, Hebdo, Mensuelle) avec élagage automatique des sauvegardes excédentaires ($N$ archives conservées). | 🟢 Terminé |
+| **Page Dédiée Filament (`ManageCloudBackups`)** | Tableau de bord épuré affichant le statut du compte Google lié (`email`), les volumes totaux, l'historique et les actions 1-clic. | 🟢 Terminé |
 
 ---
 
-### 2.10 Qualité & Suite de Tests Automatisés
+### 2.10 Tracking & Statistiques des Visites et Partages
+
+| Fonctionnalité | Description Technique & Fonctionnelle | Statut |
+| :--- | :--- | :---: |
+| **Tracking des Partages de Liens (`/share/{token}`)** | Génération de liens de partage chiffrés avec suivi complet du cycle de vie : `sent` ➔ `opened` (`opened_at`) ➔ `clicked` (`clicked_at`). | 🟢 Terminé |
+| **Gestion des Expirations des Partages** | Détection automatique des liens expirés (`expires_at`) avec redirection vers une page d'information dédiée `410 Gone` (`link-expired.blade.php`). | 🟢 Terminé |
+| **Tracking Direct des Clics (`/links/{link}/visit`)** | Contrôleur [`LinkVisitController`](file:///c:/Users/D3vOs/Projets/Laravel/Web/links-vault/app/Http/Controllers/LinkVisitController.php) interceptant chaque clic sur « Ouvrir » dans la table des liens pour incrémenter `visit_count` et mettre à jour `last_visited_at`. | 🟢 Terminé |
+| **Restitution des Statistiques** | Colonnes de visites dans `LinksTable`, fiches de détails `ViewLink`, vues de dossiers `ViewFolder` et totalisation dans le widget `StatsOverviewWidget`. | 🟢 Terminé |
+
+---
+
+### 2.11 Qualité & Suite de Tests Automatisés
 
 - **Outil de test** : Pest PHP 4 / PHPUnit 12
-- **Couverture actuelle** : **45 tests automatisés passants (193 assertions)**
+- **Couverture actuelle** : **55 tests automatisés passants (231 assertions)**
 - **Domaines testés** :
   - Inscription d'utilisateur & création automatique d'espace personnel.
   - Connexion & authentification Filament / Sanctum.
+  - Page de profil utilisateur multi-tenant (`EditProfileTest`).
   - Isolation stricte des données entre locataires (Multi-Tenancy security).
   - Gestion du CRUD des liens et validation des permissions.
   - Agents IA `LinkSummaryAgent::fake()`, actions et jobs de file d'attente.
   - Importateur et exportateur universel Netscape HTML, JSON et CSV avec vérification de ré-importation et gestion des doublons.
-  - Génération d'archive ZIP de sauvegarde, upload sur connecteurs, purge de rétention et restauration complète (`CloudBackupTest`).
+  - Génération d'archive ZIP de sauvegarde, upload sur Google Drive et Local, purge de rétention et restauration complète (`CloudBackupTest`).
+  - Flux OAuth2 Google Drive avec génération d'URL, scopes et déconnexion (`GoogleDriveOAuthTest`).
+  - Tracking des clics directs, redirections et cycle de vie des liens partagés (`LinkTrackingTest`).
 
 ---
 
@@ -225,13 +248,15 @@ Lors de la rédaction des documentations finales, ce document servira de plan di
 3. **Packaging Desktop** : Procédures de build NativePHP pour Windows (`.exe` / `.msi`) et macOS (`.dmg`).
 4. **Extension Clipper** : Structure Manifest V3, cycle de vie du background service worker et permissions requises.
 5. **Intégration IA** : Configuration des providers `Laravel\Ai` (OpenAI, Gemini, Anthropic, Ollama).
+6. **Sauvegardes Cloud** : Architecture OAuth2 Google Drive, connecteurs de stockage et schéma des archives ZIP.
 
 ### 📗 Pour la Documentation Utilisateur (Guides & Tutoriels) :
 1. **Démarrage Rapide** : Création de compte, découverte de l'espace personnel, installation de l'extension de navigateur.
 2. **Guide de la Capture** : Utilisation du raccourci `Alt + S`, capture de vidéos YouTube, enregistrement de notes depuis une sélection.
 3. **Organisation Efficace** : Utilisation des dossiers, catégories, tags et bascule entre la vue Grille et la vue Table.
 4. **Productivité & Raccourcis** : Navigation clavier avec `Ctrl + K`, favoris rapides ⭐, navigation SPA instantanée.
-5. **Collaboration en Équipe** : Invitation de collaborateurs, gestion des rôles et partages de dossiers.
+5. **Sauvegardes & Sécurité** : Liaison de Google Drive en 1 clic, exportations et restauration en cas de besoin.
+6. **Collaboration en Équipe** : Invitation de collaborateurs, gestion des rôles et partages de dossiers.
 
 ---
 *Document maintenu automatiquement pour l'équipe LinksVault.*
