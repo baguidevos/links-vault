@@ -39,7 +39,7 @@ graph LR
 | **Phase 5** | **Cloud & Sauvegardes** | Google Drive OAuth 1-clic, Sauvegarde locale chiffrée, Restauration 1-clic, Tracking | 🟢 **Terminé (100%)** |
 | **Phase 6** | **Santé des Liens (Health)** | Détecteur de liens morts (HTTP 200/404/500, timeouts, redirections), Badges, Filtres & Scan en masse | 🟢 **Terminé (100%)** |
 | **Phase 7** | **Monétisation SaaS** | Plans tarifaires (*Free/Pro/Team*), Gestion des quotas & limites (Subbase/Stripe/Mobile Money) | 🟢 **Terminé (100%)** |
-| **Phase 8** | **Recherche Sémantique** | Embeddings vectoriels, Recherche par concept / intention (`laravel/ai` vectors) | 🟣 **À venir (Prochaine Étape)** |
+| **Phase 8** | **Recherche Sémantique** | Embeddings vectoriels, Recherche par concept / intention (`laravel/ai` vectors) | 🟢 **Terminé (100%)** |
 | **Phase 9** | **Distribution Finale** | Package Chrome/Firefox Store, Builds installateurs Windows (`.exe`) & macOS (`.dmg`) | 🔴 **À venir (Phase Finale)** |
 
 ---
@@ -136,7 +136,26 @@ graph LR
   - Blocage de création de lien dans `CreateLinkAction` et API Sanctum (`QUOTA_EXCEEDED`).
   - Décompte et vérification des résumés IA dans `GenerateAiSummaryAction`.
 - [x] **Suite de Tests Pest Dédiée (`SubscriptionQuotaTest.php`)** : 7 tests passants couvrant 100% des règles d'abonnements et quotas.
-- [x] **Suite Globale** : **70 tests passants (285 assertions)**.
+
+---
+
+### 🔹 Phase 8 : Recherche Sémantique & Embeddings IA (Vector Search) 🟢
+- [x] **Modèle de Données & Migration Vectorielle** :
+  - Colonnes `embedding` (array/longText), `embedding_model` et `embedding_generated_at` dans la table `links`.
+- [x] **Service Sémantique Vectoriel (`SemanticSearchService`)** :
+  - Génération d'embeddings vectoriels via `Laravel\Ai\Embeddings`.
+  - Construction du contexte enrichi (Titre + Description + Tags + Résumé IA + Objectif).
+  - Moteur de calcul de similarité cosinus avec normalisation et pourcentages de pertinence.
+  - Recherche vectorielle multi-tenants avec seuil de similarité et tri par score.
+- [x] **Automatisation & Tâches Asynchrones** :
+  - Job de file d'attente `GenerateLinkEmbeddingJob` pour l'indexation non-bloquante.
+  - Déclenchement automatique à la création de lien (`CreateLinkAction`) et enrichissement post-résumé IA (`GenerateAiSummaryAction`).
+  - Commande Artisan `php artisan links:generate-embeddings {--team=} {--force}` avec barre de progression.
+- [x] **Interface Utilisateur Filament (`ListLinks`)** :
+  - Action d'en-tête « 🧠 Recherche IA » ouvrant une modale de recherche en langage naturel.
+  - Vue de résultats dédiés [`semantic-search-results.blade.php`](file:///c:/Users/D3vOs/Projets/Laravel/Web/links-vault/resources/views/filament/modals/semantic-search-results.blade.php) avec badges de pertinence (🎯 %), extraits de résumés et boutons d'action 1-clic.
+- [x] **Suite de Tests Pest Dédiée (`SemanticSearchTest.php`)** : 7 tests automatisés passants.
+- [x] **Suite Globale** : **77 tests passants (303 assertions)**.
 
 ---
 
@@ -146,33 +165,9 @@ graph LR
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          PROCHAINES PRIORITÉS                               │
 └─────────────────────────────────────────────────────────────────────────────┘
-  1. 🧠 Phase 8 : Recherche Sémantique & Embeddings IA (Vector Search)
-  2. 📊 Graphiques & Analytics Visuels Avancés
-  3. 📦 Phase 9 : Packaging Final & Déploiement Stores
+  1. 📊 Graphiques & Analytics Visuels Avancés (Consultations 30j, Répartition Médias)
+  2. 📦 Phase 9 : Distribution Finale & Builds Desktop (.exe, .dmg)
 ```
-- [ ] **Middleware & Vérification des Quotas** :
-  - Contrôle avant création de lien (`CanCreateLink` check).
-  - Contrôle avant génération de résumé IA (`CanUseAiSummary` check).
-  - Barre de progression visuelle d'utilisation du quota sur le tableau de bord.
-- [ ] **Portail de Gestion d'Abonnement (Stripe Checkout & Billing Portal)** :
-  - Redirection sécurisée vers Stripe pour le paiement par carte bancaire.
-  - Gestion de la mise à niveau (*Upgrade*), rétrogradation (*Downgrade*) et annulation.
-
----
-
-### 🔹 Phase 7 : Recherche Sémantique & Embeddings IA (Priorité 2) 🟣
-- [ ] **Génération d'Embeddings Vectoriels** :
-  - Indexation vectorielle automatique du titre, de la description et du résumé IA à l'enregistrement d'un lien.
-  - Stockage des vecteurs via `Laravel\Ai` (OpenAI / Voyage / Cohere embeddings).
-- [ ] **Recherche par Intention / Concept** :
-  - Possibilité de rechercher par idée (ex: *« tutoriels pour débuter avec docker »*) même si les mots exacts ne figurent pas dans le titre.
-  - Intégration transparente dans la palette de commande universelle (`Ctrl + K`).
-
----
-
-### 🔹 Phase 8 : Détecteur de Liens Morts & Dashboard Analytics (Priorité 3) 🟡
-- [ ] **Scanner de Santé des Liens (Broken Link Checker)** :
-  - Commande planifiée (`links:check-health`) qui vérifie le code HTTP (200, 301, 404, 500) en tâche de fond.
   - Badge visuel sur chaque lien : 🟢 En ligne, 🟡 Redirection, 🔴 Lien mort.
   - Notification automatique à l'utilisateur lorsqu'un lien devient inaccessible.
 - [ ] **Graphiques Statistiques Avancés (Filament Charts)** :

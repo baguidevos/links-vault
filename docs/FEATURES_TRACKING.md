@@ -233,10 +233,22 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 
 ---
 
-### 2.13 Qualité & Suite de Tests Automatisés
+### 2.13 Recherche Sémantique & Embeddings IA (Vector Search)
+
+| Fonctionnalité | Description Technique & Fonctionnelle | Statut |
+| :--- | :--- | :---: |
+| **Génération d'Embeddings Vectoriels (`Laravel\Ai\Embeddings`)** | Indexation vectorielle du contexte enrichi (titre, description, tags, résumé IA, objectif, dossier) sauvegardé dans `links.embedding`. | 🟢 Terminé |
+| **Service Sémantique (`SemanticSearchService`)** | Calcul de similarité cosinus, filtrage par tenant et tri par score de pertinence décroissant. | 🟢 Terminé |
+| **Indexation Asynchrone (`GenerateLinkEmbeddingJob`)** | Job en arrière-plan déclenché à la création du lien et ré-exécuté après enrichissement par le résumé IA. | 🟢 Terminé |
+| **Commande Artisan CLI (`links:generate-embeddings`)** | Commande console avec barre de progression pour l'indexation/réindexation en masse (`--team`, `--force`). | 🟢 Terminé |
+| **Modale Filament de Recherche IA** | Action d'en-tête « 🧠 Recherche IA » dans `ListLinks` avec recherche en langage naturel et vue détaillée des résultats avec score (%) (`semantic-search-results.blade.php`). | 🟢 Terminé |
+
+---
+
+### 2.14 Qualité & Suite de Tests Automatisés
 
 - **Outil de test** : Pest PHP 4 / PHPUnit 12
-- **Couverture actuelle** : **70 tests automatisés passants (285 assertions)**
+- **Couverture actuelle** : **77 tests automatisés passants (303 assertions)**
 - **Domaines testés** :
   - Inscription d'utilisateur & création automatique d'espace personnel.
   - Connexion & authentification Filament / Sanctum.
@@ -250,17 +262,18 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
   - Tracking des clics directs, redirections et cycle de vie des liens partagés (`LinkTrackingTest`).
   - Détection complète des codes HTTP (200, 301, 404, 500), timeouts réseau, job asynchrone et commande CLI (`LinkHealthTest`).
   - Souscription par défaut, respect des limites de liens et résumés IA, upgrade de plan et affichage Filament (`SubscriptionQuotaTest`).
+  - Génération de vecteurs, calcul cosinus, recherche par intention, job et commande CLI (`SemanticSearchTest`).
 
 ---
 
 ## 3. Feuille de Route des Fonctionnalités Futures
 
-### 3.1 Phase 8 : Recherche Sémantique & Embeddings IA (Laravel AI SDK)
+### 3.1 Graphiques & Analytics Visuels Avancés (Filament Charts)
 
 | Fonctionnalité Prévue | Objectif Technique | Impact Utilisateur |
 | :--- | :--- | :--- |
-| **Indexation Vectorielle des Liens** | Génération automatique d'embeddings vectoriels à partir du titre, de la description, des tags et du résumé IA (`Laravel\Ai\Embeddings`). | Indexation sémantique complète des liens. |
-| **Recherche par Intention / Concept** | Calcul de similarité cosinus ou recherche vectorielle pour trouver des liens même si la requête ne contient pas les mots-clés exacts. | Recherche intelligente et intuitive dans la palette `Ctrl+K`. |
+| **Évolution des Consultations sur 30 jours** | Graphique linéaire des clics et ajouts quotidiens. | Visibilité sur l'engagement. |
+| **Répartition par Médias & Domaines** | Camembert des formats (YouTube, Articles, PDF, etc.). | Analyse visuelle de la collection. |
 
 ---
 
