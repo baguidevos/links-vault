@@ -26,6 +26,7 @@ class GoogleDriveAuthController extends Controller
     {
         $client = new Client;
         $client->setClientId((string) config('services.google.client_id', env('GOOGLE_CLIENT_ID')));
+        $client->setClientSecret((string) config('services.google.client_secret', env('GOOGLE_CLIENT_SECRET')));
         $redirect = $redirectUri ?: (config('services.google.redirect_uri') ?: route('auth.google-drive.callback'));
         $client->setRedirectUri($redirect);
         $client->addScope([
