@@ -4,12 +4,13 @@ namespace App\Models;
 
 use App\Concerns\AddTeamId;
 use App\Concerns\AddUserId;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LinkShare extends Model
 {
-    use AddTeamId, AddUserId;
+    use AddTeamId, AddUserId, HasUuids;
 
     protected $keyType = 'string';
 

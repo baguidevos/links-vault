@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Models\LinkShare;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Throwable;
 
 class LinkShareController extends Controller
 {
@@ -50,9 +54,11 @@ class LinkShareController extends Controller
             }
 
             // Rediriger vers l'URL originale
-            return redirect()->to($share->link->url);
+            return redirect()->to($share->link?->url ?? '/');
 
-        } catch (\Exception $e) {
+        } catch (HttpExceptionInterface $e) {
+            throw $e;
+        } catch (Throwable $e) {
             Log::error('Erreur lors du tracking de partage', [
                 'token' => $token,
                 'error' => $e->getMessage(),

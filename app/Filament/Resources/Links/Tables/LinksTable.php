@@ -184,7 +184,7 @@ class LinksTable
                             ->color('gray')
                             ->iconButton()
                             ->tooltip(__('Ouvrir dans le navigateur'))
-                            ->url(fn (Link $record): string => $record->url, shouldOpenInNewTab: true),
+                            ->url(fn (Link $record): string => route('links.visit', $record), shouldOpenInNewTab: true),
 
                         ViewAction::make('voir')
                             ->label(__('Aperçu'))

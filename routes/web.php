@@ -6,6 +6,7 @@ use App\Http\Controllers\ExtensionDownloadController;
 use App\Http\Controllers\GlmController;
 use App\Http\Controllers\GoogleDriveAuthController;
 use App\Http\Controllers\LinkShareController;
+use App\Http\Controllers\LinkVisitController;
 use App\Services\GlmService;
 use App\Services\WebPageMetadataService;
 use Illuminate\Support\Facades\Mail;
@@ -59,6 +60,10 @@ Route::prefix('glm')->group(function () {
 // Route de tracking pour les liens partagés
 Route::get('/share/{token}', [LinkShareController::class, 'redirect'])
     ->name('links.share.redirect');
+
+// Route de tracking et redirection directe pour les liens
+Route::get('/links/{link}/visit', LinkVisitController::class)
+    ->name('links.visit');
 
 Route::get('/team-invitations/{code}/accept', AcceptInvitationController::class)
     ->middleware(['web', 'signed'])
