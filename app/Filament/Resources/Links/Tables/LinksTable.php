@@ -4,11 +4,13 @@ namespace App\Filament\Resources\Links\Tables;
 
 use App\Actions\LinkActions\GenerateAiSummaryAction;
 use App\Enums\ContentType;
+use App\Enums\LinkHealthStatus;
 use App\Enums\LinkVisibility;
 use App\Filament\Resources\Links\Actions\ChangeVisibilityAction;
 use App\Models\Folder;
 use App\Models\Link;
 use App\Services\ContentDetectionService;
+use App\Services\LinkHealthService;
 use App\Services\WebPageMetadataService;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\Action;
@@ -88,6 +90,10 @@ class LinksTable
                         '0' => __('No'),
                     ])
                     ->query(fn ($query) => $query->where('is_archived', false)),
+                SelectFilter::make('health_status')
+                    ->label(__('Santé du lien'))
+                    ->options(collect(LinkHealthStatus::cases())->mapWithKeys(fn ($case) => [$case->value => $case->getLabel()])->toArray())
+                    ->searchable(),
                 SelectFilter::make('visibility')
                     ->label(__('Visibilité'))
                     ->options(collect(LinkVisibility::cases())->mapWithKeys(fn ($case) => [$case->value => $case->getLabel()])->toArray())
@@ -161,6 +167,21 @@ class LinksTable
                                 ContentType::Image => 'success',
                                 ContentType::Other => 'gray',
                             }),
+                        TextColumn::make('health_status')
+                            ->label(__('Santé'))
+                            ->badge()
+                            ->formatStateUsing(fn (?LinkHealthStatus $state, Link $record): string => match ($state) {
+                                LinkHealthStatus::Healthy => $record->http_status ? "{$record->http_status} OK" : 'En ligne',
+                                LinkHealthStatus::Redirect => $record->http_status ? "{$record->http_status} Redir" : 'Redirection',
+                                LinkHealthStatus::Broken => $record->http_status ? "{$record->http_status} Mort" : 'Lien mort',
+                                default => 'Non vérifié',
+                            })
+                            ->color(fn (?LinkHealthStatus $state): string => $state?->getColor() ?? 'gray')
+                            ->icon(fn (?LinkHealthStatus $state): ?string => $state?->getIcon() ?? TablerIcon::Help)
+                            ->tooltip(fn (Link $record): ?string => $record->health_error
+                                ? "Erreur : {$record->health_error}"
+                                : ($record->redirect_url ? "Redirige vers : {$record->redirect_url}" : ($record->last_health_checked_at ? "Vérifié le {$record->last_health_checked_at->format('d/m/Y H:i')}" : 'Jamais vérifié')))
+                            ->sortable(),
                         TextColumn::make('visibility')
                             ->label(__('Visibilité'))
                             ->badge()
@@ -209,6 +230,33 @@ class LinksTable
                             }),
 
                         ActionGroup::make([
+                            Action::make('check_health')
+                                ->label(__('Vérifier la disponibilité'))
+                                ->icon(TablerIcon::HeartRateMonitor)
+                                ->color('info')
+                                ->action(function (Link $record, LinkHealthService $healthService): void {
+                                    $res = $healthService->checkLink($record);
+                                    if ($res['health_status'] === LinkHealthStatus::Healthy) {
+                                        Notification::make()
+                                            ->title(__('Lien en ligne (HTTP :status)', ['status' => $res['status_code'] ?? 200]))
+                                            ->success()
+                                            ->send();
+                                    } elseif ($res['health_status'] === LinkHealthStatus::Redirect) {
+                                        Notification::make()
+                                            ->title(__('Lien redirigé (HTTP :status)', ['status' => $res['status_code']]))
+                                            ->body($res['redirect_url'] ? "Cible : {$res['redirect_url']}" : null)
+                                            ->warning()
+                                            ->send();
+                                    } else {
+                                        Notification::make()
+                                            ->title(__('Lien mort ou inaccessible'))
+                                            ->body($res['error'] ?? 'Impossible de joindre le site distant.')
+                                            ->danger()
+                                            ->send();
+                                    }
+                                })
+                                ->tooltip(__('Tester la disponibilité du lien en temps réel')),
+
                             Action::make('refresh_metadata')
                                 ->label(__('Actualiser miniature'))
                                 ->icon('heroicon-o-arrow-path')
@@ -262,6 +310,20 @@ class LinksTable
                             ->tooltip(__('Plus d\'actions')),
                     ])
                     ->toolbarActions([
+                        BulkAction::make('check_health_bulk')
+                            ->label(__('Vérifier la disponibilité'))
+                            ->icon(TablerIcon::HeartRateMonitor)
+                            ->color('info')
+                            ->action(function (Collection $records, LinkHealthService $healthService): void {
+                                $stats = $healthService->checkCollection($records);
+                                Notification::make()
+                                    ->title(__(':count lien(s) analysé(s)', ['count' => $stats['total']]))
+                                    ->body("🟢 {$stats['healthy']} en ligne, 🟡 {$stats['redirect']} redirections, 🔴 {$stats['broken']} liens morts.")
+                                    ->success()
+                                    ->send();
+                            })
+                            ->deselectRecordsAfterCompletion(),
+
                         BulkAction::make('refresh_metadata_bulk')
                             ->label(__('Actualiser les miniatures'))
                             ->icon('heroicon-o-arrow-path')

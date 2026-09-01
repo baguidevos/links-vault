@@ -80,6 +80,28 @@
                     <span>{{ $record->content_type->label() }}</span>
                 </span>
             @endif
+
+            @if ($record->health_status)
+                @php
+                    $healthEnum = $record->health_status instanceof \App\Enums\LinkHealthStatus ? $record->health_status : \App\Enums\LinkHealthStatus::tryFrom((string) $record->health_status);
+                @endphp
+                @if ($healthEnum === \App\Enums\LinkHealthStatus::Broken)
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md bg-red-600/90 text-white border border-red-400/40 shadow-xs" title="{{ $record->health_error ?? 'Lien inaccessible' }}">
+                        <x-filament::icon icon="heroicon-m-exclamation-triangle" class="w-2.5 h-2.5" />
+                        <span>Mort</span>
+                    </span>
+                @elseif ($healthEnum === \App\Enums\LinkHealthStatus::Redirect)
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold backdrop-blur-md bg-amber-600/90 text-white border border-amber-400/40 shadow-xs" title="{{ $record->redirect_url ? 'Redirection vers : ' . $record->redirect_url : '' }}">
+                        <x-filament::icon icon="heroicon-m-arrow-right" class="w-2.5 h-2.5" />
+                        <span>301</span>
+                    </span>
+                @elseif ($healthEnum === \App\Enums\LinkHealthStatus::Healthy)
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium backdrop-blur-md bg-black/60 text-emerald-400 border border-emerald-500/30 shadow-xs" title="En ligne (HTTP {{ $record->http_status ?? 200 }})">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        <span>200</span>
+                    </span>
+                @endif
+            @endif
         </div>
 
         {{-- Bouton Favori interactif (Toujours visible en bouton d'icône) --}}

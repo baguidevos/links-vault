@@ -3,18 +3,21 @@
 namespace App\Filament\Resources\Links\Pages;
 
 use App\Actions\LinkActions\CreateLinkAction;
+use App\Enums\LinkHealthStatus;
 use App\Filament\Resources\Links\LinkResource;
 use App\Filament\Resources\Links\Schemas\LinkForm;
 use App\Models\Folder;
 use App\Models\Link;
 use App\Services\BookmarksExportService;
 use App\Services\BookmarksImportService;
+use App\Services\LinkHealthService;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -80,6 +83,63 @@ class ListLinks extends ListRecords
                 ->color('gray')
                 ->outlined()
                 ->action(fn () => $this->toggleViewMode()),
+
+            Action::make('scan_health')
+                ->label(__('Scanner la santé'))
+                ->icon(TablerIcon::HeartRateMonitor)
+                ->color('gray')
+                ->outlined()
+                ->modalHeading(__('Vérification de la santé des liens'))
+                ->modalDescription(__('Testez la disponibilité de vos liens et détectez les liens morts (404, erreurs de connexion) ou les redirections.'))
+                ->modalIcon(TablerIcon::HeartRateMonitor)
+                ->form([
+                    Radio::make('scan_scope')
+                        ->label(__('Périmètre du scan'))
+                        ->options([
+                            'outdated' => __('Liens non vérifiés ou anciens (> 7 jours) [Recommandé]'),
+                            'all' => __('Tous les liens de l\'espace de travail'),
+                            'broken' => __('Revérifier uniquement les liens actuellement marqués comme morts'),
+                        ])
+                        ->default('outdated')
+                        ->required(),
+                ])
+                ->action(function (array $data, LinkHealthService $healthService) {
+                    $team = Filament::getTenant() ?? auth()->user()?->personalTeam();
+                    if (! $team) {
+                        return;
+                    }
+
+                    $query = Link::query()->where('team_id', $team->id);
+
+                    if ($data['scan_scope'] === 'broken') {
+                        $query->where('health_status', LinkHealthStatus::Broken->value);
+                    } elseif ($data['scan_scope'] === 'outdated') {
+                        $query->where(function ($q) {
+                            $q->whereNull('last_health_checked_at')
+                                ->orWhere('health_status', 'unknown')
+                                ->orWhere('last_health_checked_at', '<', now()->subDays(7));
+                        });
+                    }
+
+                    $links = $query->get();
+                    if ($links->isEmpty()) {
+                        Notification::make()
+                            ->title(__('Aucun lien à vérifier'))
+                            ->body(__('Tous les liens de votre espace sont à jour.'))
+                            ->info()
+                            ->send();
+
+                        return;
+                    }
+
+                    $stats = $healthService->checkCollection($links);
+
+                    Notification::make()
+                        ->title(__('Scan de santé terminé (:count vérifiés)', ['count' => $stats['total']]))
+                        ->body("🟢 {$stats['healthy']} en ligne, 🟡 {$stats['redirect']} redirections, 🔴 {$stats['broken']} liens morts.")
+                        ->success()
+                        ->send();
+                }),
 
             ActionGroup::make([
                 Action::make('export_html')

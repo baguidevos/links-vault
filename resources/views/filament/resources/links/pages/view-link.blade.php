@@ -98,6 +98,28 @@
                                 </span>
                             @endif
 
+                            @if ($record->health_status)
+                                @php
+                                    $healthEnum = $record->health_status instanceof \App\Enums\LinkHealthStatus ? $record->health_status : \App\Enums\LinkHealthStatus::tryFrom((string) $record->health_status);
+                                @endphp
+                                @if ($healthEnum === \App\Enums\LinkHealthStatus::Healthy)
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40" title="{{ $record->last_health_checked_at ? 'Vérifié le ' . $record->last_health_checked_at->format('d/m/Y H:i') : '' }}">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        <span>En ligne ({{ $record->http_status ?? 200 }})</span>
+                                    </span>
+                                @elseif ($healthEnum === \App\Enums\LinkHealthStatus::Redirect)
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40" title="{{ $record->redirect_url ? 'Redirige vers : ' . $record->redirect_url : '' }}">
+                                        <x-filament::icon icon="heroicon-m-arrow-right" class="w-3.5 h-3.5 text-amber-500" />
+                                        <span>Redirection ({{ $record->http_status ?? 301 }})</span>
+                                    </span>
+                                @elseif ($healthEnum === \App\Enums\LinkHealthStatus::Broken)
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 border border-red-200/60 dark:border-red-800/40" title="{{ $record->health_error ?? 'Lien inaccessible' }}">
+                                        <x-filament::icon icon="heroicon-m-exclamation-triangle" class="w-3.5 h-3.5 text-red-500" />
+                                        <span>Lien Mort {{ $record->http_status ? "({$record->http_status})" : '' }}</span>
+                                    </span>
+                                @endif
+                            @endif
+
                             @if ($record->is_archived)
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
                                     <x-filament::icon icon="heroicon-m-archive-box" class="w-3.5 h-3.5" />
@@ -268,6 +290,15 @@
                             <x-filament::icon icon="heroicon-o-arrow-top-right-on-square" class="w-4 h-4" />
                             <span>Ouvrir le lien</span>
                         </a>
+
+                        <button 
+                            type="button" 
+                            wire:click="mountAction('check_health')"
+                            class="inline-flex items-center justify-center gap-2 w-full px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-xl transition"
+                        >
+                            <x-filament::icon icon="heroicon-o-heart" class="w-4 h-4 text-emerald-500" />
+                            <span>Tester la disponibilité</span>
+                        </button>
 
                         <button 
                             type="button" 

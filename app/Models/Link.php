@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Concerns\AddUserId;
 use App\Enums\ContentType;
 use App\Enums\FolderVisibility;
+use App\Enums\LinkHealthStatus;
 use App\Enums\LinkVisibility;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,18 +40,41 @@ class Link extends Model
         'is_archived',
         'visit_count',
         'last_visited_at',
+        'http_status',
+        'health_status',
+        'last_health_checked_at',
+        'health_error',
+        'redirect_url',
     ];
 
     protected $casts = [
         'url' => 'string',
         'content_type' => ContentType::class,
         'visibility' => LinkVisibility::class,
+        'health_status' => LinkHealthStatus::class,
         'metadata' => 'array',
         'is_favorite' => 'boolean',
         'is_archived' => 'boolean',
         'visit_count' => 'integer',
+        'http_status' => 'integer',
         'last_visited_at' => 'datetime',
+        'last_health_checked_at' => 'datetime',
     ];
+
+    public function isHealthy(): bool
+    {
+        return $this->health_status === LinkHealthStatus::Healthy;
+    }
+
+    public function isBroken(): bool
+    {
+        return $this->health_status === LinkHealthStatus::Broken;
+    }
+
+    public function isRedirect(): bool
+    {
+        return $this->health_status === LinkHealthStatus::Redirect;
+    }
 
     /**
      * Obtenir les métadonnées sous forme de tableau garanti.

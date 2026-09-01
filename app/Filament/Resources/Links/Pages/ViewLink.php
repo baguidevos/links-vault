@@ -3,12 +3,15 @@
 namespace App\Filament\Resources\Links\Pages;
 
 use App\Actions\LinkActions\GenerateAiSummaryAction;
+use App\Enums\LinkHealthStatus;
 use App\Filament\Resources\Links\Actions\ChangeVisibilityAction;
 use App\Filament\Resources\Links\Actions\ShareLinkModalAction;
 use App\Filament\Resources\Links\LinkResource;
 use App\Models\Link;
 use App\Services\ContentDetectionService;
+use App\Services\LinkHealthService;
 use App\Services\WebPageMetadataService;
+use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
@@ -98,6 +101,34 @@ class ViewLink extends ViewRecord
                 ->label(__('Modifier')),
 
             ActionGroup::make([
+                Action::make('check_health')
+                    ->label(__('Vérifier disponibilité 🩺'))
+                    ->icon(TablerIcon::HeartRateMonitor)
+                    ->color('info')
+                    ->action(function (LinkHealthService $healthService) {
+                        $res = $healthService->checkLink($this->record);
+                        $this->record->refresh();
+
+                        if ($res['health_status'] === LinkHealthStatus::Healthy) {
+                            Notification::make()
+                                ->title(__('Lien en ligne (HTTP :status)', ['status' => $res['status_code'] ?? 200]))
+                                ->success()
+                                ->send();
+                        } elseif ($res['health_status'] === LinkHealthStatus::Redirect) {
+                            Notification::make()
+                                ->title(__('Lien redirigé (HTTP :status)', ['status' => $res['status_code']]))
+                                ->body($res['redirect_url'] ? "Cible : {$res['redirect_url']}" : null)
+                                ->warning()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title(__('Lien mort ou inaccessible'))
+                                ->body($res['error'] ?? 'Impossible de joindre le site distant.')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
                 ShareLinkModalAction::make()
                     ->record($this->record),
 

@@ -37,9 +37,9 @@ graph LR
 | **Phase 3** | **Organisation & UX** | Vues Grille/Table, Favoris ⭐, Palette Ctrl+K, Recherche instantanée, SPA wire:navigate | 🟢 **Terminé (100%)** |
 | **Phase 4** | **IA & Intelligence** | Résumés automatiques, points clés, auto-tagging (Laravel AI SDK) | 🟢 **Terminé (100%)** |
 | **Phase 5** | **Cloud & Sauvegardes** | Google Drive OAuth 1-clic, Sauvegarde locale chiffrée, Restauration 1-clic, Tracking | 🟢 **Terminé (100%)** |
-| **Phase 6** | **Monétisation SaaS** | Plans tarifaires (*Free/Pro/Team*), Gestion des quotas & limites (Subbase/Stripe) | 🔵 **À venir (Priorité 1)** |
-| **Phase 7** | **Recherche Sémantique** | Embeddings vectoriels, Recherche par concept / intention (`laravel/ai` vectors) | 🟣 **À venir (Priorité 2)** |
-| **Phase 8** | **Santé & Analytics** | Détecteur de liens morts (HTTP ping), Graphiques d'activité & statistiques visuelles | 🟡 **À venir (Priorité 3)** |
+| **Phase 6** | **Santé des Liens (Health)** | Détecteur de liens morts (HTTP 200/404/500, timeouts, redirections), Badges, Filtres & Scan en masse | 🟢 **Terminé (100%)** |
+| **Phase 7** | **Monétisation SaaS** | Plans tarifaires (*Free/Pro/Team*), Gestion des quotas & limites (Subbase/Stripe) | 🔵 **À venir (Prochaine Étape)** |
+| **Phase 8** | **Recherche Sémantique** | Embeddings vectoriels, Recherche par concept / intention (`laravel/ai` vectors) | 🟣 **À venir (Priorité 2)** |
 | **Phase 9** | **Distribution Finale** | Package Chrome/Firefox Store, Builds installateurs Windows (`.exe`) & macOS (`.dmg`) | 🔴 **À venir (Phase Finale)** |
 
 ---
@@ -99,7 +99,23 @@ graph LR
 - [x] **Tracking & Statistiques des Liens & Partages** :
   - Tracking direct des clics via [`LinkVisitController`](app/Http/Controllers/LinkVisitController.php) (`/links/{link}/visit`).
   - Suivi des liens partagés via [`LinkShareController`](app/Http/Controllers/LinkShareController.php) (`/share/{token}`) avec détection d'ouverture, de clic et page `410 Gone` pour les liens expirés.
-- [x] **Suite de Tests Pest Automatisés** : **55 tests passants (231 assertions)**.
+- [x] **Suite de Tests Pest Automatisés** : **63 tests passants (263 assertions)**.
+
+---
+
+### 🔹 Phase 6 : Détecteur de Liens Morts & Scanner de Santé (Health Check) 🟢
+- [x] **Enum d'État de Santé (`LinkHealthStatus`)** : `healthy` (🟢 200 OK), `redirect` (🟡 301/302), `broken` (🔴 404/500/Timeout), `unknown` (⚪ Non vérifié).
+- [x] **Moteur d'Analyse HTTP Résilient (`LinkHealthService`)** : Requêtes `HEAD`/`GET` avec simulation User-Agent navigateur, détection automatique des codes HTTP, redirections cibles et capture détaillée des erreurs (timeouts, DNS, SSL).
+- [x] **Tâche Asynchrone en File d'Attente (`CheckLinkHealthJob`)** : Analyse en arrière-plan sans ralentir l'interface utilisateur.
+- [x] **Commande Artisan Planifiable (`CheckLinksHealthCommand`)** : `php artisan links:check-health` avec barre de progression et tableau récapitulatif.
+- [x] **Intégration UI Complète (Filament)** :
+  - Colonne badge `Santé` dans la vue Table avec code HTTP et infobulle détaillée (date de vérification, URL de redirection, message d'erreur).
+  - Filtre par état de santé (`health_status`).
+  - Action 1-clic de test en direct sur chaque lien et action en masse (Bulk Action).
+  - Action d'en-tête « 🩺 Scanner la santé » dans `ListLinks` avec sélection du périmètre (liens non vérifiés, liens morts ou espace entier).
+  - Pastille d'état visuelle sur les cartes de la vue Grille (`link-card`).
+  - Bouton et badge d'état sur la fiche détaillée (`ViewLink`).
+- [x] **Suite de Tests Pest Dédiée** : 8 tests automatisés avec `Http::fake()` couvrant 100% des cas d'usage.
 
 ---
 
