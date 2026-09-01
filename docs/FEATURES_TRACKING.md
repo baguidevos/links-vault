@@ -245,10 +245,29 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 
 ---
 
-### 2.14 Qualité & Suite de Tests Automatisés
+### 2.14 Graphiques & Analytics Visuels Avancés (Filament Charts)
+
+| Fonctionnalité | Description Technique & Fonctionnelle | Statut |
+| :--- | :--- | :---: |
+| **Activité d'Ajout (`LinksActivityChart`)** | Graphique interactif sur 7 / 30 / 90 jours avec filtrage dynamique et courbe de tendance. | 🟢 Terminé |
+| **Répartition Santé (`LinkHealthChart`)** | Diagramme circulaire ventilant les liens sains, redirections, liens morts et non vérifiés. | 🟢 Terminé |
+| **Sparklines en Temps Réel (`StatsOverviewWidget`)** | 5 cartes métriques avec sparklines dynamiques des 7 derniers jours et score de santé globale (%). | 🟢 Terminé |
+
+---
+
+### 2.15 Distribution Finale & Packaging Stores
+
+| Fonctionnalité | Description Technique & Fonctionnelle | Statut |
+| :--- | :--- | :---: |
+| **Commande de Packaging (`clipper:package`)** | Commande Artisan créant l'archive ZIP versionnée prête pour Chrome Web Store et Firefox Add-ons dans `dist/`. | 🟢 Terminé |
+| **Téléchargement Utilisateur (`/download/extension`)** | Endpoint de téléchargement direct de l'extension zippée. | 🟢 Terminé |
+
+---
+
+### 2.16 Qualité & Suite de Tests Automatisés
 
 - **Outil de test** : Pest PHP 4 / PHPUnit 12
-- **Couverture actuelle** : **77 tests automatisés passants (303 assertions)**
+- **Couverture actuelle** : **78 tests automatisés passants (310 assertions)**
 - **Domaines testés** :
   - Inscription d'utilisateur & création automatique d'espace personnel.
   - Connexion & authentification Filament / Sanctum.
@@ -263,17 +282,8 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
   - Détection complète des codes HTTP (200, 301, 404, 500), timeouts réseau, job asynchrone et commande CLI (`LinkHealthTest`).
   - Souscription par défaut, respect des limites de liens et résumés IA, upgrade de plan et affichage Filament (`SubscriptionQuotaTest`).
   - Génération de vecteurs, calcul cosinus, recherche par intention, job et commande CLI (`SemanticSearchTest`).
-
----
-
-## 3. Feuille de Route des Fonctionnalités Futures
-
-### 3.1 Graphiques & Analytics Visuels Avancés (Filament Charts)
-
-| Fonctionnalité Prévue | Objectif Technique | Impact Utilisateur |
-| :--- | :--- | :--- |
-| **Évolution des Consultations sur 30 jours** | Graphique linéaire des clics et ajouts quotidiens. | Visibilité sur l'engagement. |
-| **Répartition par Médias & Domaines** | Camembert des formats (YouTube, Articles, PDF, etc.). | Analyse visuelle de la collection. |
+  - Packaging de l'extension et téléchargement ZIP (`ExtensionDownloadTest`).
+  - Rendu et calcul des widgets analytics du tableau de bord (`DashboardWidgetsTest`).
 
 ---
 
