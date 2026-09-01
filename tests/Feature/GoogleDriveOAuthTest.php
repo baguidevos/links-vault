@@ -51,7 +51,7 @@ test('google drive disconnect removes user tokens and deactivates config', funct
     GoogleDrive::create([
         'user_id' => $user->id,
         'team_id' => $team->id,
-        'access_token' => 'dummy_token',
+        'access_token' => ['access_token' => 'dummy_token', 'expires_in' => 3600],
         'refresh_token' => 'dummy_refresh',
         'expires_at' => now()->addHour(),
         'email' => 'test@gmail.com',

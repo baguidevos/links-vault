@@ -172,7 +172,7 @@ class GoogleDriveAuthController extends Controller
                 ['user_id' => $user->id],
                 [
                     'team_id' => $teamId,
-                    'access_token' => is_array($token) ? json_encode($token) : (string) $token,
+                    'access_token' => is_array($token) ? $token : json_decode((string) $token, true),
                     'refresh_token' => (string) ($refreshToken ?: ''),
                     'expires_at' => now()->addSeconds($expiresIn),
                     'email' => $email,

@@ -23,7 +23,7 @@ class GoogleDrive extends Model
     ];
 
     protected $casts = [
-        'access_token' => 'encrypted',
+        'access_token' => 'encrypted:array',
         'refresh_token' => 'encrypted',
         'expires_at' => 'datetime',
     ];
