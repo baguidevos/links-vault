@@ -6,6 +6,7 @@ namespace App\Actions\LinkActions;
 
 use App\Enums\LinkVisibility;
 use App\Jobs\GenerateLinkAiSummaryJob;
+use App\Jobs\GenerateLinkEmbeddingJob;
 use App\Models\Link;
 use App\Models\Team;
 use App\Models\User;
@@ -94,6 +95,8 @@ class CreateLinkAction
 
         if ($generateAiSummary) {
             GenerateLinkAiSummaryJob::dispatch($link);
+        } else {
+            GenerateLinkEmbeddingJob::dispatch($link);
         }
 
         return $link;

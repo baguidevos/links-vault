@@ -11,6 +11,7 @@ use App\Models\Link;
 use App\Services\BookmarksExportService;
 use App\Services\BookmarksImportService;
 use App\Services\LinkHealthService;
+use App\Services\SemanticSearchService;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -19,6 +20,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
@@ -83,6 +85,63 @@ class ListLinks extends ListRecords
                 ->color('gray')
                 ->outlined()
                 ->action(fn () => $this->toggleViewMode()),
+
+            Action::make('semantic_search')
+                ->label(__('Recherche IA'))
+                ->icon('heroicon-m-sparkles')
+                ->color('primary')
+                ->outlined()
+                ->modalHeading(__('🧠 Recherche Sémantique & Intelligente (IA)'))
+                ->modalDescription(__('Trouvez vos liens par idée, concept ou intention en langage naturel (ex: "guides pour configurer docker sur linux", "articles design system"...).'))
+                ->modalIcon('heroicon-o-sparkles')
+                ->modalSubmitActionLabel(__('Lancer la recherche'))
+                ->modalWidth('2xl')
+                ->form([
+                    TextInput::make('search_query')
+                        ->label(__('Que recherchez-vous ?'))
+                        ->placeholder(__('ex: tutoriels pour dockeriser une application laravel'))
+                        ->required()
+                        ->autofocus(),
+                    Select::make('min_similarity')
+                        ->label(__('Précision de correspondance'))
+                        ->options([
+                            '0.15' => __('Large (15%+ de similarité)'),
+                            '0.25' => __('Équilibré (25%+ de similarité) [Recommandé]'),
+                            '0.40' => __('Strict (40%+ de similarité)'),
+                        ])
+                        ->default('0.25'),
+                ])
+                ->action(function (array $data, SemanticSearchService $searchService, $livewire) {
+                    $team = Filament::getTenant() ?? auth()->user()?->personalTeam();
+                    $results = $searchService->search(
+                        query: $data['search_query'],
+                        team: $team,
+                        limit: 15,
+                        minSimilarity: (float) ($data['min_similarity'] ?? 0.25)
+                    );
+
+                    $livewire->mountAction('show_semantic_results', [
+                        'query' => $data['search_query'],
+                        'results' => $results,
+                    ]);
+                }),
+
+            Action::make('show_semantic_results')
+                ->hidden()
+                ->modalHeading(fn (array $arguments) => __('🧠 Résultats IA pour : ":query"', ['query' => $arguments['query'] ?? '']))
+                ->modalWidth('3xl')
+                ->modalSubmitAction(false)
+                ->modalCancelActionLabel(__('Fermer'))
+                ->modalContent(function (array $arguments, SemanticSearchService $searchService) {
+                    $team = Filament::getTenant() ?? auth()->user()?->personalTeam();
+                    $query = $arguments['query'] ?? '';
+                    $results = $arguments['results'] ?? $searchService->search($query, $team, 15, 0.15);
+
+                    return view('filament.modals.semantic-search-results', [
+                        'query' => $query,
+                        'results' => $results,
+                    ]);
+                }),
 
             Action::make('scan_health')
                 ->label(__('Scanner la santé'))

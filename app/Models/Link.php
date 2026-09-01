@@ -45,6 +45,9 @@ class Link extends Model
         'last_health_checked_at',
         'health_error',
         'redirect_url',
+        'embedding',
+        'embedding_model',
+        'embedding_generated_at',
     ];
 
     protected $casts = [
@@ -53,13 +56,59 @@ class Link extends Model
         'visibility' => LinkVisibility::class,
         'health_status' => LinkHealthStatus::class,
         'metadata' => 'array',
+        'embedding' => 'array',
         'is_favorite' => 'boolean',
         'is_archived' => 'boolean',
         'visit_count' => 'integer',
         'http_status' => 'integer',
         'last_visited_at' => 'datetime',
         'last_health_checked_at' => 'datetime',
+        'embedding_generated_at' => 'datetime',
     ];
+
+    public function hasEmbedding(): bool
+    {
+        return ! empty($this->embedding) && is_array($this->embedding);
+    }
+
+    /**
+     * Construire le texte enrichi pour l'indexation sémantique.
+     */
+    public function getEmbeddingText(): string
+    {
+        $parts = [];
+
+        if (! empty($this->title)) {
+            $parts[] = "Titre: {$this->title}";
+        }
+
+        if (! empty($this->description)) {
+            $parts[] = "Description: {$this->description}";
+        }
+
+        if (! empty($this->ai_summary)) {
+            $parts[] = "Résumé IA: {$this->ai_summary}";
+        }
+
+        if (! empty($this->tags)) {
+            $tagsStr = is_array($this->tags) ? implode(', ', $this->tags) : (string) $this->tags;
+            $parts[] = "Tags: {$tagsStr}";
+        }
+
+        if (! empty($this->objective)) {
+            $parts[] = "Objectif: {$this->objective}";
+        }
+
+        if ($this->relationLoaded('category') && $this->category) {
+            $parts[] = "Catégorie: {$this->category->name}";
+        }
+
+        if ($this->relationLoaded('folder') && $this->folder) {
+            $parts[] = "Dossier: {$this->folder->name}";
+        }
+
+        return implode("\n", $parts);
+    }
 
     public function isHealthy(): bool
     {

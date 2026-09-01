@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\LinkActions;
 
 use App\Ai\Agents\LinkSummaryAgent;
+use App\Jobs\GenerateLinkEmbeddingJob;
 use App\Models\Link;
 use App\Models\Tag;
 use App\Services\SubscriptionQuotaService;
@@ -129,6 +130,9 @@ class GenerateAiSummaryAction
             if ($user) {
                 app(SubscriptionQuotaService::class)->consumeAiSummary($user);
             }
+
+            // Ré-indexer vectoriellement avec le résumé IA enrichi
+            GenerateLinkEmbeddingJob::dispatch($link, true);
 
             return $link;
         } catch (Throwable $e) {
