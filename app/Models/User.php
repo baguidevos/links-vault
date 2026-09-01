@@ -20,7 +20,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Laravelcm\Subscriptions\Traits\HasPlanSubscriptions;
 use LaravelDaily\FilaTeams\Contracts\HasTeamMembership;
 
-#[Fillable(['name', 'email', 'password', 'is_admin'])]
+#[Fillable(['name', 'email', 'password', 'is_admin', 'avatar', 'locale', 'timezone', 'preferences'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, HasDefaultTenant, HasTeamMembership
 {
@@ -38,6 +38,7 @@ class User extends Authenticatable implements FilamentUser, HasDefaultTenant, Ha
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'preferences' => 'array',
         ];
     }
 
