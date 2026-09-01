@@ -221,10 +221,22 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
 
 ---
 
-### 2.12 Qualité & Suite de Tests Automatisés
+### 2.12 Monétisation SaaS, Abonnements & Quotas (Subbase)
+
+| Fonctionnalité | Description Technique & Fonctionnelle | Statut |
+| :--- | :--- | :---: |
+| **Seeder des Plans Tarifaires (`PlanSeeder`)** | Initialisation des offres `Free` (0 €), `Pro` (4.99 € / 3 000 FCFA) et `Team` (14.99 € / 9 000 FCFA) avec prix multi-devises (`EUR`, `XOF`, `USD`). | 🟢 Terminé |
+| **Service Centralisé de Quotas (`SubscriptionQuotaService`)** | Assignation automatique de l'offre Free, vérification des seuils de liens, de résumés IA mensuels, de membres et d'accès Google Drive. | 🟢 Terminé |
+| **Page Filament de Gestion d'Abonnement (`ManageSubscription`)** | Page dédiée avec 3 barres de progression dynamiques, sélecteur de fréquence (Mensuel / Annuel -20%), sélecteur de devise et cartes interactives de souscription. | 🟢 Terminé |
+| **Application des Quotas dans le Workflow** | Blocage élégant à la création de lien dans `CreateLinkAction` et renvoi de l'erreur `QUOTA_EXCEEDED` (HTTP 403) pour l'API Chrome Extension. | 🟢 Terminé |
+| **Décompte des Résumés IA** | Consommation décomptée et vérifiée dans `GenerateAiSummaryAction` avec réinitialisation mensuelle. | 🟢 Terminé |
+
+---
+
+### 2.13 Qualité & Suite de Tests Automatisés
 
 - **Outil de test** : Pest PHP 4 / PHPUnit 12
-- **Couverture actuelle** : **63 tests automatisés passants (263 assertions)**
+- **Couverture actuelle** : **70 tests automatisés passants (285 assertions)**
 - **Domaines testés** :
   - Inscription d'utilisateur & création automatique d'espace personnel.
   - Connexion & authentification Filament / Sanctum.
@@ -237,17 +249,18 @@ LinksVault est conçu comme une plateforme unifiée déclinée en 3 piliers :
   - Flux OAuth2 Google Drive avec génération d'URL, scopes et déconnexion (`GoogleDriveOAuthTest`).
   - Tracking des clics directs, redirections et cycle de vie des liens partagés (`LinkTrackingTest`).
   - Détection complète des codes HTTP (200, 301, 404, 500), timeouts réseau, job asynchrone et commande CLI (`LinkHealthTest`).
+  - Souscription par défaut, respect des limites de liens et résumés IA, upgrade de plan et affichage Filament (`SubscriptionQuotaTest`).
 
 ---
 
 ## 3. Feuille de Route des Fonctionnalités Futures
 
-### 3.1 Phase 5 : Monétisation SaaS (Subbase / Stripe)
+### 3.1 Phase 8 : Recherche Sémantique & Embeddings IA (Laravel AI SDK)
 
 | Fonctionnalité Prévue | Objectif Technique | Impact Utilisateur |
 | :--- | :--- | :--- |
-| **Gestion des Abonnements (Subbase / Stripe)** | Gestion des plans tarifaires (*Free, Pro, Team*) avec portail de facturation et gestion des cartes bancaires. | Modèle de monétisation SaaS clé en main. |
-| **Système de Quotas & Limites** | Restriction sur le nombre maximal de liens et de requêtes de résumés IA par mois selon le plan souscrit. | Conversion vers les offres payantes. |
+| **Indexation Vectorielle des Liens** | Génération automatique d'embeddings vectoriels à partir du titre, de la description, des tags et du résumé IA (`Laravel\Ai\Embeddings`). | Indexation sémantique complète des liens. |
+| **Recherche par Intention / Concept** | Calcul de similarité cosinus ou recherche vectorielle pour trouver des liens même si la requête ne contient pas les mots-clés exacts. | Recherche intelligente et intuitive dans la palette `Ctrl+K`. |
 
 ---
 
