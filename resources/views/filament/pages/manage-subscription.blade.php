@@ -224,8 +224,8 @@
                         ])
                     >
                         @if ($isFeatured)
-                            <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                                <span class="px-3.5 py-1 text-xs font-bold tracking-wide uppercase text-white bg-primary-600 rounded-full shadow-sm">
+                            <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap">
+                                <span class="inline-flex items-center justify-center px-4 py-1 text-[11px] font-bold tracking-wider uppercase text-white bg-primary-600 rounded-full shadow-md whitespace-nowrap">
                                     {{ __('Le Plus Populaire') }}
                                 </span>
                             </div>
