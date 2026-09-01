@@ -310,7 +310,7 @@ class AIService
      */
     protected function suggestAndAttachTags(Link $link, array $suggestedTags): void
     {
-        $existingTags = $link->tags->pluck('slug')->all();
+        $existingTags = $link->tags()->pluck('slug')->all();
         $tagsToAttach = [];
 
         foreach ($suggestedTags as $tagName) {

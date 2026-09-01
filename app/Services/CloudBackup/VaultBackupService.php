@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\BookmarksExportService;
 use App\Services\CloudBackup\Contracts\CloudStorageConnectorInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Throwable;
 use ZipArchive;
@@ -182,7 +183,9 @@ class VaultBackupService
                 'metadata' => $link->getSafeMetadata(),
                 'folder' => $link->folder ? ['id' => $link->folder->id, 'name' => $link->folder->name, 'slug' => $link->folder->slug] : null,
                 'category' => $link->category ? ['id' => $link->category->id, 'name' => $link->category->name, 'slug' => $link->category->slug] : null,
-                'tags' => $link->tags ? $link->tags->pluck('name')->toArray() : [],
+                'tags' => ($link->relationLoaded('tags') && $link->getRelation('tags') instanceof Collection)
+                    ? $link->getRelation('tags')->pluck('name')->filter()->values()->toArray()
+                    : (is_string($link->tags) && filled($link->tags) ? array_values(array_filter(array_map('trim', explode(',', $link->tags)))) : []),
                 'created_at' => $link->created_at?->toIso8601String(),
                 'updated_at' => $link->updated_at?->toIso8601String(),
             ];

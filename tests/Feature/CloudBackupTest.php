@@ -105,6 +105,7 @@ test('it can backup a team to local storage and record in database', function ()
         'url' => 'https://github.com',
         'url_hash' => hash('sha256', 'https://github.com'),
         'title' => 'GitHub',
+        'tags' => 'git, devops, opensource',
     ]);
 
     $backupService = app(VaultBackupService::class);
