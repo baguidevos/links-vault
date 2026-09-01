@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Http\Controllers\GoogleDriveAuthController;
 use App\Models\CloudBackup;
 use App\Models\CloudStorageConfig;
 use App\Models\GoogleDrive;
@@ -131,7 +132,12 @@ class ManageCloudBackups extends Page implements HasTable
                             ->label('Changer de compte Google')
                             ->icon(TablerIcon::SwitchHorizontal)
                             ->color('gray')
-                            ->url(fn () => route('auth.google-drive.redirect', ['team_id' => $teamId])),
+                            ->action(function () use ($teamId) {
+                                $controller = app(GoogleDriveAuthController::class);
+                                $authUrl = $controller->getAuthUrl((int) $teamId);
+
+                                return redirect()->away($authUrl);
+                            }),
 
                         Action::make('disconnect')
                             ->label('Déconnecter')
@@ -174,7 +180,25 @@ class ManageCloudBackups extends Page implements HasTable
                     ->label('🔗 Lier mon compte Google Drive')
                     ->icon(TablerIcon::BrandGoogleDrive)
                     ->color('primary')
-                    ->url(fn () => route('auth.google-drive.redirect', ['team_id' => $teamId])),
+                    ->action(function () use ($teamId) {
+                        $clientId = config('services.google.client_id', env('GOOGLE_CLIENT_ID'));
+                        $clientSecret = config('services.google.client_secret', env('GOOGLE_CLIENT_SECRET'));
+
+                        if (empty($clientId) || empty($clientSecret)) {
+                            Notification::make()
+                                ->title('Configuration Google manquante')
+                                ->body('Veuillez renseigner GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET dans votre fichier .env.')
+                                ->danger()
+                                ->send();
+
+                            return null;
+                        }
+
+                        $controller = app(GoogleDriveAuthController::class);
+                        $authUrl = $controller->getAuthUrl((int) $teamId);
+
+                        return redirect()->away($authUrl);
+                    }),
 
             // 2. Action Sauvegarde Locale
             Action::make('configure_local')

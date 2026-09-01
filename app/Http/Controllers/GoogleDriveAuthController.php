@@ -41,6 +41,28 @@ class GoogleDriveAuthController extends Controller
     }
 
     /**
+     * Génère l'URL d'autorisation Google OAuth2 avec l'état sérialisé.
+     */
+    public function getAuthUrl(?int $teamId = null): string
+    {
+        $user = Auth::user();
+        $team = $teamId ? Team::find($teamId) : ($user?->currentTeam ?? $user?->personalTeam());
+        $teamSlug = $team?->slug ?? 'default';
+
+        $stateData = [
+            'user_id' => $user?->id,
+            'team_id' => $team?->id,
+            'team_slug' => $teamSlug,
+            'csrf_token' => csrf_token(),
+        ];
+
+        $client = $this->getGoogleClient();
+        $client->setState(base64_encode(json_encode($stateData)));
+
+        return $client->createAuthUrl();
+    }
+
+    /**
      * Redirige l'utilisateur vers l'écran de sélection de compte et consentement Google.
      */
     public function redirect(Request $request): RedirectResponse
@@ -63,21 +85,9 @@ class GoogleDriveAuthController extends Controller
             return redirect()->back();
         }
 
-        $teamId = $request->query('team_id');
-        $team = $teamId ? Team::find($teamId) : ($user->currentTeam ?? $user->personalTeam());
-        $teamSlug = $team?->slug ?? 'default';
+        $teamId = $request->query('team_id') ? (int) $request->query('team_id') : null;
 
-        $stateData = [
-            'user_id' => $user->id,
-            'team_id' => $team?->id,
-            'team_slug' => $teamSlug,
-            'csrf_token' => csrf_token(),
-        ];
-
-        $client = $this->getGoogleClient();
-        $client->setState(base64_encode(json_encode($stateData)));
-
-        return redirect()->away($client->createAuthUrl());
+        return redirect()->away($this->getAuthUrl($teamId));
     }
 
     /**
