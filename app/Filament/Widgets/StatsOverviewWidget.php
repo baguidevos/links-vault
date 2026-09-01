@@ -24,28 +24,48 @@ class StatsOverviewWidget extends BaseWidget
         $totalVisits = (clone $linkQuery)->sum('visit_count') ?? 0;
         $totalFavorites = (clone $linkQuery)->where('is_favorite', true)->count();
 
+        // Calcul du taux de santé des liens
+        $healthyCount = (clone $linkQuery)->where('health_status', 'healthy')->count();
+        $brokenCount = (clone $linkQuery)->where('health_status', 'broken')->count();
+        $healthPercent = $totalLinks > 0 ? (int) round(($healthyCount / $totalLinks) * 100) : 100;
+
+        // Sparkline des 7 derniers jours d'ajouts
+        $sparkline = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $dayStart = now()->subDays($i)->startOfDay();
+            $dayEnd = now()->subDays($i)->endOfDay();
+            $sparkline[] = (clone $linkQuery)
+                ->where('created_at', '>=', $dayStart)
+                ->where('created_at', '<=', $dayEnd)
+                ->count();
+        }
+
         return [
-            Stat::make('Liens Enregistrés', $totalLinks)
+            Stat::make('Liens Enregistrés', (string) $totalLinks)
                 ->description('Dans cet espace de travail')
                 ->descriptionIcon('heroicon-m-arrow-trending-up')
                 ->color('primary')
-                ->chart([7, 10, 14, 18, 24, 30, $totalLinks ?: 1]),
+                ->chart($sparkline),
 
-            Stat::make('Catégories', $totalCategories)
-                ->description('Dossiers d\'organisation')
+            Stat::make('Catégories & Dossiers', (string) $totalCategories)
+                ->description('Organisation thématique')
                 ->descriptionIcon('heroicon-m-folder')
                 ->color('info'),
 
-            Stat::make('Total des Visites', number_format($totalVisits))
+            Stat::make('Total des Visites', number_format((int) $totalVisits))
                 ->description('Consultations globales')
                 ->descriptionIcon('heroicon-m-eye')
-                ->color('success')
-                ->chart([2, 5, 8, 15, 22, $totalVisits ?: 1]),
+                ->color('success'),
 
-            Stat::make('Favoris', $totalFavorites)
+            Stat::make('Favoris', (string) $totalFavorites)
                 ->description('Liens mis en avant')
                 ->descriptionIcon('heroicon-m-star')
                 ->color('warning'),
+
+            Stat::make('Santé du Vault', "{$healthPercent}%")
+                ->description($brokenCount > 0 ? "{$brokenCount} lien(s) mort(s) détecté(s)" : 'Tous les liens sont opérationnels')
+                ->descriptionIcon($brokenCount > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-check-badge')
+                ->color($brokenCount > 0 ? 'danger' : 'success'),
         ];
     }
 }

@@ -1,6 +1,8 @@
 <?php
 
 use App\Filament\Widgets\LatestLinksWidget;
+use App\Filament\Widgets\LinkHealthChart;
+use App\Filament\Widgets\LinksActivityChart;
 use App\Filament\Widgets\LinksByCategoryChart;
 use App\Filament\Widgets\LinksContentTypeChart;
 use App\Filament\Widgets\StatsOverviewWidget;
@@ -60,4 +62,14 @@ test('dashboard widgets render correctly for tenant team', function () {
     Livewire::actingAs($user)
         ->test(LinksContentTypeChart::class)
         ->assertOk();
+
+    Livewire::actingAs($user)
+        ->test(LinksActivityChart::class)
+        ->assertOk()
+        ->assertSee('Activité d\'Ajout de Liens');
+
+    Livewire::actingAs($user)
+        ->test(LinkHealthChart::class)
+        ->assertOk()
+        ->assertSee('État de Santé des Liens');
 });
