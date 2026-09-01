@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c4dd3eb143b8f52519d87c1b46fd3b23",
+    "content-hash": "ecb3196979f2183185b381fa9ce3bf19",
     "packages": [
         {
             "name": "alaouy/youtube",
@@ -2519,86 +2519,6 @@
                 }
             ],
             "time": "2026-08-24T17:13:02+00:00"
-        },
-        {
-            "name": "ipatco/filament-profile",
-            "version": "1.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/iPatco/filament-profile.git",
-                "reference": "73b87628439267efce45c2fae2eac04d72d575ca"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/iPatco/filament-profile/zipball/73b87628439267efce45c2fae2eac04d72d575ca",
-                "reference": "73b87628439267efce45c2fae2eac04d72d575ca",
-                "shasum": ""
-            },
-            "require": {
-                "filament/filament": "^5.0",
-                "php": "^8.2",
-                "spatie/laravel-package-tools": "^1.15.0"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.0",
-                "laravel/pint": "^1.0",
-                "nunomaduro/collision": "^8.0",
-                "orchestra/testbench": "^9.0|^10.0|^11.0",
-                "pestphp/pest": "^3.7|^4.0",
-                "pestphp/pest-plugin-arch": "^3.0|^4.0",
-                "pestphp/pest-plugin-laravel": "^3.0|^4.0",
-                "pestphp/pest-plugin-livewire": "^3.0|^4.0",
-                "rector/rector": "^2.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "aliases": {
-                        "FilamentProfile": "Ipatco\\FilamentProfile\\Facades\\FilamentProfile"
-                    },
-                    "providers": [
-                        "Ipatco\\FilamentProfile\\FilamentProfileServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Ipatco\\FilamentProfile\\": "src/",
-                    "Ipatco\\FilamentProfile\\Database\\Factories\\": "database/factories/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Prashant Rijal",
-                    "email": "info@ipatco.com",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Breeze-style user profile for Filament panels — profile info, password, browser sessions, and account deletion.",
-            "homepage": "https://github.com/ipatco/filament-profile",
-            "keywords": [
-                "filament",
-                "filament-plugin",
-                "filament-profile",
-                "filamentphp",
-                "iPatco",
-                "laravel"
-            ],
-            "support": {
-                "issues": "https://github.com/ipatco/filament-profile/issues",
-                "source": "https://github.com/ipatco/filament-profile"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/iPatco",
-                    "type": "github"
-                }
-            ],
-            "time": "2026-07-24T12:36:51+00:00"
         },
         {
             "name": "kirschbaum-development/eloquent-power-joins",

@@ -21,7 +21,6 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Ipatco\FilamentProfile\FilamentProfilePlugin;
 use LaravelDaily\FilaTeams\FilaTeamsPlugin;
 
 class AppPanelProvider extends PanelProvider
@@ -59,11 +58,7 @@ class AppPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
-            ->plugins([
-                FilaTeamsPlugin::make(),
-                FilamentProfilePlugin::make()
-                    ->showOnDropdown(),
-            ])
+            ->plugin(FilaTeamsPlugin::make())
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([])
             ->middleware([

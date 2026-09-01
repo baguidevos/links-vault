@@ -14,7 +14,6 @@
         "daljo25/filament-tabler-icons": "^3.41",
         "fawaziwalewa/filament-icon-picker": "^0.2.0",
         "google/apiclient": "^2.19",
-        "ipatco/filament-profile": "*",
         "laravel/ai": "^0.5.1",
         "laravel/framework": "^13.0",
         "laravel/sanctum": "^4.0",
