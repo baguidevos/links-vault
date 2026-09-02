@@ -21,5 +21,7 @@ return [
     'invitation' => [
         'expires_after_days' => 7,
     ],
-    'create_personal_team_on_registration' => true,
+    // Désactivé au niveau du vendor pour éviter les conflits d'écouteurs d'événements.
+    // La création est gérée de manière unique et idempotente par App\Listeners\CreatePersonalTeam.
+    'create_personal_team_on_registration' => false,
 ];

@@ -12,13 +12,14 @@ class CreatePersonalTeam
 
     public function handle(object $event): void
     {
-        if (! config('filateams.create_personal_team_on_registration', true)) {
-            return;
-        }
-
         $user = method_exists($event, 'getUser') ? $event->getUser() : ($event->user ?? null);
 
         if (! $user) {
+            return;
+        }
+
+        // Empêche strictement toute création en doublon d'équipe personnelle
+        if ($user->personalTeam() !== null || $user->teams()->where('is_personal', true)->exists()) {
             return;
         }
 
