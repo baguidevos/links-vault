@@ -68,7 +68,7 @@ class LinkResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['title', 'url', 'description', 'objective', 'content_type'];
+        return ['title', 'description', 'objective', 'content_type'];
     }
 
     public static function getGlobalSearchEloquentQuery(): Builder

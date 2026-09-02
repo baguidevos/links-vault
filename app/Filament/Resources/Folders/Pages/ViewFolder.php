@@ -102,7 +102,6 @@ class ViewFolder extends ViewRecord
             ->when($this->searchQuery, function ($q) {
                 $q->where(function ($sub) {
                     $sub->where('title', 'like', "%{$this->searchQuery}%")
-                        ->orWhere('url', 'like', "%{$this->searchQuery}%")
                         ->orWhere('description', 'like', "%{$this->searchQuery}%");
                 });
             })

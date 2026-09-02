@@ -200,9 +200,13 @@ test('it can restore a vault from a backup zip archive', function () {
 
     $this->assertDatabaseHas('links', [
         'team_id' => $targetTeam->id,
-        'url' => 'https://php.net',
+        'url_hash' => hash('sha256', 'https://php.net'),
         'title' => 'PHP Documentation',
     ]);
+
+    $restoredLink = Link::where('team_id', $targetTeam->id)->first();
+    expect($restoredLink)->not->toBeNull()
+        ->and($restoredLink->url)->toBe('https://php.net');
 
     $this->assertDatabaseHas('folders', [
         'team_id' => $targetTeam->id,

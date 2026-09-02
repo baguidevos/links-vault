@@ -7,6 +7,7 @@ use App\Enums\ContentType;
 use App\Enums\FolderVisibility;
 use App\Enums\LinkHealthStatus;
 use App\Enums\LinkVisibility;
+use App\Models\Builders\LinkBuilder;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -51,7 +52,7 @@ class Link extends Model
     ];
 
     protected $casts = [
-        'url' => 'string',
+        'url' => 'encrypted',
         'content_type' => ContentType::class,
         'visibility' => LinkVisibility::class,
         'health_status' => LinkHealthStatus::class,
@@ -311,5 +312,16 @@ class Link extends Model
         }
 
         return false;
+    }
+
+    /**
+     * Create a new Eloquent query builder for the model.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @return LinkBuilder<Link>
+     */
+    public function newEloquentBuilder($query): LinkBuilder
+    {
+        return new LinkBuilder($query);
     }
 }

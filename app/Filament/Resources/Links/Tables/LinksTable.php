@@ -53,13 +53,12 @@ class LinksTable
             })
             ->searchable([
                 'title',
-                'url',
                 'description',
                 'objective',
                 'folder.name',
                 'category.name',
             ])
-            ->searchPlaceholder(__('Rechercher un lien par titre, URL, description, dossier...'))
+            ->searchPlaceholder(__('Rechercher un lien par titre, description, dossier...'))
             ->searchDebounce('300ms')
             ->defaultSort('created_at', 'desc')
             ->filters([
@@ -135,8 +134,6 @@ class LinksTable
 
                         TextColumn::make('url')
                             ->label(__('URL'))
-                            ->searchable()
-                            ->sortable()
                             ->limit(40)
                             ->url(fn ($record) => $record->url, shouldOpenInNewTab: true),
                         TextColumn::make('folder.name')
