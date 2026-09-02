@@ -25,6 +25,7 @@ Homestead.yaml
 Thumbs.db
 /api/*
 /prototype-web
+/dist
 
 # EnvKit — never commit .env backups (they contain secrets)
 .env.bkp*

@@ -22,11 +22,15 @@ class GoogleDriveAuthController extends Controller
     /**
      * Instancie et configure le client OAuth2 Google.
      */
-    protected function getGoogleClient(?string $redirectUri = null): Client
+    protected function getGoogleClient(?string $redirectUri = null, ?int $teamId = null): Client
     {
+        $config = $teamId ? CloudStorageConfig::where('team_id', $teamId)->where('provider', 'google_drive')->first() : null;
+        $clientId = (string) ($config?->credentials['client_id'] ?? config('services.google.client_id', env('GOOGLE_CLIENT_ID')));
+        $clientSecret = (string) ($config?->credentials['client_secret'] ?? config('services.google.client_secret', env('GOOGLE_CLIENT_SECRET')));
+
         $client = new Client;
-        $client->setClientId((string) config('services.google.client_id', env('GOOGLE_CLIENT_ID')));
-        $client->setClientSecret((string) config('services.google.client_secret', env('GOOGLE_CLIENT_SECRET')));
+        $client->setClientId($clientId);
+        $client->setClientSecret($clientSecret);
         $redirect = $redirectUri ?: (config('services.google.redirect_uri') ?: route('auth.google-drive.callback'));
         $client->setRedirectUri($redirect);
         $client->addScope([
@@ -57,7 +61,7 @@ class GoogleDriveAuthController extends Controller
             'csrf_token' => csrf_token(),
         ];
 
-        $client = $this->getGoogleClient();
+        $client = $this->getGoogleClient(null, $team?->id);
         $client->setState(base64_encode(json_encode($stateData)));
 
         return $client->createAuthUrl();
@@ -135,7 +139,7 @@ class GoogleDriveAuthController extends Controller
         $teamSlug = $state['team_slug'] ?? ($user->currentTeam?->slug ?? $user->personalTeam()?->slug ?? '');
 
         try {
-            $client = $this->getGoogleClient();
+            $client = $this->getGoogleClient(null, $teamId ? (int) $teamId : null);
             $token = $client->fetchAccessTokenWithAuthCode($code);
 
             if (isset($token['error'])) {

@@ -186,14 +186,59 @@ class ManageCloudBackups extends Page implements HasTable
                     ->label('Lier mon compte Google Drive')
                     ->icon(TablerIcon::BrandGoogleDrive)
                     ->color('primary')
-                    ->action(function () use ($teamId) {
-                        $clientId = config('services.google.client_id', env('GOOGLE_CLIENT_ID'));
-                        $clientSecret = config('services.google.client_secret', env('GOOGLE_CLIENT_SECRET'));
+                    ->form(function () use ($teamId): array {
+                        $config = CloudStorageConfig::where('team_id', $teamId)
+                            ->where('provider', 'google_drive')
+                            ->first();
+
+                        $envClientId = config('services.google.client_id', env('GOOGLE_CLIENT_ID'));
+                        $envClientSecret = config('services.google.client_secret', env('GOOGLE_CLIENT_SECRET'));
+
+                        if (! empty($envClientId) && ! empty($envClientSecret)) {
+                            return [];
+                        }
+
+                        return [
+                            TextInput::make('client_id')
+                                ->label('Google Client ID')
+                                ->default($config?->credentials['client_id'] ?? '')
+                                ->required()
+                                ->helperText('Renseignez votre Client ID OAuth Google Cloud.'),
+
+                            TextInput::make('client_secret')
+                                ->label('Google Client Secret')
+                                ->password()
+                                ->revealable()
+                                ->default($config?->credentials['client_secret'] ?? '')
+                                ->required()
+                                ->helperText('Votre secret client OAuth 2.0.'),
+                        ];
+                    })
+                    ->action(function (array $data) use ($teamId) {
+                        $config = CloudStorageConfig::where('team_id', $teamId)
+                            ->where('provider', 'google_drive')
+                            ->first();
+
+                        $clientId = $data['client_id'] ?? ($config?->credentials['client_id'] ?? config('services.google.client_id', env('GOOGLE_CLIENT_ID')));
+                        $clientSecret = $data['client_secret'] ?? ($config?->credentials['client_secret'] ?? config('services.google.client_secret', env('GOOGLE_CLIENT_SECRET')));
+
+                        if (! empty($data['client_id']) && ! empty($data['client_secret'])) {
+                            CloudStorageConfig::updateOrCreate([
+                                'team_id' => $teamId,
+                                'provider' => 'google_drive',
+                            ], [
+                                'is_active' => true,
+                                'credentials' => array_merge($config?->credentials ?? [], [
+                                    'client_id' => $data['client_id'],
+                                    'client_secret' => $data['client_secret'],
+                                ]),
+                            ]);
+                        }
 
                         if (empty($clientId) || empty($clientSecret)) {
                             Notification::make()
                                 ->title('Configuration Google manquante')
-                                ->body('Veuillez renseigner GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET dans votre fichier .env.')
+                                ->body('Veuillez renseigner vos identifiants Google OAuth.')
                                 ->danger()
                                 ->send();
 
