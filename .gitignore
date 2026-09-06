@@ -35,4 +35,5 @@ Thumbs.db
 *.sqlite
 database/*.sqlite*
 database/nativephp.sqlite*
+/storage/framework/lsp-*
 
