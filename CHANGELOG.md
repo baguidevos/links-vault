@@ -15,6 +15,7 @@
 - **Desktop Cloud Sync** :
   - Résolution du TypeError sur la propriété `DesktopSyncSettings::$sync_status` avec prise en charge du statut null et fallback `'idle'`.
   - Résolution polymorphique du modèle d'équipe (`Team`) dans `DesktopSyncService::sync()` pour supporter indifféremment l'instance de tenant FilaTeams et `App\Models\Team`.
+  - Masquage du bouton d'en-tête « Générer un jeton de synchro » sur l'application Desktop (celui-ci étant réservé à l'instance Web distante).
 - **Link Health Status Enum** :
   - Alignement de la méthode `LinkHealthStatus::getIcon()` sur le contrat Filament `HasIcon` (`string|BackedEnum|Htmlable|null`) pour supporter l'énumération `TablerIcon`.
   - Correction du type de retour dans la closure de colonne `health_status` de `LinksTable`.

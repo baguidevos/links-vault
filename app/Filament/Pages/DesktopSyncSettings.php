@@ -141,6 +141,13 @@ class DesktopSyncSettings extends Page
         }
     }
 
+    public static function isDesktop(): bool
+    {
+        return (bool) config('nativephp-internal.running', false)
+            || request()->hasHeader('X-NativePHP-Secret')
+            || str_contains((string) request()->userAgent(), 'Electron');
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -148,6 +155,7 @@ class DesktopSyncSettings extends Page
                 ->label('Générer un jeton de synchro')
                 ->icon(TablerIcon::Key)
                 ->color('primary')
+                ->hidden(fn () => static::isDesktop())
                 ->action(function () {
                     $user = Auth::user();
                     if (! $user) {
@@ -168,6 +176,7 @@ class DesktopSyncSettings extends Page
                 ->label('Connexion automatique (Email / MdP)')
                 ->icon(TablerIcon::Login)
                 ->color('gray')
+                ->visible(fn () => static::isDesktop())
                 ->form([
                     TextInput::make('modal_server_url')
                         ->label('URL de votre instance Web')
