@@ -70,7 +70,7 @@ jobs:
         shell: cmd
 
       - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-progress --no-interaction --optimize-autoloader
+        run: composer install --prefer-dist --no-progress --no-interaction --no-dev --optimize-autoloader
 
       - name: Install NPM dependencies
         run: npm ci
@@ -81,9 +81,29 @@ jobs:
       - name: Build and Publish Desktop (Windows)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO: links-vault
           NATIVEPHP_UPDATER_PROVIDER: github
           GITHUB_RELEASE_TYPE: ${{ inputs.release_type || 'draft' }}
           APP_ENV: production
         run: php artisan native:publish win
+
+      - name: Verify release was published
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VER=$(php artisan tinker --execute "echo config('nativephp.version');" | tr -d '\r\n[:space:]')
+          TAG="v${VER}"
+          echo "Verifying release ${TAG} on ${{ github.repository }}..."
+          ASSETS=$(gh release view "$TAG" --repo ${{ github.repository }} --json assets --jq '[.assets[].name] | join(" ")') || {
+            echo "::error::Release ${TAG} introuvable sur ${{ github.repository }}. native:publish a pu échouer silencieusement."
+            exit 1
+          }
+          echo "Assets trouvés : ${ASSETS}"
+          echo "${ASSETS}" | grep -qiE '\.exe($| )' || {
+            echo "::error::La release ${TAG} existe mais aucun installateur Windows .exe n'a été téléversé !"
+            exit 1
+          }
+          echo "Release ${TAG} validée avec succès avec son installateur Windows .exe."

@@ -61,10 +61,14 @@ return [
      * You may use wildcards to match multiple keys.
      */
     'cleanup_env_keys' => [
+        'APP_ENV',
+        'APP_DEBUG',
+        'APP_KEY',
         'AWS_*',
         'AZURE_*',
         'GITHUB_*',
         'DO_SPACES_*',
+        '*_SECRET',
         'BIFROST_*',
         'NATIVEPHP_UPDATER_PATH',
         'NATIVEPHP_APPLE_ID',
@@ -74,6 +78,16 @@ return [
         'NATIVEPHP_AZURE_ENDPOINT',
         'NATIVEPHP_AZURE_CERTIFICATE_PROFILE_NAME',
         'NATIVEPHP_AZURE_CODE_SIGNING_ACCOUNT_NAME',
+        'STRIPE_*',
+        'RESEND_*',
+        'MAIL_*',
+        'DB_HOST',
+        'DB_PORT',
+        'DB_DATABASE',
+        'DB_USERNAME',
+        'DB_PASSWORD',
+        'REDIS_*',
+        'SESSION_DOMAIN',
     ],
 
     /**
@@ -87,6 +101,10 @@ return [
         'content',
         'node_modules',
         '*/tests',
+        '.env.production',
+        '.env.local',
+        '.ai',
+        '.agents',
     ],
 
     /**
@@ -166,6 +184,10 @@ return [
     'prebuild' => [
         'npm run build',
         'php artisan optimize',
+        '"'.PHP_BINARY.'" artisan native:patch-electron-builder --no-interaction',
+        '"'.PHP_BINARY.'" artisan native:patch-splash-screen --no-interaction',
+        '"'.PHP_BINARY.'" artisan native:patch-nsis-installer --no-interaction',
+        '"'.PHP_BINARY.'" artisan native:patch-auto-updater --no-interaction',
     ],
 
     'postbuild' => [

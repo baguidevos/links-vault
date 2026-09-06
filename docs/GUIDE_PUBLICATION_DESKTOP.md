@@ -49,8 +49,18 @@ Avant la compilation finale, NativePHP exécute automatiquement les scripts conf
 'prebuild' => [
     'npm run build',         // Compile les assets Vite et styles Tailwind
     'php artisan optimize',  // Met en cache routes, configs et vues
+    '"'.PHP_BINARY.'" artisan native:patch-electron-builder --no-interaction', // Réduit langues Chromium & accélère NSIS
+    '"'.PHP_BINARY.'" artisan native:patch-splash-screen --no-interaction',    // Injecte le splash screen fluide LinksVault
+    '"'.PHP_BINARY.'" artisan native:patch-nsis-installer --no-interaction',    // Active l'assistant NSIS avec branding
+    '"'.PHP_BINARY.'" artisan native:patch-auto-updater --no-interaction',     // Fiabilise l'AutoUpdater au quit
 ],
 ```
+
+Ces 4 commandes Artisan personnalisées apportent les optimisations suivantes :
+1. **Splash Screen immédiat (`native:patch-splash-screen`)** : Affiche un écran de chargement élégant aux couleurs de LinksVault dès le clic de l'utilisateur, pendant que PHP et SQLite initialisent l'environnement, puis se referme dès que Filament est chargé.
+2. **Allègement du build (`native:patch-electron-builder`)** : Ne conserve que les langues requises (`fr`, `en-US`) au lieu des 50+ locales Chromium, économisant ~50 Mo sur le paquet, et bascule la compression NSIS en mode `normal` pour diviser le temps de packaging.
+3. **Installeur Windows assisté (`native:patch-nsis-installer`)** : Remplace l'installation 1-clic silencieuse par un assistant permettant de choisir le dossier d'installation, avec relance automatique silencieuse lors des mises à jour (`${isUpdated}`) et nettoyage propre d'AppData à la désinstallation.
+4. **Auto-Updater sécurisé (`native:patch-auto-updater`)** : Désactive l'installation brutale en cours de fermeture et applique la mise à jour au moment du `before-quit`.
 
 ---
 
