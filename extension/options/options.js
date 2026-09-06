@@ -5,7 +5,8 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const serverUrlInput = document.getElementById('server-url');
   const apiTokenInput = document.getElementById('api-token');
-  const btnToggleToken = document.getElementById('btn-toggle-token');
+  const btnPasteToken = document.getElementById('btn-paste-token');
+  const tokenStatusBadge = document.getElementById('token-status-badge');
   const btnTestConnection = document.getElementById('btn-test-connection');
   const btnSaveSettings = document.getElementById('btn-save-settings');
   const statusMessage = document.getElementById('status-message');
@@ -16,6 +17,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const defaultAiSummary = document.getElementById('default-ai-summary');
   const defaultFavorite = document.getElementById('default-favorite');
 
+  // Stored state in memory
+  let storedConfig = {
+    serverUrl: 'http://localhost:8000',
+    apiToken: '',
+    user: null,
+  };
+
   // Load existing settings
   const stored = await getStorage([
     'serverUrl',
@@ -25,8 +33,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     'defaultFavorite',
   ]);
 
-  serverUrlInput.value = stored.serverUrl || 'http://localhost:8000';
-  apiTokenInput.value = stored.apiToken || '';
+  if (stored.serverUrl) storedConfig.serverUrl = stored.serverUrl;
+  if (stored.apiToken) storedConfig.apiToken = stored.apiToken;
+  if (stored.user) storedConfig.user = stored.user;
+
+  serverUrlInput.value = storedConfig.serverUrl;
+  
+  // Never display the plain-text token!
+  apiTokenInput.value = '';
+
+  if (storedConfig.apiToken) {
+    tokenStatusBadge.style.display = 'inline-flex';
+    apiTokenInput.placeholder = 'Collez un nouveau token pour remplacer...';
+  } else {
+    tokenStatusBadge.style.display = 'none';
+    apiTokenInput.placeholder = 'Collez votre token ici...';
+  }
+
   if (stored.defaultAiSummary !== undefined) {
     defaultAiSummary.checked = stored.defaultAiSummary;
   }
@@ -34,21 +57,91 @@ document.addEventListener('DOMContentLoaded', async () => {
     defaultFavorite.checked = stored.defaultFavorite;
   }
 
-  if (stored.user) {
-    showConnectedUser(stored.user);
+  if (storedConfig.user) {
+    showConnectedUser(storedConfig.user);
   }
 
-  // Toggle show/hide token
-  btnToggleToken.addEventListener('click', () => {
-    const isPassword = apiTokenInput.type === 'password';
-    apiTokenInput.type = isPassword ? 'text' : 'password';
-    btnToggleToken.textContent = isPassword ? 'Masquer' : 'Afficher';
+  // Connect & Save Token Function
+  async function connectAndSaveToken(token) {
+    const serverUrl = cleanUrl(serverUrlInput.value);
+    if (!serverUrl) {
+      showStatus('Veuillez d\'abord spécifier une URL de serveur valide.', 'error');
+      return;
+    }
+
+    setButtonLoading(btnPasteToken, true, 'Connexion...');
+    try {
+      const res = await fetch(`${serverUrl}/api/me`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Token invalide ou non autorisé.');
+      }
+
+      await saveStorage({
+        serverUrl,
+        apiToken: token,
+        user: data.user,
+      });
+
+      storedConfig.apiToken = token;
+      storedConfig.user = data.user;
+
+      // Always ensure token is wiped from the input
+      apiTokenInput.value = '';
+      apiTokenInput.placeholder = 'Collez un nouveau token pour remplacer...';
+      tokenStatusBadge.style.display = 'inline-flex';
+      showConnectedUser(data.user);
+
+      showStatus(`Connexion réussie ! Connecté en tant que ${data.user.name || data.user.email}. Le token est enregistré en toute sécurité.`, 'success');
+    } catch (err) {
+      showStatus(`Échec de connexion : ${err.message}`, 'error');
+    } finally {
+      setButtonLoading(btnPasteToken, false, 'Coller & Connecter');
+    }
+  }
+
+  // Handle paste event directly on apiTokenInput: auto-connect and clear input
+  apiTokenInput.addEventListener('paste', (e) => {
+    const pasted = (e.clipboardData || window.clipboardData)?.getData('text');
+    if (pasted && pasted.trim()) {
+      e.preventDefault();
+      apiTokenInput.value = '';
+      connectAndSaveToken(pasted.trim());
+    }
+  });
+
+  // Handle click on "Coller & Connecter"
+  btnPasteToken.addEventListener('click', async () => {
+    let token = apiTokenInput.value.trim();
+    apiTokenInput.value = '';
+
+    if (!token && navigator.clipboard && navigator.clipboard.readText) {
+      try {
+        token = (await navigator.clipboard.readText()).trim();
+      } catch {
+        // Clipboard read permission might be restricted
+      }
+    }
+
+    if (!token) {
+      showStatus('Veuillez coller un Personal Access Token dans le champ.', 'error');
+      return;
+    }
+
+    await connectAndSaveToken(token);
   });
 
   // Test Connection
   btnTestConnection.addEventListener('click', async () => {
     const serverUrl = cleanUrl(serverUrlInput.value);
-    const token = apiTokenInput.value.trim();
+    const token = apiTokenInput.value.trim() || storedConfig.apiToken;
+    apiTokenInput.value = '';
 
     if (!serverUrl) {
       showStatus('Veuillez spécifier une URL de serveur valide.', 'error');
@@ -85,15 +178,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Disconnect
   btnDisconnect.addEventListener('click', async () => {
     apiTokenInput.value = '';
+    storedConfig.apiToken = '';
+    storedConfig.user = null;
+    tokenStatusBadge.style.display = 'none';
     userInfoCard.style.display = 'none';
+    apiTokenInput.placeholder = 'Collez votre token ici...';
     await saveStorage({ apiToken: '', user: null });
-    showStatus('Session déconnectée.', 'success');
+    showStatus('Session déconnectée. Le token a été supprimé.', 'success');
   });
 
   // Save Settings
   btnSaveSettings.addEventListener('click', async () => {
     const serverUrl = cleanUrl(serverUrlInput.value);
-    const apiToken = apiTokenInput.value.trim();
+    const newApiToken = apiTokenInput.value.trim();
+    const effectiveToken = newApiToken || storedConfig.apiToken;
+    apiTokenInput.value = '';
 
     if (!serverUrl) {
       showStatus('L\'URL du serveur est obligatoire.', 'error');
@@ -102,23 +201,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setButtonLoading(btnSaveSettings, true, 'Enregistrement...');
     try {
-      let user = null;
-      if (apiToken) {
+      let user = storedConfig.user;
+      if (effectiveToken) {
         const res = await fetch(`${serverUrl}/api/me`, {
           headers: {
             'Accept': 'application/json',
-            'Authorization': `Bearer ${apiToken}`,
+            'Authorization': `Bearer ${effectiveToken}`,
           },
         });
         if (res.ok) {
           const data = await res.json();
           user = data.user;
+          storedConfig.user = user;
+          storedConfig.apiToken = effectiveToken;
+          tokenStatusBadge.style.display = 'inline-flex';
         }
       }
 
       await saveStorage({
         serverUrl,
-        apiToken,
+        apiToken: effectiveToken,
         user,
         defaultAiSummary: defaultAiSummary.checked,
         defaultFavorite: defaultFavorite.checked,

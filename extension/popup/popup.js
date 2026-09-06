@@ -127,6 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         user: data.user,
       });
 
+      authPassword.value = '';
       hideAlert();
       await switchViewToSave();
     } catch (err) {
@@ -136,11 +137,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Token Submit (Manual)
-  btnTokenSubmit.addEventListener('click', async (e) => {
-    e.preventDefault();
+  // Token Submit & Auto-connect on paste
+  async function connectWithToken(tokenValue) {
     const serverUrl = cleanServerUrl(authServerUrl.value);
-    const token = authToken.value.trim();
+    const token = (tokenValue || authToken.value).trim();
+
+    // Immediately wipe plain text from input
+    authToken.value = '';
 
     if (!serverUrl || !token) {
       showAlert('Veuillez renseigner l\'URL et le Token', 'warning');
@@ -174,6 +177,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
       setButtonLoading(btnTokenSubmit, false);
     }
+  }
+
+  // Dès le collage dans le champ token, se connecter automatiquement et vider le champ
+  authToken.addEventListener('paste', (e) => {
+    const pasted = (e.clipboardData || window.clipboardData)?.getData('text');
+    if (pasted && pasted.trim()) {
+      e.preventDefault();
+      authToken.value = '';
+      connectWithToken(pasted.trim());
+    }
+  });
+
+  btnTokenSubmit.addEventListener('click', (e) => {
+    e.preventDefault();
+    connectWithToken();
   });
 
   // Tag Management

@@ -52,10 +52,14 @@
         <div class="form-group">
           <label for="api-token">Personal Access Token</label>
           <div class="input-with-action">
-            <input type="password" id="api-token" placeholder="1|abcdef123456...">
-            <button type="button" id="btn-toggle-token" class="btn btn-outline">Afficher</button>
+            <input type="password" id="api-token" placeholder="Collez votre token ici..." autocomplete="off">
+            <button type="button" id="btn-paste-token" class="btn btn-primary">Coller & Connecter</button>
           </div>
-          <span class="hint">Vous pouvez vous connecter directement depuis le popup ou coller un token ici.</span>
+          <div id="token-status-badge" class="token-status-badge" style="display: none;">
+            <span class="status-dot"></span>
+            <span id="token-status-text">Token configuré et protégé (masqué)</span>
+          </div>
+          <span class="hint">Pour votre sécurité, le token n'est jamais affiché en clair. Dès le collage, la connexion s'établit et le champ est masqué.</span>
         </div>
 
         <div id="user-info-card" class="user-card" style="display: none;">
