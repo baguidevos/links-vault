@@ -116,7 +116,7 @@ router.post('/create', (req, res) => {
         // Set the tray to the state
         state.tray = tray;
 
-        if (!showDockIcon) {
+        if (!showDockIcon && app.dock) {
             app.dock.hide();
         }
     } else {
