@@ -140,3 +140,29 @@ test('url_hash preserves duplicate detection even when url is encrypted', functi
 
     expect($exists)->toBeTrue();
 });
+
+test('retrieving an unencrypted link through eloquent falls back gracefully without throwing DecryptException', function () {
+    $user = User::factory()->create();
+    $team = Team::create([
+        'user_id' => $user->id,
+        'name' => 'Security Team',
+        'slug' => 'security-team-5',
+        'is_personal' => true,
+    ]);
+
+    $plainUrl = 'https://legacy-unencrypted-plain.com/dashboard';
+
+    $legacyId = DB::table('links')->insertGetId([
+        'user_id' => $user->id,
+        'team_id' => $team->id,
+        'title' => 'Unencrypted Legacy Link',
+        'url' => $plainUrl,
+        'url_hash' => hash('sha256', $plainUrl),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $retrieved = Link::find($legacyId);
+
+    expect($retrieved->url)->toBe($plainUrl);
+});

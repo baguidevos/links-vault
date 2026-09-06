@@ -13,6 +13,7 @@ use App\Models\Tag;
 use App\Models\Team;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -26,8 +27,12 @@ class DesktopSyncService
      *
      * @return array{success: bool, message?: string, error?: string, stats?: array<string, mixed>}
      */
-    public function sync(User $user, ?Team $team = null): array
+    public function sync(User $user, Model|Team|null $team = null): array
     {
+        if ($team && ! ($team instanceof Team)) {
+            $team = Team::find($team->id);
+        }
+
         $settings = SyncSetting::where('user_id', $user->id)->first();
 
         if (! $settings || ! $settings->isConfigured()) {

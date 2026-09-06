@@ -36,10 +36,15 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             Log::error('NativePHP auto-migration/sync failed: '.$e->getMessage());
         }
 
+        // =========================================================================
+        // SOLUTION 1 : Barre de menus Desktop native (ACTIVE)
+        // Menu 'Navigation' avec les actions Page précédente / suivante / Actualiser.
+        // Toujours présent et utilisable, même sur les écrans d'erreur 500 / exceptions.
+        // =========================================================================
         Menu::create(
             Menu::app(),
             Menu::file('Fichier'),
-            Menu::edit('Édition'),
+            Menu::reload('Actualiser (F5)'),
             Menu::window('Fenêtre')
         );
 
@@ -55,6 +60,26 @@ class NativeAppServiceProvider implements ProvidesPhpIni
                 )
             );
 
+        // --- SOLUTION 1 (ACTIVE) : Fenêtre avec barre de menus native apparente ---
+        // Window::open('main')
+        //     ->title('LinksVault')
+        //     ->width(1360)
+        //     ->height(860)
+        //     ->minWidth(980)
+        //     ->minHeight(650)
+        //     ->rememberState()
+        //     ->hideMenu() // Désactivé pour la Solution 1 : permet d'afficher la barre de menus avec 'Navigation'
+        //     ->showDevTools(false)
+        //     ->url(url('/app'));
+
+        // =========================================================================
+        // SOLUTION 2 : Barre de titre personnalisée HTML/CSS intégrée (COMMENTÉE)
+        // Pour tester la Solution 2 :
+        // 1. Commentez le bloc Window::open('main') de la Solution 1 ci-dessus
+        // 2. Décommentez le bloc Window::open('main') ci-dessous
+        // 3. Décommentez le renderHook(PanelsRenderHook::BODY_START, ...) dans AppPanelProvider.php
+        // =========================================================================
+
         Window::open('main')
             ->title('LinksVault')
             ->width(1360)
@@ -62,9 +87,11 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             ->minWidth(980)
             ->minHeight(650)
             ->rememberState()
-            ->hideMenu()
+            // ->titleBarHidden() // Masque la barre native Windows pour laisser place à la barre personnalisée
+            ->hideMenu()       // Masque la barre de menus standard
             ->showDevTools(false)
             ->url(url('/app'));
+
     }
 
     /**

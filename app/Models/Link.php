@@ -10,6 +10,7 @@ use App\Enums\LinkHealthStatus;
 use App\Enums\LinkVisibility;
 use App\Models\Builders\LinkBuilder;
 use Filament\Facades\Filament;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -315,6 +316,25 @@ class Link extends Model
         }
 
         return false;
+    }
+
+    /**
+     * Decrypt the given encrypted string with fallback for legacy plain text values.
+     *
+     * @param  mixed  $value
+     * @return mixed
+     */
+    public function fromEncryptedString($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+
+        try {
+            return parent::fromEncryptedString($value);
+        } catch (DecryptException) {
+            return $value;
+        }
     }
 
     /**

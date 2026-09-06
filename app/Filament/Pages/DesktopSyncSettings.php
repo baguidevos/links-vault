@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Models\SyncSetting;
+use App\Models\Team;
 use App\Services\Sync\DesktopSyncService;
 use BackedEnum;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
@@ -40,7 +41,7 @@ class DesktopSyncSettings extends Page
 
     public ?string $last_synced_at = null;
 
-    public string $sync_status = 'idle';
+    public ?string $sync_status = 'idle';
 
     public ?string $last_error = null;
 
@@ -68,7 +69,7 @@ class DesktopSyncSettings extends Page
         $this->api_token = $settings->api_token;
         $this->auto_sync_enabled = (bool) $settings->auto_sync_enabled;
         $this->last_synced_at = $settings->last_synced_at?->format('d/m/Y H:i:s');
-        $this->sync_status = $settings->sync_status;
+        $this->sync_status = $settings->sync_status ?? 'idle';
         $this->last_error = $settings->last_error;
     }
 
@@ -95,20 +96,16 @@ class DesktopSyncSettings extends Page
             return;
         }
 
-        $tenantId = Filament::getTenant()?->id ?? $user->current_team_id;
-
-        $settings = SyncSetting::where('user_id', $user->id)->first();
-        if ($settings) {
-            $settings->update([
-                'server_url' => $this->server_url,
-                'api_token' => $this->api_token,
-                'team_id' => $tenantId,
-                'auto_sync_enabled' => $this->auto_sync_enabled,
-            ]);
-        }
+        $settings = SyncSetting::firstOrCreate(['user_id' => $user->id]);
+        $settings->update([
+            'server_url' => $this->server_url,
+            'api_token' => $this->api_token,
+            'auto_sync_enabled' => $this->auto_sync_enabled,
+        ]);
 
         Notification::make()
             ->title('Paramètres enregistrés')
+            ->body('La configuration de synchronisation a été mise à jour.')
             ->success()
             ->send();
     }
@@ -121,7 +118,8 @@ class DesktopSyncSettings extends Page
         }
 
         $this->is_syncing = true;
-        $team = Filament::getTenant() ?? $user->teams()->first();
+        $tenant = Filament::getTenant();
+        $team = $tenant instanceof Team ? $tenant : ($tenant ? Team::find($tenant->id) : $user->teams()->first());
 
         $result = $syncService->sync($user, $team);
         $this->is_syncing = false;

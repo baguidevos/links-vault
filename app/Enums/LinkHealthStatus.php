@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
+use BackedEnum;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Illuminate\Contracts\Support\Htmlable;
 
 enum LinkHealthStatus: string implements HasColor, HasIcon, HasLabel
 {
@@ -36,7 +38,7 @@ enum LinkHealthStatus: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function getIcon(): ?string
+    public function getIcon(): string|BackedEnum|Htmlable|null
     {
         return match ($this) {
             self::Healthy => TablerIcon::Check,

@@ -174,7 +174,7 @@ class LinksTable
                                 default => 'Non vérifié',
                             })
                             ->color(fn (?LinkHealthStatus $state): string => $state?->getColor() ?? 'gray')
-                            ->icon(fn (?LinkHealthStatus $state): ?string => $state?->getIcon() ?? TablerIcon::Help)
+                            ->icon(fn (?LinkHealthStatus $state): string|TablerIcon|null => $state?->getIcon() ?? TablerIcon::Help)
                             ->tooltip(fn (Link $record): ?string => $record->health_error
                                 ? "Erreur : {$record->health_error}"
                                 : ($record->redirect_url ? "Redirige vers : {$record->redirect_url}" : ($record->last_health_checked_at ? "Vérifié le {$record->last_health_checked_at->format('d/m/Y H:i')}" : 'Jamais vérifié')))

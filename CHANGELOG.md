@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-09-06
+
+### Desktop (NativePHP & Electron)
+- **Windows PHP Crash Prevention** : Suppression des variables d'environnement `PHPRC` et `PHP_INI_SCAN_DIR` au démarrage d'Electron pour empêcher le binaire PHP statique de charger des `php.ini` système conflictuels (`0xC0000005`).
+- **Navigation & Historique Desktop** :
+  - Ajout des raccourcis et gestionnaires de navigation arrière/avant dans Electron (`Alt + ←`, `Alt + →`, boutons de souris `browser-backward`/`browser-forward`).
+  - Interception des clics de menu pour naviguer en arrière même sur les écrans d'erreur 500 / exceptions Laravel.
+  - Configuration de la barre de menus native et support du mode frameless / barre personnalisée dans `NativeAppServiceProvider`.
+  - Création du composant d'en-tête personnalisé `desktop-custom-titlebar.blade.php` avec drag region et boutons de navigation.
+
+### Bug Fixes & Resilience
+- **Encrypted Links Fallback** : Gestion gracieuse des URLs existantes en clair dans `Link::fromEncryptedString()` pour éviter les exceptions `DecryptException` lors de l'accès aux liens hérités.
+- **Desktop Cloud Sync** :
+  - Résolution du TypeError sur la propriété `DesktopSyncSettings::$sync_status` avec prise en charge du statut null et fallback `'idle'`.
+  - Résolution polymorphique du modèle d'équipe (`Team`) dans `DesktopSyncService::sync()` pour supporter indifféremment l'instance de tenant FilaTeams et `App\Models\Team`.
+- **Link Health Status Enum** :
+  - Alignement de la méthode `LinkHealthStatus::getIcon()` sur le contrat Filament `HasIcon` (`string|BackedEnum|Htmlable|null`) pour supporter l'énumération `TablerIcon`.
+  - Correction du type de retour dans la closure de colonne `health_status` de `LinksTable`.
+
+### Testing
+- **EncryptedLinksTest** : Ajout d'un test automatisé validant la tolérance de déchiffrement pour les URLs non chiffrées.
+
 ## 2026-04-17
 
 ### CI/CD & DevOps
