@@ -61,6 +61,12 @@
             "@php artisan config:clear --ansi",
             "@php artisan test"
         ],
+        "desktop:build": [
+            "@php artisan native:build"
+        ],
+        "desktop:publish": [
+            "@php artisan native:publish"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

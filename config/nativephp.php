@@ -61,6 +61,9 @@ return [
      * You may use wildcards to match multiple keys.
      */
     'cleanup_env_keys' => [
+        'APP_ENV',
+        'APP_DEBUG',
+        'APP_KEY',
         'AWS_*',
         'AZURE_*',
         'GITHUB_*',
@@ -91,6 +94,7 @@ return [
         'DB_USERNAME',
         'DB_PASSWORD',
         'REDIS_*',
+        'SESSION_DOMAIN',
     ],
 
     /**
@@ -104,6 +108,10 @@ return [
         'content',
         'node_modules',
         '*/tests',
+        '.env.production',
+        '.env.local',
+        '.ai',
+        '.agents',
     ],
 
     /**
@@ -122,13 +130,13 @@ return [
          * Supported: "github", "s3", "spaces"
          * Note: The "s3" provider is compatible with S3-compatible services like Cloudflare R2.
          */
-        'default' => env('NATIVEPHP_UPDATER_PROVIDER', 'spaces'),
+        'default' => env('NATIVEPHP_UPDATER_PROVIDER', 'github'),
 
         'providers' => [
             'github' => [
                 'driver' => 'github',
-                'repo' => env('GITHUB_REPO'),
-                'owner' => env('GITHUB_OWNER'),
+                'repo' => env('GITHUB_REPO', 'links-vault'),
+                'owner' => env('GITHUB_OWNER', 'baguidevos'),
                 'token' => env('GITHUB_TOKEN'),
                 'vPrefixedTagName' => env('GITHUB_V_PREFIXED_TAG_NAME', true),
                 'private' => env('GITHUB_PRIVATE', false),
@@ -181,11 +189,16 @@ return [
      * Define your own scripts to run before and after the build process.
      */
     'prebuild' => [
-        // 'npm run build',
+        'npm run build',
+        'php artisan optimize',
+        '"'.PHP_BINARY.'" artisan native:patch-electron-builder --no-interaction',
+        '"'.PHP_BINARY.'" artisan native:patch-splash-screen --no-interaction',
+        '"'.PHP_BINARY.'" artisan native:patch-nsis-installer --no-interaction',
+        '"'.PHP_BINARY.'" artisan native:patch-auto-updater --no-interaction',
     ],
 
     'postbuild' => [
-        // 'rm -rf public/build',
+        // 'php artisan optimize:clear',
     ],
 
     /**
