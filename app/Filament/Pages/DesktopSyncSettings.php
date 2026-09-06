@@ -8,6 +8,7 @@ use App\Models\SyncSetting;
 use App\Models\Team;
 use App\Services\Sync\DesktopSyncService;
 use BackedEnum;
+use Carbon\Carbon;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -17,6 +18,7 @@ use Filament\Pages\Page;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Native\Desktop\Facades\AutoUpdater;
 use Throwable;
 
 class DesktopSyncSettings extends Page
@@ -61,6 +63,24 @@ class DesktopSyncSettings extends Page
 
     public ?string $active_team_name = null;
 
+    public string $desktop_app_version = '';
+
+    public string $updater_provider = '';
+
+    public bool $updater_enabled = true;
+
+    /** @var array{version: string, releaseNotes?: string|null, downloaded_at?: string}|null */
+    public ?array $update_downloaded = null;
+
+    /** @var array{version: string, detected_at?: string}|null */
+    public ?array $update_available = null;
+
+    public ?string $last_update_check_at = null;
+
+    public bool $is_checking_updates = false;
+
+    public ?string $updater_error = null;
+
     public function mount(): void
     {
         $user = Auth::user();
@@ -71,6 +91,16 @@ class DesktopSyncSettings extends Page
         $tenant = Filament::getTenant();
         $this->active_team_name = $tenant?->name;
         $this->current_server_url = config('app.url');
+
+        $this->desktop_app_version = (string) config('nativephp.version', '1.0.0');
+        $this->updater_provider = (string) config('nativephp.updater.default', 'github');
+        $this->updater_enabled = (bool) config('nativephp.updater.enabled', true);
+        $this->update_downloaded = cache()->get('nativephp_update_downloaded');
+        $this->update_available = cache()->get('nativephp_update_available');
+        $this->is_checking_updates = (bool) cache()->get('nativephp_checking_updates', false);
+        $this->updater_error = cache()->get('nativephp_updater_error');
+        $lastChecked = cache()->get('nativephp_last_checked_at');
+        $this->last_update_check_at = $lastChecked ? Carbon::parse($lastChecked)->diffForHumans() : null;
 
         $tenantId = $tenant?->id ?? $user->current_team_id;
         $settings = SyncSetting::firstOrCreate(
@@ -265,5 +295,64 @@ class DesktopSyncSettings extends Page
                     }
                 }),
         ];
+    }
+
+    public function checkForDesktopUpdates(): void
+    {
+        if (! static::isDesktop()) {
+            Notification::make()
+                ->title('Fonction réservée à l\'application Desktop')
+                ->body('La mise à jour automatique s\'applique uniquement à l\'application installée sur votre ordinateur.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        try {
+            $this->is_checking_updates = true;
+            cache()->put('nativephp_checking_updates', true, now()->addMinutes(2));
+            cache()->forget('nativephp_updater_error');
+
+            if (class_exists(AutoUpdater::class)) {
+                AutoUpdater::checkForUpdates();
+            }
+
+            $this->mount();
+
+            Notification::make()
+                ->title('Recherche de mise à jour lancée')
+                ->body('Vérification auprès de GitHub Releases. Si une nouvelle version est disponible, elle sera téléchargée en arrière-plan.')
+                ->info()
+                ->send();
+        } catch (Throwable $e) {
+            $this->is_checking_updates = false;
+            Notification::make()
+                ->title('Erreur de vérification')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function installDesktopUpdate(): void
+    {
+        if (! static::isDesktop()) {
+            return;
+        }
+
+        try {
+            cache()->forget('nativephp_update_downloaded');
+
+            if (class_exists(AutoUpdater::class)) {
+                AutoUpdater::quitAndInstall();
+            }
+        } catch (Throwable $e) {
+            Notification::make()
+                ->title('Erreur lors de l\'installation')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 }

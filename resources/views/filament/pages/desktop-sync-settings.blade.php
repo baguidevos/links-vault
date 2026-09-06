@@ -433,6 +433,83 @@
 
         <!-- Explanations & Architecture Card -->
         <div class="space-y-4">
+            @desktop
+                <!-- Desktop Version & Auto-Update Card -->
+                <div class="p-5 bg-gradient-to-br from-indigo-500/10 via-white to-purple-500/5 dark:from-indigo-950/40 dark:via-gray-900 dark:to-purple-950/20 border border-indigo-500/30 rounded-2xl shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-indigo-500 font-bold text-sm">
+                            <x-tabler-cloud-download class="w-5 h-5" />
+                            <span>Mise à Jour Desktop</span>
+                        </div>
+                        <span class="px-2.5 py-0.5 text-xs font-mono font-semibold rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
+                            v{{ $desktop_app_version }}
+                        </span>
+                    </div>
+
+                    @if ($update_downloaded)
+                        <div class="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-xl space-y-3">
+                            <div class="flex items-center gap-2 text-emerald-500 font-semibold text-xs">
+                                <x-tabler-sparkles class="w-4 h-4" />
+                                <span>Nouvelle version prête !</span>
+                            </div>
+                            <p class="text-xs text-gray-700 dark:text-gray-300">
+                                La version <strong>v{{ $update_downloaded['version'] }}</strong> a été téléchargée avec succès.
+                            </p>
+                            <button 
+                                type="button"
+                                wire:click="installDesktopUpdate"
+                                class="w-full py-2 px-3 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg flex items-center justify-center gap-1.5 transition shadow-sm"
+                            >
+                                <x-tabler-refresh class="w-4 h-4" />
+                                <span>Redémarrer & Installer</span>
+                            </button>
+                        </div>
+                    @elseif ($update_available)
+                        <div class="p-3.5 bg-amber-500/15 border border-amber-500/30 rounded-xl space-y-1.5">
+                            <div class="flex items-center gap-2 text-amber-500 font-semibold text-xs">
+                                <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                                <span>Téléchargement en cours...</span>
+                            </div>
+                            <p class="text-xs text-gray-600 dark:text-gray-300">
+                                Mise à jour vers <strong>v{{ $update_available['version'] }}</strong> en arrière-plan.
+                            </p>
+                        </div>
+                    @else
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                <span>Canal de mise à jour</span>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">GitHub Releases</span>
+                            </div>
+                            @if ($last_update_check_at)
+                                <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                    <span>Dernière recherche</span>
+                                    <span class="text-gray-600 dark:text-gray-300">{{ $last_update_check_at }}</span>
+                                </div>
+                            @endif
+
+                            @if ($updater_error)
+                                <div class="p-2.5 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs text-rose-400">
+                                    {{ $updater_error }}
+                                </div>
+                            @endif
+
+                            <div class="pt-2">
+                                <button 
+                                    type="button"
+                                    wire:click="checkForDesktopUpdates"
+                                    wire:loading.attr="disabled"
+                                    class="w-full py-2 px-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-lg flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+                                >
+                                    <x-tabler-refresh class="w-3.5 h-3.5" wire:loading.class="animate-spin" wire:target="checkForDesktopUpdates" />
+                                    <span wire:loading.remove wire:target="checkForDesktopUpdates">Rechercher une mise à jour</span>
+                                    <span wire:loading wire:target="checkForDesktopUpdates">Vérification en cours...</span>
+                                </button>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            @enddesktop
+
             <div class="p-5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-2xl space-y-3">
                 <div class="flex items-center gap-2 text-indigo-500 font-semibold text-sm">
                     <x-tabler-info-circle class="w-4 h-4" />

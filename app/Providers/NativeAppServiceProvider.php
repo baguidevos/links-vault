@@ -4,9 +4,15 @@ namespace App\Providers;
 
 use App\Jobs\SyncWithCloudJob;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Nafiswatsiq\Subbase\Models\Plan as ModelsPlan;
 use Native\Desktop\Contracts\ProvidesPhpIni;
+use Native\Desktop\Events\AutoUpdater\CheckingForUpdate;
+use Native\Desktop\Events\AutoUpdater\Error as AutoUpdaterError;
+use Native\Desktop\Events\AutoUpdater\UpdateAvailable;
+use Native\Desktop\Events\AutoUpdater\UpdateDownloaded;
+use Native\Desktop\Events\AutoUpdater\UpdateNotAvailable;
 use Native\Desktop\Facades\Menu;
 use Native\Desktop\Facades\MenuBar;
 use Native\Desktop\Facades\Window;
@@ -19,6 +25,9 @@ class NativeAppServiceProvider implements ProvidesPhpIni
      */
     public function boot(): void
     {
+        // Enregistrer les écouteurs d'événements pour le cycle de vie de l'AutoUpdater
+        $this->registerAutoUpdateListeners();
+
         // Exécution automatique des migrations en attente sur l'application Desktop
         try {
             Artisan::call('migrate', ['--force' => true]);
@@ -37,15 +46,18 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         }
 
         // =========================================================================
-        // SOLUTION 1 : Barre de menus Desktop native (ACTIVE)
-        // Menu 'Navigation' avec les actions Page précédente / suivante / Actualiser.
-        // Toujours présent et utilisable, même sur les écrans d'erreur 500 / exceptions.
+        // Barre de menus Desktop native
         // =========================================================================
         Menu::create(
             Menu::app(),
             Menu::file('Fichier'),
             Menu::reload('Actualiser (F5)'),
-            Menu::window('Fenêtre')
+            Menu::window('Fenêtre'),
+            Menu::make(
+                Menu::link(url('/app/settings/sync'), 'Mises à jour & Synchronisation...'),
+                Menu::separator(),
+                Menu::about('À propos de LinksVault')
+            )->label('Aide')
         );
 
         MenuBar::create()
@@ -55,6 +67,7 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             ->withContextMenu(
                 Menu::make(
                     Menu::link(url('/app'), 'Ouvrir LinksVault'),
+                    Menu::link(url('/app/settings/sync'), 'Mises à jour & Synchronisation'),
                     Menu::separator(),
                     Menu::quit('Quitter LinksVault')
                 )
@@ -104,5 +117,51 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             'display_errors' => '1',
             'error_reporting' => 'E_ALL',
         ];
+    }
+
+    /**
+     * Enregistre les écouteurs d'événements pour l'AutoUpdater NativePHP.
+     */
+    protected function registerAutoUpdateListeners(): void
+    {
+        Event::listen(UpdateDownloaded::class, function (UpdateDownloaded $event) {
+            Log::info('NativePHP Desktop update downloaded', [
+                'version' => $event->version,
+                'releaseDate' => $event->releaseDate ?? null,
+            ]);
+            cache()->put('nativephp_update_downloaded', [
+                'version' => $event->version,
+                'releaseNotes' => $event->releaseNotes ?? null,
+                'downloaded_at' => now()->toIso8601String(),
+            ], now()->addDays(7));
+            cache()->forget('nativephp_checking_updates');
+        });
+
+        Event::listen(UpdateAvailable::class, function (UpdateAvailable $event) {
+            Log::info('NativePHP Desktop update available', ['version' => $event->version]);
+            cache()->put('nativephp_update_available', [
+                'version' => $event->version,
+                'detected_at' => now()->toIso8601String(),
+            ], now()->addHours(6));
+            cache()->forget('nativephp_checking_updates');
+        });
+
+        Event::listen(UpdateNotAvailable::class, function () {
+            Log::info('NativePHP Desktop is up to date.');
+            cache()->forget('nativephp_update_available');
+            cache()->forget('nativephp_checking_updates');
+            cache()->put('nativephp_last_checked_at', now()->toIso8601String(), now()->addDays(1));
+        });
+
+        Event::listen(CheckingForUpdate::class, function () {
+            Log::info('NativePHP Desktop checking for updates...');
+            cache()->put('nativephp_checking_updates', true, now()->addMinutes(5));
+        });
+
+        Event::listen(AutoUpdaterError::class, function (AutoUpdaterError $event) {
+            Log::warning('NativePHP Desktop updater error: '.$event->error);
+            cache()->forget('nativephp_checking_updates');
+            cache()->put('nativephp_updater_error', $event->error, now()->addHours(1));
+        });
     }
 }
