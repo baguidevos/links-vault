@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\SyncSetting;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\Sync\WebSyncService;
@@ -43,6 +44,16 @@ class SyncController extends Controller
 
         $result = $syncService->handlePush($user, $team, $validated);
 
+        SyncSetting::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'team_id' => $team->id,
+                'last_synced_at' => now(),
+                'sync_status' => 'active',
+                'last_error' => null,
+            ]
+        );
+
         return response()->json($result);
     }
 
@@ -68,6 +79,16 @@ class SyncController extends Controller
         }
 
         $result = $syncService->buildPull($user, $team, $validated['since'] ?? null);
+
+        SyncSetting::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'team_id' => $team->id,
+                'last_synced_at' => now(),
+                'sync_status' => 'active',
+                'last_error' => null,
+            ]
+        );
 
         return response()->json($result);
     }

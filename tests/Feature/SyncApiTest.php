@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Filament\Pages\DesktopSyncSettings;
 use App\Models\Category;
 use App\Models\Folder;
 use App\Models\Link;
@@ -301,4 +302,34 @@ test('DesktopSyncService coordinates push and pull via HTTP client', function ()
     $settings = SyncSetting::where('user_id', $user->id)->first();
     expect($settings->sync_status)->toBe('idle')
         ->and($settings->last_synced_at)->not->toBeNull();
+});
+
+test('it records sync timestamps on server and detects active status in settings page', function () {
+    $user = User::factory()->create();
+    $team = Team::create(['name' => 'Web Team', 'slug' => 'web-team', 'is_personal' => true]);
+    $user->teams()->attach($team->id, ['role' => 'owner']);
+    $user->update(['current_team_id' => $team->id]);
+
+    // Push request on Web server
+    $response = $this->actingAs($user, 'sanctum')->postJson(route('api.sync.push'), [
+        'team_uuid' => $team->uuid,
+        'entities' => ['links' => []],
+    ]);
+
+    $response->assertOk();
+
+    $setting = SyncSetting::where('user_id', $user->id)->first();
+    expect($setting)->not->toBeNull()
+        ->and($setting->sync_status)->toBe('active')
+        ->and($setting->last_synced_at)->not->toBeNull();
+
+    // Verify DesktopSyncSettings mounts and correctly detects ever synced and active
+    $page = new DesktopSyncSettings;
+    $this->actingAs($user);
+    $page->mount();
+
+    expect($page->has_ever_synced)->toBeTrue()
+        ->and($page->is_sync_active)->toBeTrue()
+        ->and($page->last_synced_at)->not->toBeNull()
+        ->and($page->last_synced_diff)->not->toBeNull();
 });

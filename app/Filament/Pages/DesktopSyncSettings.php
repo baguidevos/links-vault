@@ -49,6 +49,18 @@ class DesktopSyncSettings extends Page
 
     public ?string $newWebSyncToken = null;
 
+    public bool $has_ever_synced = false;
+
+    public bool $is_sync_active = false;
+
+    public ?string $last_synced_diff = null;
+
+    public int $connected_desktop_clients = 0;
+
+    public string $current_server_url = '';
+
+    public ?string $active_team_name = null;
+
     public function mount(): void
     {
         $user = Auth::user();
@@ -56,7 +68,11 @@ class DesktopSyncSettings extends Page
             return;
         }
 
-        $tenantId = Filament::getTenant()?->id ?? $user->current_team_id;
+        $tenant = Filament::getTenant();
+        $this->active_team_name = $tenant?->name;
+        $this->current_server_url = config('app.url');
+
+        $tenantId = $tenant?->id ?? $user->current_team_id;
         $settings = SyncSetting::firstOrCreate(
             ['user_id' => $user->id],
             [
@@ -68,9 +84,33 @@ class DesktopSyncSettings extends Page
         $this->server_url = $settings->server_url;
         $this->api_token = $settings->api_token;
         $this->auto_sync_enabled = (bool) $settings->auto_sync_enabled;
-        $this->last_synced_at = $settings->last_synced_at?->format('d/m/Y H:i:s');
         $this->sync_status = $settings->sync_status ?? 'idle';
         $this->last_error = $settings->last_error;
+
+        // Récupérer les jetons d'accès Desktop générés pour cet utilisateur
+        $desktopTokens = $user->tokens()
+            ->where(function ($q) {
+                $q->where('name', 'like', '%Desktop%')
+                    ->orWhere('name', 'like', '%Sync%');
+            })
+            ->get();
+
+        $this->connected_desktop_clients = $desktopTokens->count();
+
+        // Récupérer la dernière utilisation d'un token ou last_synced_at
+        $latestTokenUsage = $desktopTokens->whereNotNull('last_used_at')->sortByDesc('last_used_at')->first()?->last_used_at;
+        $effectiveLastSynced = $settings->last_synced_at;
+
+        if ($latestTokenUsage && (! $effectiveLastSynced || $latestTokenUsage->gt($effectiveLastSynced))) {
+            $effectiveLastSynced = $latestTokenUsage;
+        }
+
+        $this->has_ever_synced = (bool) $effectiveLastSynced;
+        $this->last_synced_at = $effectiveLastSynced?->format('d/m/Y H:i:s');
+        $this->last_synced_diff = $effectiveLastSynced?->diffForHumans();
+
+        // Une synchronisation est considérée active si un échange a eu lieu dans les 7 derniers jours
+        $this->is_sync_active = (bool) ($effectiveLastSynced && $effectiveLastSynced->isAfter(now()->subDays(7)));
     }
 
     public function getHeading(): string|Htmlable

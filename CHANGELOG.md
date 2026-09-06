@@ -10,6 +10,12 @@
   - Configuration de la barre de menus native et support du mode frameless / barre personnalisée dans `NativeAppServiceProvider`.
   - Création du composant d'en-tête personnalisé `desktop-custom-titlebar.blade.php` avec drag region et boutons de navigation.
 
+### Desktop Cloud Sync & Web Dashboard
+- **Indicateur de statut et historique de synchronisation sur l'interface Web** :
+  - Détection et calcul de l'état de synchronisation (`is_sync_active`, `has_ever_synced`, `last_synced_diff`, `connected_desktop_clients`).
+  - Enregistrement des horodatages de synchronisation côté serveur dans `SyncController` lors de chaque push et pull.
+  - Affichage adapté sur l'interface Web : indicateur d'état clair (actif < 7 jours, inactif > 7 jours, ou jamais synchronisé), widget du nombre de postes connectés et panneau d'instructions avec copie en 1 clic de l'URL du serveur.
+
 ### Bug Fixes & Resilience
 - **Encrypted Links Fallback** : Gestion gracieuse des URLs existantes en clair dans `Link::fromEncryptedString()` pour éviter les exceptions `DecryptException` lors de l'accès aux liens hérités.
 - **Desktop Cloud Sync** :
