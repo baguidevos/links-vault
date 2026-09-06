@@ -5,15 +5,17 @@ namespace App\Models;
 use App\Concerns\AddTeamId;
 use App\Concerns\AddUserId;
 use App\Concerns\BelongsToTeam;
+use App\Concerns\Syncable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
-    use AddTeamId, AddUserId, BelongsToTeam;
+    use AddTeamId, AddUserId, BelongsToTeam, Syncable;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'team_id',
         'name',

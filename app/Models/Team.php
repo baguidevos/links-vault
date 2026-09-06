@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\Syncable;
 use App\Concerns\TeamConcerns\GeneratesUniqueTeamSlugs;
 use App\FilaTeams;
 use Database\Factories\TeamFactory;
@@ -19,8 +20,10 @@ class Team extends Model implements HasCurrentTenantLabel
 
     use HasFactory;
     use SoftDeletes;
+    use Syncable;
 
     protected $fillable = [
+        'uuid',
         'name',
         'slug',
         'is_personal',

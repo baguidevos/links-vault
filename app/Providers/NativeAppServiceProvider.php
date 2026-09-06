@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Jobs\SyncWithCloudJob;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Nafiswatsiq\Subbase\Models\Plan as ModelsPlan;
@@ -28,8 +29,11 @@ class NativeAppServiceProvider implements ProvidesPhpIni
                     '--force' => true,
                 ]);
             }
+
+            // Déclencher la synchronisation en arrière-plan au démarrage du Desktop
+            SyncWithCloudJob::dispatch();
         } catch (\Throwable $e) {
-            Log::error('NativePHP auto-migration failed: '.$e->getMessage());
+            Log::error('NativePHP auto-migration/sync failed: '.$e->getMessage());
         }
 
         Menu::create(

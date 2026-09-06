@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Concerns\AddTeamId;
 use App\Concerns\AddUserId;
 use App\Concerns\BelongsToTeam;
+use App\Concerns\Syncable;
 use App\Enums\FolderRole;
 use App\Enums\FolderVisibility;
 use Filament\Facades\Filament;
@@ -19,9 +20,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Folder extends Model
 {
-    use AddTeamId, AddUserId, BelongsToTeam, HasFactory;
+    use AddTeamId, AddUserId, BelongsToTeam, HasFactory, Syncable;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'team_id',
         'category_id',

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\AddUserId;
+use App\Concerns\Syncable;
 use App\Enums\ContentType;
 use App\Enums\FolderVisibility;
 use App\Enums\LinkHealthStatus;
@@ -18,8 +19,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Link extends Model
 {
     use AddUserId;
+    use Syncable;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'team_id',
         'url',

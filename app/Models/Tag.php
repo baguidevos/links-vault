@@ -4,15 +4,17 @@ namespace App\Models;
 
 use App\Concerns\AddTeamId;
 use App\Concerns\AddUserId;
+use App\Concerns\Syncable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LaravelDaily\FilaTeams\Models\Team;
 
 class Tag extends Model
 {
-    use AddTeamId, AddUserId;
+    use AddTeamId, AddUserId, Syncable;
 
     protected $fillable = [
+        'uuid',
         'user_id',
         'team_id',
         'name',
