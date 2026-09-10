@@ -63,14 +63,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
 
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction --no-dev --optimize-autoloader
+
       - name: Prepare environment file
         run: |
           copy .env.example .env
           php artisan key:generate --force
         shell: cmd
-
-      - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-progress --no-interaction --no-dev --optimize-autoloader
 
       - name: Install NPM dependencies
         run: npm ci
