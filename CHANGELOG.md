@@ -1,5 +1,87 @@
 # Changelog
 
+## v1.0.0 — 2026-09-10
+
+> **Première release stable** — Application desktop (Windows) + Web + Extension navigateur.
+
+### 🖥️ Desktop — Publication & Build
+
+- **Pipeline de publication NativePHP/Electron** : Configuration complète du build Windows avec NSIS installer, splash screen personnalisé et optimisations Electron.
+- **Auto-updater** : Mise en place du système de mise à jour automatique via Electron pour les futures versions.
+- **Prebuild patches** : Splash screen, installeur NSIS customisé et optimisations de build Electron.
+- **Sécurité .env** : Exclusion des credentials Google et clés secrètes du bundle de production pour empêcher les fuites de secrets.
+
+### 🔌 Extension Navigateur
+
+- **Sécurité du token** : Affichage sécurisé du jeton d'authentification avec auto-connect au collage du token.
+
+### ☁️ Cloud Sync
+
+- **Synchronisation bidirectionnelle** : Implémentation complète de la synchronisation desktop ↔ web (push/pull).
+- **Historique & statut** : Affichage de l'historique de synchronisation et de l'état de connexion sur l'interface web (actif < 7 jours, inactif, jamais synchronisé).
+- **Masquage contextuel** : Bouton de génération de jeton masqué sur l'app desktop (réservé au web).
+
+### 🔐 Sécurité
+
+- **Chiffrement at-rest** : Chiffrement symétrique des URLs de liens avec `LinkBuilder` et migration automatique des données existantes.
+- **Encrypted Links Fallback** : Tolérance gracieuse des URLs non chiffrées pour compatibilité ascendante.
+
+### 📊 Analytics & Dashboard
+
+- **Graphiques d'activité** : `LinksActivityChart`, `LinkHealthChart` et sparklines temps réel sur le tableau de bord.
+
+### 🩺 Health Scanner
+
+- **Dead link scanner** : Détection des liens morts avec service HTTP résilient, job de queue, commande Artisan et intégrations UI Filament.
+- **Link Health Enum** : Alignement sur le contrat `HasIcon` de Filament pour l'icône de statut.
+
+### 🤖 Intelligence Artificielle
+
+- **Recherche sémantique vectorielle** : Embeddings, recherche par vecteurs et modal AI sur la liste des liens.
+- **AI SDK Laravel** : Résumés automatiques, points clés et auto-tagging via le SDK AI officiel Laravel.
+
+### 💰 SaaS & Monétisation
+
+- **Plans d'abonnement** : Plans multi-devises, enforcement de quotas et page Filament `ManageSubscription`.
+- **Remises & promotions** : Système de réductions configurable.
+
+### ☁️ Cloud Backups
+
+- **Connecteurs multi-providers** : S3/R2, Google Drive, Dropbox et stockage local.
+- **Google Drive OAuth** : Connexion 1-clic avec sélecteur de compte et synchronisation automatique du token.
+- **Auto-pruning & restore** : Rétention automatique et restauration en 1 clic.
+
+### 📥 Import / Export
+
+- **Importeur universel de favoris** : Support Chrome, Netscape HTML, JSON et CSV.
+- **Exporteur universel** : Export dans les mêmes formats.
+- **Extraction automatique** : `thumbnail_url` et `favicon_url` extraits et persistés lors de la création et de l'import.
+
+### 👤 Profil & Interface
+
+- **Page EditProfile** : Page multi-tenant personnalisée avec layout responsive 3 colonnes.
+- **Clipper packaging** : Commande `clipper:package` pour générer des archives ZIP prêtes pour le store.
+- **UX améliorée** : Actions groupées en dropdown, header responsive, badges corrigés.
+
+### 🛡️ Navigation & Desktop UX
+
+- **Navigation historique** : Raccourcis arrière/avant (`Alt + ←/→`, boutons souris) dans Electron.
+- **Windows compatibility** : Correction du crash PHP Windows, guard `app.dock` sur Windows.
+- **Pages d'erreur** : Pages d'erreur personnalisées avec layout adapté et assets desktop.
+
+### 🔧 Bug Fixes
+
+- **Teams** : Prévention de la création dupliquée d'équipe personnelle à l'inscription.
+- **Google Drive** : Cast `access_token` en `encrypted:array`, correction du `client_secret` lors de l'échange OAuth.
+- **Metadata** : Helper `getSafeMetadata` pour normaliser les métadonnées en array.
+- **Import** : Résolution du path de stockage compatible NativePHP desktop et web.
+
+### 📈 Tracking
+
+- **Suivi end-to-end** : Tracking des visites et partages de liens avec incrémentation automatique et suite de tests dédiée.
+
+---
+
 ## 2026-09-06
 
 ### Desktop (NativePHP & Electron)
