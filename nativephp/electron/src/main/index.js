@@ -99,4 +99,3 @@ const appPath = app.isPackaged ? path.join(buildPath, 'app') : (process.env.APP_
  * Turn on the lights for the NativePHP app.
  */
 NativePHP.bootstrap(app, defaultIcon, phpBinary, certificate, appPath);
-

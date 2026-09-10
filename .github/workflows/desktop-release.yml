@@ -89,6 +89,25 @@ jobs:
           APP_ENV: production
         run: php artisan native:publish win
 
+      - name: Publish Windows repair installer
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = (Select-String -Path .env -Pattern '^NATIVEPHP_APP_VERSION=').Line.Split('=', 2)[1]
+          $setup = Get-ChildItem nativephp/electron/dist -Filter '*-setup.exe' -File | Select-Object -First 1
+          if ($null -eq $setup) {
+            throw 'Installateur Windows introuvable.'
+          }
+          $packageDirectory = Join-Path $env:RUNNER_TEMP 'linksvault-windows-repair'
+          New-Item -ItemType Directory -Path $packageDirectory | Out-Null
+          Copy-Item $setup.FullName $packageDirectory
+          Copy-Item nativephp/electron/build/Install-LinksVault.cmd $packageDirectory
+          Copy-Item nativephp/electron/build/Repair-LinksVaultInstall.ps1 $packageDirectory
+          $archive = "nativephp/electron/dist/LinksVault-$version-windows-repair.zip"
+          Compress-Archive -Path "$packageDirectory\*" -DestinationPath $archive
+          gh release upload "v$version" $archive --repo $env:GITHUB_REPOSITORY --clobber
+
       - name: Verify release was published
         shell: bash
         env:

@@ -8,7 +8,7 @@ return [
      * It is used to determine if the app needs to be updated.
      * Increment this value every time you release a new version of your app.
      */
-    'version' => env('NATIVEPHP_APP_VERSION', '1.0.0'),
+    'version' => env('NATIVEPHP_APP_VERSION', '1.0.2'),
 
     /**
      * The ID of your application. This should be a unique identifier
@@ -192,7 +192,6 @@ return [
         'npm run build',
         'php artisan optimize',
         '"'.PHP_BINARY.'" artisan native:patch-electron-builder --no-interaction',
-        '"'.PHP_BINARY.'" artisan native:patch-splash-screen --no-interaction',
         '"'.PHP_BINARY.'" artisan native:patch-nsis-installer --no-interaction',
         '"'.PHP_BINARY.'" artisan native:patch-auto-updater --no-interaction',
     ],

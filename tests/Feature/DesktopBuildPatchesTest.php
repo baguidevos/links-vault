@@ -93,6 +93,20 @@ test('patch nsis installer injects nsis options and creates installer nsh', func
         ->assertSuccessful();
 });
 
+test('Windows repair launcher preserves user data while cleaning an orphaned installation', function () {
+    $repairScript = file_get_contents(base_path('nativephp/electron/build/Repair-LinksVaultInstall.ps1'));
+    $launcher = file_get_contents(base_path('nativephp/electron/build/Install-LinksVault.cmd'));
+
+    expect($repairScript)
+        ->toContain("Join-Path \$env:LOCALAPPDATA 'Programs\\linksvault'")
+        ->toContain("Get-Process -Name 'linksvault'")
+        ->toContain("'Uninstall linksvault.exe'")
+        ->toContain('Remove-Item -LiteralPath $expectedInstallDirectory -Recurse -Force')
+        ->not->toContain('linksvault-updater');
+
+    expect($launcher)->toContain('Repair-LinksVaultInstall.ps1');
+});
+
 test('patch auto updater injects graceful shutdown and is idempotent', function () {
     $fakePluginIndex = $this->tempDir.DIRECTORY_SEPARATOR.'index.js';
     file_put_contents($fakePluginIndex, "autoUpdater.checkForUpdatesAndNotify();\n");
