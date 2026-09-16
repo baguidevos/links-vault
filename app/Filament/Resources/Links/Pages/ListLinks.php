@@ -208,7 +208,7 @@ class ListLinks extends ListRecords
                     ->form([
                         FileUpload::make('file')
                             ->label(__('Fichier de signets'))
-                            ->acceptedFileTypes(['text/html', 'application/json', 'text/csv', 'text/plain', 'text/xml'])
+                            ->acceptedFileTypes(['text/html', 'application/json', 'text/json', 'text/csv', 'text/plain', 'text/xml', 'application/octet-stream'])
                             ->disk('local')
                             ->directory('temp-imports')
                             ->required(),
