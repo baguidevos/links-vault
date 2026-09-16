@@ -269,11 +269,14 @@ class ListLinks extends ListRecords
                             return;
                         }
 
-                        $stats = $importer->import(
+                        $extension = pathinfo($relativeFile, PATHINFO_EXTENSION);
+                        
+                        $stats = $importer->importFromContent(
                             content: $content,
+                            originalExtension: $extension,
                             user: $user,
                             teamId: $teamId,
-                            parentFolderId: ! empty($data['folder_id']) ? (int) $data['folder_id'] : null,
+                            defaultFolderId: ! empty($data['folder_id']) ? (int) $data['folder_id'] : null,
                             generateAiSummary: (bool) ($data['generate_ai_summary'] ?? false)
                         );
 
