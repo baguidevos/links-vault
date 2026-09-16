@@ -99,6 +99,8 @@ export default {
         uninstallDisplayName: '${productName}',
         createDesktopShortcut: 'always',
         deleteAppDataOnUninstall: deleteAppDataOnUninstall,
+        oneClick: false,
+        allowToChangeInstallationDirectory: true,
     },
     protocols: {
         name: deepLinkProtocol,
