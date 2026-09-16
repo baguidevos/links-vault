@@ -103,15 +103,74 @@ return [
      * You may use glob / wildcard patterns here.
      */
     'cleanup_exclude_files' => [
+        // Build & dev tooling
         'build',
         'temp',
         'content',
         'node_modules',
+        'stubs',
+
+        // Tests (app + vendor)
         '*/tests',
-        '.env.production',
-        '.env.local',
+        'tests',
+        'phpunit.xml',
+
+        // CI/CD & workflows
+        'workflows',
+        '.github',
+
+        // Documentation & markdown files
+        'docs',
+        'api',
+        'YouTubeTranscriptionService',
+        '*.md',
+        'CHANGELOG.md',
+        'README.md',
+
+        // Browser extension (not needed in desktop)
+        'extension',
+        'extension.crx',
+        'extension.pem',
+
+        // AI agent configs
         '.ai',
         '.agents',
+        '.claude',
+        '.gemini',
+        '.junie',
+        '.qwen',
+        '.mcp.json',
+        'boost.json',
+        'opencode.json',
+
+        // Env files that shouldn't be bundled
+        '.env.production',
+        '.env.local',
+        '.env.example',
+        '.env.ftp.example',
+        '.env.glm.example',
+
+        // Editor & git config
+        '.editorconfig',
+        '.gitattributes',
+        '.gitignore',
+
+        // Dev/scratch files
+        'test_cli_service.php',
+        'php_error.log',
+        'idee_sur_politique_de_conf.md',
+        'implementation_plan.md',
+        'prd_report_system.md',
+        'roadmap.md',
+        'roadmap-v2.md',
+
+        // Vite source config (already built by prebuild)
+        'vite.config.js',
+        'package.json',
+        'package-lock.json',
+
+        // Compiled views (regenerated at runtime)
+        'storage/framework/views/*',
     ],
 
     /**
