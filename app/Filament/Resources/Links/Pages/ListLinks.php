@@ -205,7 +205,7 @@ class ListLinks extends ListRecords
                     ->modalHeading(__('Importer des signets'))
                     ->modalDescription(__('Compatible avec les fichiers de favoris Chrome, Firefox, Safari, Edge, Pocket, Raindrop.io, JSON ou CSV.'))
                     ->modalIcon('heroicon-o-arrow-up-tray')
-                    ->form([
+                    ->schema([
                         FileUpload::make('file')
                             ->label(__('Fichier de signets'))
                             ->acceptedFileTypes(['text/html', 'application/json', 'text/json', 'text/csv', 'text/plain', 'text/xml', 'application/octet-stream'])
