@@ -29,6 +29,9 @@
         DeleteRegKey SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}"
         StrCpy $R0 0
     ${endif}
+    ; Active l'affichage des détails pour voir la progression réelle de l'extraction des fichiers
+    SetDetailsPrint both
+    DetailPrint "Extraction et installation des composants de LinksVault..."
 !macroend
 
 !macro customUnInstallCheckCurrentUser
@@ -37,6 +40,9 @@
 
 !macro customHeader
     !define MUI_ABORTWARNING
+    ; Afficher la zone de texte des détails en direct sous la barre de progression
+    ShowInstDetails show
+    ShowUninstDetails show
 !macroend
 
 ; Enable Cancel button on instfiles page and ensure window is in foreground
@@ -64,7 +70,7 @@
 !macroend
 
 !macro customInstall
-    ; no-op
+    DetailPrint "Finalisation de l'installation et configuration des raccourcis..."
 !macroend
 
 ; During updates, auto-launch the app and skip the finish page entirely so

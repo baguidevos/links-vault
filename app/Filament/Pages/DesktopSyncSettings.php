@@ -75,11 +75,22 @@ class DesktopSyncSettings extends Page
     /** @var array{version: string, detected_at?: string}|null */
     public ?array $update_available = null;
 
+    /** @var array{percent: int, transferred: int, total: int, humanTransferred: string, humanTotal: string, humanSpeed: string}|null */
+    public ?array $download_progress = null;
+
     public ?string $last_update_check_at = null;
 
     public bool $is_checking_updates = false;
 
     public ?string $updater_error = null;
+
+    public function refreshDesktopProgress(): void
+    {
+        $this->download_progress = cache()->get('nativephp_download_progress');
+        $this->update_downloaded = cache()->get('nativephp_update_downloaded');
+        $this->update_available = cache()->get('nativephp_update_available');
+        $this->updater_error = cache()->get('nativephp_updater_error');
+    }
 
     public function mount(): void
     {
@@ -92,11 +103,12 @@ class DesktopSyncSettings extends Page
         $this->active_team_name = $tenant?->name;
         $this->current_server_url = config('app.url');
 
-        $this->desktop_app_version = (string) config('nativephp.version', '1.0.0');
+        $this->desktop_app_version = (string) config('nativephp.version', '1.0.5');
         $this->updater_provider = (string) config('nativephp.updater.default', 'github');
         $this->updater_enabled = (bool) config('nativephp.updater.enabled', true);
         $this->update_downloaded = cache()->get('nativephp_update_downloaded');
         $this->update_available = cache()->get('nativephp_update_available');
+        $this->download_progress = cache()->get('nativephp_download_progress');
         $this->is_checking_updates = (bool) cache()->get('nativephp_checking_updates', false);
         $this->updater_error = cache()->get('nativephp_updater_error');
         $lastChecked = cache()->get('nativephp_last_checked_at');

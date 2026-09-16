@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Nafiswatsiq\Subbase\Models\Plan as ModelsPlan;
 use Native\Desktop\Contracts\ProvidesPhpIni;
 use Native\Desktop\Events\AutoUpdater\CheckingForUpdate;
+use Native\Desktop\Events\AutoUpdater\DownloadProgress;
 use Native\Desktop\Events\AutoUpdater\Error as AutoUpdaterError;
 use Native\Desktop\Events\AutoUpdater\UpdateAvailable;
 use Native\Desktop\Events\AutoUpdater\UpdateDownloaded;
@@ -127,6 +128,19 @@ class NativeAppServiceProvider implements ProvidesPhpIni
      */
     protected function registerAutoUpdateListeners(): void
     {
+        Event::listen(DownloadProgress::class, function (DownloadProgress $event) {
+            cache()->put('nativephp_download_progress', [
+                'percent' => (int) round($event->percent),
+                'transferred' => $event->transferred,
+                'total' => $event->total,
+                'bytesPerSecond' => $event->bytesPerSecond,
+                'humanTransferred' => number_format($event->transferred / 1048576, 1).' Mo',
+                'humanTotal' => number_format($event->total / 1048576, 1).' Mo',
+                'humanSpeed' => number_format($event->bytesPerSecond / 1048576, 1).' Mo/s',
+                'updated_at' => now()->timestamp,
+            ], now()->addMinutes(10));
+        });
+
         Event::listen(UpdateDownloaded::class, function (UpdateDownloaded $event) {
             Log::info('NativePHP Desktop update downloaded', [
                 'version' => $event->version,
@@ -138,6 +152,7 @@ class NativeAppServiceProvider implements ProvidesPhpIni
                 'downloaded_at' => now()->toIso8601String(),
             ], now()->addDays(7));
             cache()->forget('nativephp_checking_updates');
+            cache()->forget('nativephp_download_progress');
         });
 
         Event::listen(UpdateAvailable::class, function (UpdateAvailable $event) {
@@ -153,6 +168,7 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             Log::info('NativePHP Desktop is up to date.');
             cache()->forget('nativephp_update_available');
             cache()->forget('nativephp_checking_updates');
+            cache()->forget('nativephp_download_progress');
             cache()->put('nativephp_last_checked_at', now()->toIso8601String(), now()->addDays(1));
         });
 
@@ -164,6 +180,7 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         Event::listen(AutoUpdaterError::class, function (AutoUpdaterError $event) {
             Log::warning('NativePHP Desktop updater error: '.$event->error);
             cache()->forget('nativephp_checking_updates');
+            cache()->forget('nativephp_download_progress');
             cache()->put('nativephp_updater_error', $event->error, now()->addHours(1));
         });
     }

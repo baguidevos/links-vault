@@ -464,8 +464,30 @@
                                 <span>Redémarrer & Installer</span>
                             </button>
                         </div>
+                    @elseif ($download_progress)
+                        <div class="p-3.5 bg-indigo-500/15 border border-indigo-500/30 rounded-xl space-y-2.5" wire:poll.1s="refreshDesktopProgress">
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-2 text-indigo-400 font-semibold">
+                                    <x-tabler-cloud-download class="w-4 h-4 text-indigo-400 animate-bounce" />
+                                    <span>Téléchargement de la mise à jour...</span>
+                                </div>
+                                <span class="font-mono text-indigo-400 font-bold text-sm">{{ $download_progress['percent'] }}%</span>
+                            </div>
+
+                            <div class="w-full bg-gray-200 dark:bg-gray-700/60 rounded-full h-2.5 overflow-hidden shadow-inner">
+                                <div 
+                                    class="bg-indigo-600 dark:bg-indigo-500 h-2.5 rounded-full transition-all duration-300 ease-out" 
+                                    style="width: {{ $download_progress['percent'] }}%"
+                                ></div>
+                            </div>
+
+                            <div class="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 font-mono">
+                                <span>{{ $download_progress['humanTransferred'] }} / {{ $download_progress['humanTotal'] }}</span>
+                                <span>{{ $download_progress['humanSpeed'] }}</span>
+                            </div>
+                        </div>
                     @elseif ($update_available)
-                        <div class="p-3.5 bg-amber-500/15 border border-amber-500/30 rounded-xl space-y-1.5">
+                        <div class="p-3.5 bg-amber-500/15 border border-amber-500/30 rounded-xl space-y-1.5" wire:poll.2s="refreshDesktopProgress">
                             <div class="flex items-center gap-2 text-amber-500 font-semibold text-xs">
                                 <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
                                 <span>Téléchargement en cours...</span>

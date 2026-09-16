@@ -27,7 +27,29 @@
             </span>
         </div>
 
-        @if ($updateDownloaded)
+        @if ($downloadProgress)
+            <div class="pt-1 space-y-1.5" wire:poll.1s="refreshProgress">
+                <div class="flex items-center justify-between text-[11px] font-medium text-gray-700 dark:text-gray-300">
+                    <span class="flex items-center gap-1.5">
+                        <x-tabler-cloud-download class="w-3.5 h-3.5 text-indigo-500 animate-bounce" />
+                        <span>Téléchargement...</span>
+                    </span>
+                    <span class="font-mono text-indigo-600 dark:text-indigo-400 font-bold">{{ $downloadProgress['percent'] }}%</span>
+                </div>
+
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden shadow-inner">
+                    <div 
+                        class="bg-indigo-600 dark:bg-indigo-500 h-2 rounded-full transition-all duration-300 ease-out" 
+                        style="width: {{ $downloadProgress['percent'] }}%"
+                    ></div>
+                </div>
+
+                <div class="flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400 font-mono">
+                    <span>{{ $downloadProgress['humanTransferred'] }} / {{ $downloadProgress['humanTotal'] }}</span>
+                    <span>{{ $downloadProgress['humanSpeed'] }}</span>
+                </div>
+            </div>
+        @elseif ($updateDownloaded)
             <div class="pt-1">
                 <button
                     type="button"
@@ -76,11 +98,11 @@
             type="button"
             wire:click="checkForUpdates"
             wire:loading.attr="disabled"
-            title="LinksVault v{{ $currentVersion }} — Cliquez pour rechercher une mise à jour"
+            title="LinksVault v{{ $currentVersion }} — {{ $downloadProgress ? 'Téléchargement '.$downloadProgress['percent'].'%' : 'Rechercher une mise à jour' }}"
             class="relative inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
         >
-            <x-tabler-refresh class="w-4 h-4" wire:loading.class="animate-spin text-indigo-500" wire:target="checkForUpdates" />
-            <span class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full {{ $updateDownloaded ? 'bg-emerald-400 animate-ping' : ($updateAvailable ? 'bg-amber-400' : 'bg-emerald-400') }}"></span>
+            <x-tabler-refresh class="w-4 h-4 {{ $downloadProgress ? 'animate-spin text-indigo-500' : '' }}" wire:loading.class="animate-spin text-indigo-500" wire:target="checkForUpdates" />
+            <span class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full {{ $downloadProgress ? 'bg-indigo-500 animate-ping' : ($updateDownloaded ? 'bg-emerald-400 animate-ping' : ($updateAvailable ? 'bg-amber-400' : 'bg-emerald-400')) }}"></span>
         </button>
     </div>
 </div>

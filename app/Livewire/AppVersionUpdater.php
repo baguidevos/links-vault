@@ -27,17 +27,28 @@ class AppVersionUpdater extends Component
 
     public ?array $updateAvailable = null;
 
+    public ?array $downloadProgress = null;
+
     public ?string $updaterError = null;
 
     public function mount(): void
     {
-        $this->currentVersion = (string) config('nativephp.version', '1.0.4');
+        $this->currentVersion = (string) config('nativephp.version', '1.0.5');
         $this->updateDownloaded = Cache::get('nativephp_update_downloaded');
         $this->updateAvailable = Cache::get('nativephp_update_available');
+        $this->downloadProgress = Cache::get('nativephp_download_progress');
         $this->updaterError = Cache::get('nativephp_updater_error');
 
         $lastChecked = Cache::get('nativephp_last_checked_at');
         $this->lastCheckedAt = $lastChecked ? Carbon::parse($lastChecked)->diffForHumans() : null;
+    }
+
+    public function refreshProgress(): void
+    {
+        $this->downloadProgress = Cache::get('nativephp_download_progress');
+        $this->updateDownloaded = Cache::get('nativephp_update_downloaded');
+        $this->updateAvailable = Cache::get('nativephp_update_available');
+        $this->updaterError = Cache::get('nativephp_updater_error');
     }
 
     public function checkForUpdates(): void
