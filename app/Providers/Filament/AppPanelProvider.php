@@ -54,6 +54,7 @@ class AppPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::HEAD_START, fn () => view('filament.render_hooks.favicons'))
             ->renderHook(PanelsRenderHook::TOPBAR_START, fn () => view('filament.components.navigation-history-buttons'))
             ->renderHook(PanelsRenderHook::SIMPLE_PAGE_START, fn () => view('filament.components.navigation-history-buttons'))
+            ->renderHook(PanelsRenderHook::SIDEBAR_FOOTER, fn () => view('filament.components.sidebar-version-updater'))
             // SOLUTION 2 (COMMENTÉE) : Décommentez pour afficher la barre de titre personnalisée tout en haut
             // ->renderHook(PanelsRenderHook::BODY_START, fn () => view('filament.components.desktop-custom-titlebar'))
             ->colors([

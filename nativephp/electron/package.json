@@ -5,6 +5,10 @@
     "main": "./out/main/index.js",
     "author": "NativePHP",
     "homepage": "https://nativephp.com",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/baguidevos/links-vault.git"
+    },
     "type": "module",
     "engines": {
         "node": ">=22.0.0"

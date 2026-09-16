@@ -714,3 +714,81 @@ textarea {
   border-color: var(--primary);
 }
 
+/* Desktop Status Pill & Action Buttons */
+.desktop-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  transition: all 0.25s ease;
+}
+
+.desktop-status-pill.online {
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.desktop-status-pill.online .status-dot {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+}
+
+.desktop-status-pill.offline {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.desktop-status-pill.offline .status-dot {
+  background: #f59e0b;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.form-footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn-save {
+  flex: 1;
+  width: auto;
+  margin-top: 0;
+}
+
+.btn-launch {
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 9px 12px;
+  font-size: 12px;
+}
+
+.btn-text-link {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.btn-text-link:hover {
+  background: var(--bg-surface-hover);
+}
+

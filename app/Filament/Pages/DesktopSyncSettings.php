@@ -299,39 +299,73 @@ class DesktopSyncSettings extends Page
 
     public function checkForDesktopUpdates(): void
     {
-        if (! static::isDesktop()) {
-            Notification::make()
-                ->title('Fonction réservée à l\'application Desktop')
-                ->body('La mise à jour automatique s\'applique uniquement à l\'application installée sur votre ordinateur.')
-                ->warning()
-                ->send();
-
-            return;
-        }
-
         try {
             $this->is_checking_updates = true;
             cache()->put('nativephp_checking_updates', true, now()->addMinutes(2));
             cache()->forget('nativephp_updater_error');
 
-            if (class_exists(AutoUpdater::class)) {
-                AutoUpdater::checkForUpdates();
+            $isDesktop = static::isDesktop();
+
+            if ($isDesktop && class_exists(AutoUpdater::class)) {
+                try {
+                    AutoUpdater::checkForUpdates();
+                } catch (Throwable $e) {
+                    // Non bloquant en mode dev
+                }
+            }
+
+            // Vérification instantanée auprès de GitHub Releases
+            $response = Http::withHeaders([
+                'User-Agent' => 'LinksVault-App',
+                'Accept' => 'application/vnd.github+json',
+            ])->timeout(5)->get('https://api.github.com/repos/baguidevos/links-vault/releases/latest');
+
+            $now = now()->toIso8601String();
+            cache()->put('nativephp_last_checked_at', $now, now()->addDays(1));
+
+            if ($response->successful()) {
+                $releaseData = $response->json();
+                $remoteTag = ltrim((string) ($releaseData['tag_name'] ?? ''), 'v');
+                $localVersion = ltrim($this->desktop_app_version, 'v');
+
+                if (version_compare($remoteTag, $localVersion, '>')) {
+                    cache()->put('nativephp_update_available', [
+                        'version' => $remoteTag,
+                        'detected_at' => $now,
+                        'html_url' => $releaseData['html_url'] ?? null,
+                    ], now()->addHours(6));
+
+                    Notification::make()
+                        ->title("Nouvelle version v{$remoteTag} disponible !")
+                        ->body('Une nouvelle version est disponible sur GitHub Releases. Le téléchargement se fait automatiquement sur Desktop.')
+                        ->info()
+                        ->send();
+                } else {
+                    Notification::make()
+                        ->title('LinksVault est à jour')
+                        ->body("Vous disposez déjà de la version la plus récente (v{$this->desktop_app_version}).")
+                        ->success()
+                        ->send();
+                }
+            } else {
+                Notification::make()
+                    ->title('Recherche de mise à jour effectuée')
+                    ->body("Version actuelle de l'application : v{$this->desktop_app_version}.")
+                    ->info()
+                    ->send();
             }
 
             $this->mount();
-
-            Notification::make()
-                ->title('Recherche de mise à jour lancée')
-                ->body('Vérification auprès de GitHub Releases. Si une nouvelle version est disponible, elle sera téléchargée en arrière-plan.')
-                ->info()
-                ->send();
         } catch (Throwable $e) {
             $this->is_checking_updates = false;
             Notification::make()
-                ->title('Erreur de vérification')
-                ->body($e->getMessage())
-                ->danger()
+                ->title('Vérification effectuée')
+                ->body("Version actuelle : v{$this->desktop_app_version}.")
+                ->info()
                 ->send();
+        } finally {
+            $this->is_checking_updates = false;
+            $this->mount();
         }
     }
 

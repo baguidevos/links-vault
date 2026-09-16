@@ -13,6 +13,26 @@
     BringToFront
     ; Attempt to forcefully kill the running app before installation to avoid file lock errors
     nsExec::ExecToLog 'taskkill /IM "LinksVault.exe" /F'
+    nsExec::ExecToLog 'taskkill /IM "linksvault.exe" /F'
+!macroend
+
+; Fallback handler for previous version uninstaller failure.
+; If the old uninstaller exited with an error code (e.g. 2 from aborted locked files),
+; force clean the installation directory and registry so the new installation succeeds.
+!macro customUnInstallCheck
+    ${if} $R0 != 0
+        DetailPrint "Previous uninstaller exited with code $R0. Forcing cleanup of installation directory."
+        nsExec::ExecToLog 'taskkill /IM "LinksVault.exe" /F'
+        nsExec::ExecToLog 'taskkill /IM "linksvault.exe" /F'
+        RMDir /r "$INSTDIR"
+        DeleteRegKey SHELL_CONTEXT "${UNINSTALL_REGISTRY_KEY}"
+        DeleteRegKey SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}"
+        StrCpy $R0 0
+    ${endif}
+!macroend
+
+!macro customUnInstallCheckCurrentUser
+    !insertmacro customUnInstallCheck
 !macroend
 
 !macro customHeader

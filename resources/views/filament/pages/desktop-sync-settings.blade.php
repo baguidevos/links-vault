@@ -434,12 +434,12 @@
         <!-- Explanations & Architecture Card -->
         <div class="space-y-4">
             @desktop
-                <!-- Desktop Version & Auto-Update Card -->
+                <!-- Application Version & In-App Update Card -->
                 <div class="p-5 bg-gradient-to-br from-indigo-500/10 via-white to-purple-500/5 dark:from-indigo-950/40 dark:via-gray-900 dark:to-purple-950/20 border border-indigo-500/30 rounded-2xl shadow-sm space-y-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2 text-indigo-500 font-bold text-sm">
                             <x-tabler-cloud-download class="w-5 h-5" />
-                            <span>Mise à Jour Desktop</span>
+                            <span>Mise à Jour de l'Application</span>
                         </div>
                         <span class="px-2.5 py-0.5 text-xs font-mono font-semibold rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
                             v{{ $desktop_app_version }}
@@ -458,7 +458,7 @@
                             <button 
                                 type="button"
                                 wire:click="installDesktopUpdate"
-                                class="w-full py-2 px-3 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg flex items-center justify-center gap-1.5 transition shadow-sm"
+                                class="w-full py-2 px-3 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer"
                             >
                                 <x-tabler-refresh class="w-4 h-4" />
                                 <span>Redémarrer & Installer</span>
@@ -471,18 +471,18 @@
                                 <span>Téléchargement en cours...</span>
                             </div>
                             <p class="text-xs text-gray-600 dark:text-gray-300">
-                                Mise à jour vers <strong>v{{ $update_available['version'] }}</strong> en arrière-plan.
+                                Mise à jour vers <strong>v{{ $update_available['version'] }}</strong> en cours.
                             </p>
                         </div>
                     @else
                         <div class="space-y-2">
                             <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                                 <span>Canal de mise à jour</span>
-                                <span class="font-medium text-gray-700 dark:text-gray-300">GitHub Releases</span>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">GitHub Releases (Auto-Updater)</span>
                             </div>
                             @if ($last_update_check_at)
                                 <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                                    <span>Dernière recherche</span>
+                                    <span>Dernière vérification</span>
                                     <span class="text-gray-600 dark:text-gray-300">{{ $last_update_check_at }}</span>
                                 </div>
                             @endif
@@ -498,7 +498,7 @@
                                     type="button"
                                     wire:click="checkForDesktopUpdates"
                                     wire:loading.attr="disabled"
-                                    class="w-full py-2 px-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-lg flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+                                    class="w-full py-2 px-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-lg flex items-center justify-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
                                 >
                                     <x-tabler-refresh class="w-3.5 h-3.5" wire:loading.class="animate-spin" wire:target="checkForDesktopUpdates" />
                                     <span wire:loading.remove wire:target="checkForDesktopUpdates">Rechercher une mise à jour</span>

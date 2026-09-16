@@ -13,6 +13,7 @@ use Native\Desktop\Events\AutoUpdater\Error as AutoUpdaterError;
 use Native\Desktop\Events\AutoUpdater\UpdateAvailable;
 use Native\Desktop\Events\AutoUpdater\UpdateDownloaded;
 use Native\Desktop\Events\AutoUpdater\UpdateNotAvailable;
+use Native\Desktop\Facades\ChildProcess;
 use Native\Desktop\Facades\Menu;
 use Native\Desktop\Facades\MenuBar;
 use Native\Desktop\Facades\Window;
@@ -105,6 +106,8 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             ->showDevTools(false)
             ->url(url('/app'));
 
+        // Démarrage du mini-serveur local pour l'extension Chrome en arrière-plan
+        ChildProcess::artisan('extension:server', 'extension-server', null, true);
     }
 
     /**

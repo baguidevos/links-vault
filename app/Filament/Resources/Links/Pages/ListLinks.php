@@ -270,7 +270,7 @@ class ListLinks extends ListRecords
                         }
 
                         $extension = pathinfo($relativeFile, PATHINFO_EXTENSION);
-                        
+
                         $stats = $importer->importFromContent(
                             content: $content,
                             originalExtension: $extension,

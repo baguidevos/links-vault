@@ -41,8 +41,11 @@
     <div id="view-auth" class="view" style="display: none;">
       <div class="auth-box">
         <div class="auth-intro">
-          <h2>Connexion requise</h2>
-          <p>Connectez l'extension à votre instance Links Vault pour enregistrer vos liens.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <h2 style="margin: 0;">Configuration Cloud / Web</h2>
+            <button type="button" id="btn-back-to-save" class="btn-text-link">← Retour</button>
+          </div>
+          <p>Connectez l'extension à votre instance web si vous souhaitez synchroniser à distance.</p>
         </div>
 
         <div class="form-group">
@@ -93,6 +96,12 @@
 
     <!-- VIEW 2: SAVE LINK FORM -->
     <div id="view-save" class="view" style="display: none;">
+      <!-- Desktop Status Bar -->
+      <div id="desktop-status-bar" class="desktop-status-pill offline">
+        <span class="status-dot"></span>
+        <span id="desktop-status-text">Vérification de l'application Desktop...</span>
+      </div>
+
       <!-- Preview Card -->
       <div class="preview-card" id="preview-card">
         <div class="preview-thumb-container" id="preview-thumb-container" style="display: none;">
@@ -177,6 +186,9 @@
           <button type="submit" id="btn-save-link" class="btn btn-primary btn-save">
             <span class="btn-text">Enregistrer dans le Vault</span>
             <div class="spinner" style="display: none;"></div>
+          </button>
+          <button type="button" id="btn-launch-desktop" class="btn btn-secondary btn-launch" style="display: none;" title="Démarrer l'application LinksVault">
+            🚀 Ouvrir l'application
           </button>
         </div>
       </form>

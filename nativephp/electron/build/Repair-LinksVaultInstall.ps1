@@ -8,8 +8,8 @@ $installDirectory = Join-Path $env:LOCALAPPDATA 'Programs\linksvault'
 $expectedInstallDirectory = [System.IO.Path]::GetFullPath($installDirectory)
 
 function Stop-LinksVault {
-    Get-Process -Name 'linksvault' -ErrorAction SilentlyContinue |
-        Stop-Process -Force -ErrorAction Stop
+    Get-Process -Name 'linksvault', 'LinksVault', 'Uninstall linksvault' -ErrorAction SilentlyContinue |
+        Stop-Process -Force -ErrorAction SilentlyContinue
 }
 
 function Get-InstallerPath {
@@ -49,7 +49,17 @@ if (Test-Path -LiteralPath $uninstaller -PathType Leaf) {
 Stop-LinksVault
 
 if (Test-Path -LiteralPath $expectedInstallDirectory -PathType Container) {
-    Remove-Item -LiteralPath $expectedInstallDirectory -Recurse -Force
+    Remove-Item -LiteralPath $expectedInstallDirectory -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+# Clean orphaned registry keys if left behind
+$uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\f279aa42-eaa4-538b-af02-df147ae9a59c'
+if (Test-Path $uninstallKey) {
+    Remove-Item -Path $uninstallKey -Recurse -Force -ErrorAction SilentlyContinue
+}
+$appKey = 'HKCU:\Software\f279aa42-eaa4-538b-af02-df147ae9a59c'
+if (Test-Path $appKey) {
+    Remove-Item -Path $appKey -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 Start-Process -FilePath $installer -Wait

@@ -48,6 +48,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const successMessage = document.getElementById('success-message');
   const btnOpenVault = document.getElementById('btn-open-vault');
   const btnSaveAnother = document.getElementById('btn-save-another');
+  const desktopStatusBar = document.getElementById('desktop-status-bar');
+  const desktopStatusText = document.getElementById('desktop-status-text');
+  const btnLaunchDesktop = document.getElementById('btn-launch-desktop');
+  const btnBackToSave = document.getElementById('btn-back-to-save');
 
   // State
   const currentConfig = {
@@ -74,12 +78,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Navigation / Options
   btnOptions.addEventListener('click', () => {
-    if (chrome.runtime && chrome.runtime.openOptionsPage) {
-      chrome.runtime.openOptionsPage();
+    if (viewSave.style.display !== 'none') {
+      showView('auth');
     } else {
-      window.open(chrome.runtime.getURL('options/options.html'));
+      showView('save');
     }
   });
+
+  if (btnBackToSave) {
+    btnBackToSave.addEventListener('click', () => {
+      showView('save');
+    });
+  }
+
+  if (btnLaunchDesktop) {
+    btnLaunchDesktop.addEventListener('click', () => {
+      launchDesktopApp(currentTabData.url);
+    });
+  }
 
   // Auth Tabs Toggle
   tabLogin.addEventListener('click', () => {
@@ -264,37 +280,67 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setButtonLoading(btnSaveLink, true);
     try {
-      const res = await fetch(`${currentConfig.serverUrl}/api/links`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${currentConfig.apiToken}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      // 1. Tenter la sauvegarde directe via l'application Desktop locale si connectée
+      const isDesktopOnline = await checkDesktopPing();
 
-      const data = await res.json();
+      if (isDesktopOnline) {
+        const saveRes = await fetch('http://127.0.0.1:41234/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
 
-      if (res.status === 409) {
-        // Duplicate
-        showAlert('Ce lien est déjà présent dans votre Vault !', 'warning');
-        btnOpenVault.href = data.vault_url || `${currentConfig.serverUrl}/app`;
+        if (saveRes.ok) {
+          linkForm.style.display = 'none';
+          successBox.style.display = 'flex';
+          successMessage.textContent = "Enregistré avec succès dans l'application Desktop !";
+          btnOpenVault.href = 'linksvault://';
+          btnOpenVault.textContent = 'Ouvrir LinksVault ↗';
+          return;
+        } else {
+          throw new Error("Erreur lors de la sauvegarde locale dans l'application Desktop.");
+        }
+      }
+
+      // 2. Si le Desktop n'est pas lancé mais qu'une API Web distante est configurée
+      if (currentConfig.serverUrl && currentConfig.apiToken) {
+        const res = await fetch(`${currentConfig.serverUrl}/api/links`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${currentConfig.apiToken}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+
+        if (res.status === 409) {
+          showAlert('Ce lien est déjà présent dans votre Vault !', 'warning');
+          btnOpenVault.href = data.vault_url || `${currentConfig.serverUrl}/app`;
+          linkForm.style.display = 'none';
+          successBox.style.display = 'flex';
+          successMessage.textContent = 'Ce lien est déjà enregistré.';
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error(data.message || "Erreur lors de l'enregistrement.");
+        }
+
         linkForm.style.display = 'none';
         successBox.style.display = 'flex';
-        successMessage.textContent = 'Ce lien est déjà enregistré.';
+        successMessage.textContent = 'Le lien a été enregistré avec succès !';
+        btnOpenVault.href = data.vault_url || `${currentConfig.serverUrl}/app`;
         return;
       }
 
-      if (!res.ok) {
-        throw new Error(data.message || 'Erreur lors de l\'enregistrement.');
-      }
+      // 3. Ni Desktop lancé, ni API Web connectée -> Alerte et lancement du Desktop
+      showAlert("L'application LinksVault Desktop n'est pas lancée.", 'warning');
+      updateDesktopStatus(false);
+      launchDesktopApp(payload.url);
 
-      // Success
-      linkForm.style.display = 'none';
-      successBox.style.display = 'flex';
-      successMessage.textContent = 'Le lien a été enregistré avec succès !';
-      btnOpenVault.href = data.vault_url || `${currentConfig.serverUrl}/app`;
     } catch (err) {
       showAlert(err.message, 'error');
     } finally {
@@ -308,12 +354,75 @@ document.addEventListener('DOMContentLoaded', async () => {
     linkForm.style.display = 'flex';
   });
 
-  // --- CORE FUNCTIONS ---
+  // --- CORE FUNCTIONS & DESKTOP IPC HELPERS ---
+
+  let desktopWatcherTimer = null;
+
+  async function checkDesktopPing() {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1200);
+      const res = await fetch('http://127.0.0.1:41234/ping', {
+        method: 'GET',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return res.ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function updateDesktopStatus(isOnline) {
+    if (!desktopStatusBar) return;
+    if (isOnline) {
+      desktopStatusBar.className = 'desktop-status-pill online';
+      desktopStatusText.textContent = 'LinksVault Desktop connecté';
+      if (btnLaunchDesktop) btnLaunchDesktop.style.display = 'none';
+    } else {
+      desktopStatusBar.className = 'desktop-status-pill offline';
+      desktopStatusText.textContent = 'LinksVault Desktop non lancé';
+      if (btnLaunchDesktop) btnLaunchDesktop.style.display = 'flex';
+    }
+  }
+
+  function launchDesktopApp(saveUrl = null) {
+    let deepLink = 'linksvault://';
+    if (saveUrl) {
+      deepLink = `linksvault://save?url=${encodeURIComponent(saveUrl)}&title=${encodeURIComponent(linkTitle ? linkTitle.value : (currentTabData.title || ''))}`;
+    }
+
+    const a = document.createElement('a');
+    a.href = deepLink;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    showAlert("Démarrage de l'application LinksVault Desktop...", 'success');
+    startDesktopWatcher();
+  }
+
+  function startDesktopWatcher() {
+    if (desktopWatcherTimer) clearInterval(desktopWatcherTimer);
+    let attempts = 0;
+    desktopWatcherTimer = setInterval(async () => {
+      attempts++;
+      const isOnline = await checkDesktopPing();
+      if (isOnline) {
+        clearInterval(desktopWatcherTimer);
+        desktopWatcherTimer = null;
+        updateDesktopStatus(true);
+        showAlert('LinksVault Desktop est maintenant prêt !', 'success');
+        setTimeout(hideAlert, 3000);
+      } else if (attempts > 25) {
+        clearInterval(desktopWatcherTimer);
+        desktopWatcherTimer = null;
+      }
+    }, 1500);
+  }
 
   async function init() {
-    showView('loading');
-
-    // Load stored settings
+    // Charger la configuration existante
     const stored = await getStorage(['serverUrl', 'apiToken', 'user']);
     if (stored.serverUrl) currentConfig.serverUrl = stored.serverUrl;
     if (stored.apiToken) currentConfig.apiToken = stored.apiToken;
@@ -321,32 +430,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     authServerUrl.value = currentConfig.serverUrl;
 
-    if (!currentConfig.apiToken) {
-      showView('auth');
-      return;
-    }
-
+    // Toujours ouvrir directement l'interface de capture de lien !
     await switchViewToSave();
   }
 
   async function switchViewToSave() {
-    showView('loading');
+    hideAlert();
+    showView('save');
 
-    // Extract current tab DOM
+    // 1. Extraire les métadonnées de la page web active
     await extractTabInfo();
+    populateSaveForm();
 
-    // Verify token & load Context (Teams, Categories, Tags)
-    try {
-      await loadContext();
-      showView('save');
-      populateSaveForm();
+    // 2. Vérifier l'état de l'application Desktop locale
+    const isDesktopOnline = await checkDesktopPing();
+    updateDesktopStatus(isDesktopOnline);
 
-      // Trigger backend preview in background to enrich metadata if needed
-      enrichPreviewFromBackend();
-    } catch (err) {
-      console.error('switchViewToSave error:', err);
-      showAlert(`Connexion échouée (${err.message}). Veuillez vous reconnecter.`, 'error');
-      showView('auth');
+    if (!isDesktopOnline) {
+      startDesktopWatcher();
+    }
+
+    // 3. Si un serveur Web distant est configuré, charger le contexte en tâche de fond sans bloquer
+    if (currentConfig.serverUrl && currentConfig.apiToken) {
+      loadContext().then(() => {
+        enrichPreviewFromBackend();
+      }).catch((e) => {
+        console.warn("API Web non joignable (mode Desktop local actif) :", e);
+      });
     }
   }
 

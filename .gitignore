@@ -37,3 +37,6 @@ database/*.sqlite*
 database/nativephp.sqlite*
 /storage/framework/lsp-*
 
+# Chrome extension build artifacts
+*.crx
+*.pem
