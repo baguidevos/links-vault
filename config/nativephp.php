@@ -63,7 +63,6 @@ return [
     'cleanup_env_keys' => [
         'APP_ENV',
         'APP_DEBUG',
-        'APP_KEY',
         'AWS_*',
         'AZURE_*',
         'GITHUB_*',
