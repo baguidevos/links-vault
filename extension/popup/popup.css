@@ -727,6 +727,12 @@ textarea {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   transition: all 0.25s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.desktop-status-pill:hover {
+  filter: brightness(1.1);
 }
 
 .desktop-status-pill.online {
@@ -774,6 +780,11 @@ textarea {
   flex-shrink: 0;
   padding: 9px 12px;
   font-size: 12px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
 .btn-text-link {

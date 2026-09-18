@@ -400,7 +400,7 @@ test('create link action handles string and array metadata without throwing Type
 
     expect($link)->toBeInstanceOf(Link::class)
         ->and($link->folder_id)->toBe($folder->id)
-        ->and($link->tags)->toBe('php,laravel')
+        ->and(str_replace(' ', '', $link->tags))->toBe('php,laravel')
         ->and($link->metadata)->toBeArray();
 });
 

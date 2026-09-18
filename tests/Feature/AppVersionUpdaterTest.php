@@ -6,9 +6,12 @@ use App\Filament\Pages\DesktopSyncSettings;
 use App\Livewire\AppVersionUpdater;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
+
+uses(RefreshDatabase::class);
 
 beforeEach(function () {
     Cache::flush();

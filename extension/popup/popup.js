@@ -72,6 +72,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   let availableFolders = [];
   let availableCategories = [];
   let availableTeams = [];
+  let isDesktopRunning = false;
+  let currentTabId = null;
+  let currentTabUrl = '';
 
   // Initialize
   await init();
@@ -92,15 +95,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (btnLaunchDesktop) {
-    btnLaunchDesktop.addEventListener('click', async () => {
-      const isOnline = await checkDesktopPing();
-      if (isOnline) {
-        try {
-          await fetch('http://127.0.0.1:41234/open', { method: 'POST' });
-          return;
-        } catch (_) {}
+    btnLaunchDesktop.addEventListener('click', (e) => {
+      if (isDesktopRunning) {
+        e.preventDefault();
+        fetch('http://127.0.0.1:41234/open', { method: 'POST' }).catch(() => {});
+        return;
       }
+      btnLaunchDesktop.href = getDeepLink(currentTabData.url);
+      // When offline, native <a> click handles the linksvault:// protocol with valid user activation.
+      // Simultaneously launch via active tab injection for maximum reliability:
       launchDesktopApp(currentTabData.url);
+    });
+  }
+
+  if (desktopStatusBar) {
+    desktopStatusBar.title = 'Cliquer pour ouvrir ou lancer LinksVault Desktop';
+    desktopStatusBar.addEventListener('click', () => {
+      if (isDesktopRunning) {
+        fetch('http://127.0.0.1:41234/open', { method: 'POST' }).catch(() => {});
+      } else {
+        launchDesktopApp(currentTabData.url);
+      }
     });
   }
 
@@ -416,34 +431,67 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  function getDeepLink(saveUrl = null) {
+    if (saveUrl) {
+      const titleVal = linkTitle ? linkTitle.value : (currentTabData.title || '');
+      return `linksvault://save?url=${encodeURIComponent(saveUrl)}&title=${encodeURIComponent(titleVal)}`;
+    }
+    return 'linksvault://open';
+  }
+
   function updateDesktopStatus(isOnline) {
+    isDesktopRunning = !!isOnline;
     if (!desktopStatusBar) return;
     if (isOnline) {
       desktopStatusBar.className = 'desktop-status-pill online';
-      desktopStatusText.textContent = 'LinksVault Desktop connecté';
+      desktopStatusText.textContent = 'LinksVault Desktop connecté (Local)';
       if (btnLaunchDesktop) btnLaunchDesktop.style.display = 'none';
     } else {
       desktopStatusBar.className = 'desktop-status-pill offline';
       desktopStatusText.textContent = 'LinksVault Desktop non lancé';
-      if (btnLaunchDesktop) btnLaunchDesktop.style.display = 'flex';
+      if (btnLaunchDesktop) {
+        btnLaunchDesktop.style.display = 'inline-flex';
+        btnLaunchDesktop.href = getDeepLink(currentTabData.url);
+      }
     }
   }
 
   function launchDesktopApp(saveUrl = null) {
-    let deepLink = 'linksvault://';
-    if (saveUrl) {
-      deepLink = `linksvault://save?url=${encodeURIComponent(saveUrl)}&title=${encodeURIComponent(linkTitle ? linkTitle.value : (currentTabData.title || ''))}`;
+    const deepLink = getDeepLink(saveUrl);
+
+    // 1. Dual guarantee: trigger from active tab via script injection
+    // Active web pages are trusted by Chromium to invoke OS protocol handlers
+    if (currentTabId && currentTabUrl && !currentTabUrl.startsWith('chrome://') && !currentTabUrl.startsWith('edge://') && !currentTabUrl.startsWith('chrome-extension://') && !currentTabUrl.startsWith('about:')) {
+      chrome.scripting.executeScript({
+        target: { tabId: currentTabId },
+        func: (url) => {
+          const a = document.createElement('a');
+          a.href = url;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => a.remove(), 1000);
+        },
+        args: [deepLink],
+      }).catch((e) => {
+        console.warn('Could not inject protocol launcher in active tab:', e);
+      });
     }
 
+    // 2. Direct navigation inside popup
     try {
       window.location.href = deepLink;
-    } catch (_) {
+    } catch (_) {}
+
+    // 3. Fallback link click inside popup
+    try {
       const a = document.createElement('a');
       a.href = deepLink;
+      a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
-    }
+      setTimeout(() => a.remove(), 500);
+    } catch (_) {}
 
     showAlert("Démarrage de l'application LinksVault Desktop...", 'success');
     startDesktopWatcher();
@@ -459,14 +507,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearInterval(desktopWatcherTimer);
         desktopWatcherTimer = null;
         updateDesktopStatus(true);
-        showAlert('LinksVault Desktop est maintenant prêt !', 'success');
+        showAlert('LinksVault Desktop est maintenant connecté !', 'success');
         setTimeout(hideAlert, 3000);
         loadContextFromDesktop().catch(() => {});
-      } else if (attempts > 25) {
+      } else if (attempts > 30) {
         clearInterval(desktopWatcherTimer);
         desktopWatcherTimer = null;
       }
-    }, 1500);
+    }, 1200);
   }
 
   async function init() {
@@ -522,9 +570,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab || !tab.url) return;
 
+      currentTabId = tab.id;
+      currentTabUrl = tab.url;
+
       currentTabData.url = tab.url;
       currentTabData.title = tab.title || '';
       currentTabData.favicon = tab.favIconUrl || '';
+
+      if (btnLaunchDesktop) {
+        btnLaunchDesktop.href = getDeepLink(currentTabData.url);
+      }
 
       // Detect content type early
       if (currentTabData.url.includes('youtube.com/') || currentTabData.url.includes('youtu.be/')) {
@@ -760,6 +815,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Show selection action if text selected
     if (currentTabData.selectedText) {
       btnInsertSelection.style.display = 'inline-block';
+    }
+
+    if (btnLaunchDesktop) {
+      btnLaunchDesktop.href = getDeepLink(currentTabData.url);
     }
   }
 
