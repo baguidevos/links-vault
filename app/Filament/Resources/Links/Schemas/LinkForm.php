@@ -82,7 +82,7 @@ class LinkForm
                                 })
                         )
                         ->afterStateUpdated(function ($state, Set $set, Get $get) {
-                            self::inspectAndFillUrl($state, $set, $get, force: false);
+                            self::inspectAndFillUrl($state, $set, $get, force: true);
                         }),
                     TextInput::make('title')
                         ->label(__('Title'))

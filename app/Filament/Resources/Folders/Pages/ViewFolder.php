@@ -14,9 +14,12 @@ use App\Models\Link;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 class ViewFolder extends ViewRecord
@@ -77,6 +80,96 @@ class ViewFolder extends ViewRecord
                     $this->record->refresh();
                 }),
 
+            Action::make('add_existing_links')
+                ->label(__('Ajouter des liens existants'))
+                ->icon('heroicon-o-queue-list')
+                ->color('gray')
+                ->modalHeading(__('Ajouter des liens existants au dossier'))
+                ->modalDescription(__('Cochez les liens de cet espace auxquels vous avez accès pour les déplacer ou les rattacher à ce dossier.'))
+                ->modalSubmitActionLabel(__('Ajouter au dossier'))
+                ->modalWidth('xl')
+                ->slideOver()
+                ->visible(fn () => auth()->user() ? $this->record->canBeEditedBy(auth()->user()) : false)
+                ->form([
+                    CheckboxList::make('link_ids')
+                        ->label(__('Liens disponibles'))
+                        ->options(function () {
+                            return $this->getAvailableLinksQuery()
+                                ->latest()
+                                ->get()
+                                ->mapWithKeys(function (Link $link) {
+                                    return [$link->id => $link->title ?: $link->url];
+                                })
+                                ->toArray();
+                        })
+                        ->descriptions(function () {
+                            return $this->getAvailableLinksQuery()
+                                ->latest()
+                                ->get()
+                                ->mapWithKeys(function (Link $link) {
+                                    $parts = [];
+                                    try {
+                                        $host = parse_url($link->url, PHP_URL_HOST);
+                                        if (! empty($host)) {
+                                            $parts[] = $host;
+                                        }
+                                    } catch (\Throwable) {
+                                        // Ignore en cas d'erreur de décryptage
+                                    }
+
+                                    if ($link->folder) {
+                                        $parts[] = '📂 '.$link->folder->name;
+                                    } else {
+                                        $parts[] = '📄 '.__('Sans dossier');
+                                    }
+
+                                    if ($link->category) {
+                                        $parts[] = '🏷️ '.$link->category->name;
+                                    }
+
+                                    return [$link->id => implode(' • ', $parts)];
+                                })
+                                ->toArray();
+                        })
+                        ->searchable()
+                        ->bulkToggleable()
+                        ->required()
+                        ->columns(1)
+                        ->helperText(function () {
+                            $count = $this->getAvailableLinksQuery()->count();
+                            if ($count === 0) {
+                                return __('Aucun lien disponible à ajouter dans cet espace.');
+                            }
+
+                            return __(':count lien(s) éligible(s) dans cet espace hors de ce dossier.', ['count' => $count]);
+                        }),
+                ])
+                ->action(function (array $data) {
+                    $linkIds = $data['link_ids'] ?? [];
+                    if (empty($linkIds)) {
+                        return;
+                    }
+
+                    $linksToUpdate = $this->getAvailableLinksQuery()
+                        ->whereIn('id', $linkIds)
+                        ->get();
+
+                    $count = 0;
+                    foreach ($linksToUpdate as $link) {
+                        $link->update([
+                            'folder_id' => $this->record->id,
+                        ]);
+                        $count++;
+                    }
+
+                    Notification::make()
+                        ->title(__(':count lien(s) ajouté(s) au dossier avec succès', ['count' => $count]))
+                        ->success()
+                        ->send();
+
+                    $this->record->refresh();
+                }),
+
             ChangeFolderVisibilityAction::make()
                 ->record($this->record),
 
@@ -85,6 +178,24 @@ class ViewFolder extends ViewRecord
             DeleteAction::make()
                 ->successRedirectUrl(FolderResource::getUrl('index')),
         ];
+    }
+
+    /**
+     * Récupère la requête des liens existants éligibles à être rattachés à ce dossier.
+     */
+    public function getAvailableLinksQuery(): Builder
+    {
+        $user = auth()->user();
+        $tenant = Filament::getTenant() ?? $this->record->team;
+
+        return Link::query()
+            ->when($tenant, fn (Builder $q) => $q->where('team_id', $tenant->id))
+            ->where(function (Builder $q) {
+                $q->whereNull('folder_id')
+                    ->orWhere('folder_id', '!=', $this->record->id);
+            })
+            ->when($user, fn (Builder $q) => $q->accessibleForUser($user))
+            ->with(['folder', 'category']);
     }
 
     /**
@@ -191,6 +302,39 @@ class ViewFolder extends ViewRecord
         if ($link) {
             $link->increment('visit_count');
             $link->update(['last_visited_at' => now()]);
+        }
+    }
+
+    /**
+     * Retire un lien de ce dossier (le remet sans dossier).
+     */
+    public function removeLinkFromFolder(int $linkId): void
+    {
+        $user = auth()->user();
+        if (! $user || ! $this->record->canBeEditedBy($user)) {
+            Notification::make()
+                ->title(__('Vous n\'avez pas les droits pour modifier ce dossier'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $link = Link::query()
+            ->where('id', $linkId)
+            ->where('folder_id', $this->record->id)
+            ->when($user, fn (Builder $q) => $q->accessibleForUser($user))
+            ->first();
+
+        if ($link) {
+            $link->update(['folder_id' => null]);
+
+            Notification::make()
+                ->title(__('Lien retiré du dossier avec succès'))
+                ->success()
+                ->send();
+
+            $this->record->refresh();
         }
     }
 }

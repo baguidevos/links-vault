@@ -89,14 +89,26 @@
 
                     {{-- Actions rapides du Dossier --}}
                     <div class="flex items-center gap-2 shrink-0">
-                        <button
-                            type="button"
-                            wire:click="mountAction('add_link')"
-                            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-500 rounded-xl transition duration-150 shadow-xs cursor-pointer"
-                        >
-                            <x-filament::icon icon="heroicon-o-plus" class="w-4 h-4" />
-                            <span>Ajouter un lien</span>
-                        </button>
+                        @if ($record->canBeEditedBy(auth()->user()))
+                            <button
+                                type="button"
+                                wire:click="mountAction('add_link')"
+                                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-500 rounded-xl transition duration-150 shadow-xs cursor-pointer"
+                            >
+                                <x-filament::icon icon="heroicon-o-plus" class="w-4 h-4" />
+                                <span>Ajouter un lien</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                wire:click="mountAction('add_existing_links')"
+                                class="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition duration-150 shadow-xs cursor-pointer"
+                                title="Ajouter des liens existants"
+                            >
+                                <x-filament::icon icon="heroicon-o-queue-list" class="w-4 h-4 text-primary-500" />
+                                <span class="hidden sm:inline">Ajouter existants</span>
+                            </button>
+                        @endif
 
                         @if ($record->canChangeVisibility(auth()->user()))
                             <button
@@ -249,14 +261,27 @@
                                 Réinitialiser les filtres
                             </button>
                         @else
-                            <button
-                                type="button"
-                                wire:click="mountAction('add_link')"
-                                class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-500 rounded-xl transition shadow-xs cursor-pointer"
-                            >
-                                <x-filament::icon icon="heroicon-o-plus" class="w-4 h-4" />
-                                <span>Ajouter un lien maintenant</span>
-                            </button>
+                            @if ($record->canBeEditedBy(auth()->user()))
+                                <div class="flex flex-wrap items-center justify-center gap-3">
+                                    <button
+                                        type="button"
+                                        wire:click="mountAction('add_link')"
+                                        class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-500 rounded-xl transition shadow-xs cursor-pointer"
+                                    >
+                                        <x-filament::icon icon="heroicon-o-plus" class="w-4 h-4" />
+                                        <span>Nouveau lien</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        wire:click="mountAction('add_existing_links')"
+                                        class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition shadow-xs cursor-pointer"
+                                    >
+                                        <x-filament::icon icon="heroicon-o-queue-list" class="w-4 h-4 text-primary-500" />
+                                        <span>Ajouter des liens existants</span>
+                                    </button>
+                                </div>
+                            @endif
                         @endif
                     </div>
                 @else
@@ -362,6 +387,19 @@
                                     >
                                         <x-filament::icon icon="heroicon-o-arrow-top-right-on-square" class="w-4 h-4" />
                                     </a>
+
+                                    @if ($record->canBeEditedBy(auth()->user()))
+                                        {{-- Retirer du dossier --}}
+                                        <button
+                                            type="button"
+                                            wire:click="removeLinkFromFolder({{ $link->id }})"
+                                            wire:confirm="Êtes-vous sûr de vouloir retirer ce lien de ce dossier ?"
+                                            class="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
+                                            title="Retirer du dossier"
+                                        >
+                                            <x-filament::icon icon="heroicon-o-folder-minus" class="w-4 h-4" />
+                                        </button>
+                                    @endif
                                 </div>
                             </div>
                         @endforeach

@@ -5,13 +5,16 @@ use App\Enums\ContentType;
 use App\Enums\FolderRole;
 use App\Enums\FolderVisibility;
 use App\Enums\LinkVisibility;
+use App\Filament\Resources\Folders\Pages\ViewFolder;
 use App\Models\Category;
 use App\Models\Folder;
 use App\Models\Link;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use LaravelDaily\FilaTeams\Models\Team;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -461,4 +464,71 @@ test('view folder page shows change visibility button for authorized user', func
 
     $response->assertOk();
     $response->assertSee('Visibilité');
+});
+
+test('a user can add existing tenant links to a folder and detach them', function () {
+    $folder = Folder::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'name' => 'Dossier Projets Existants',
+        'visibility' => FolderVisibility::Team,
+    ]);
+
+    $link1 = Link::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'title' => 'Lien sans dossier 1',
+        'url' => 'https://example1.com',
+        'content_type' => ContentType::Other,
+    ]);
+
+    $link2 = Link::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'title' => 'Lien sans dossier 2',
+        'url' => 'https://example2.com',
+        'content_type' => ContentType::Other,
+    ]);
+
+    // Lien d\'un autre tenant qui ne doit pas être touché
+    $otherTeam = Team::create([
+        'name' => 'Autre Team',
+        'slug' => 'autre-team',
+        'is_personal' => false,
+    ]);
+    $otherLink = Link::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $otherTeam->id,
+        'title' => 'Lien autre team',
+        'url' => 'https://other-team.com',
+        'content_type' => ContentType::Other,
+    ]);
+
+    // 1. La page affiche bien le bouton d'ajout de liens existants
+    $response = $this->actingAs($this->owner)
+        ->get("/app/{$this->team->slug}/folders/{$folder->id}");
+
+    $response->assertOk();
+    $response->assertSee('Ajouter existants');
+
+    // 2. Test Livewire pour monter l'action add_existing_links et l'exécuter
+    Livewire::actingAs($this->owner);
+    Filament::setTenant($this->team);
+
+    Livewire::test(ViewFolder::class, ['record' => $folder->id])
+        ->callAction('add_existing_links', [
+            'link_ids' => [$link1->id, $link2->id],
+        ])
+        ->assertHasNoActionErrors();
+
+    expect($link1->fresh()->folder_id)->toBe($folder->id);
+    expect($link2->fresh()->folder_id)->toBe($folder->id);
+    expect($otherLink->fresh()->folder_id)->toBeNull();
+
+    // 3. Test de détachement d'un lien
+    Livewire::test(ViewFolder::class, ['record' => $folder->id])
+        ->call('removeLinkFromFolder', $link1->id);
+
+    expect($link1->fresh()->folder_id)->toBeNull();
+    expect($link2->fresh()->folder_id)->toBe($folder->id);
 });
