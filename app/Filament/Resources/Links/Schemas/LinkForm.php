@@ -22,6 +22,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -56,49 +57,32 @@ class LinkForm
                         ->autofocus()
                         ->url()
                         ->live(onBlur: true)
+                        ->suffixAction(
+                            Action::make('inspect_url')
+                                ->label(__('Inspecter'))
+                                ->icon('heroicon-m-arrow-path')
+                                ->tooltip('Extraire automatiquement les métadonnées OpenGraph')
+                                ->action(function ($state, Set $set, Get $get) {
+                                    if (empty($state)) {
+                                        Notification::make()
+                                            ->warning()
+                                            ->title(__('Veuillez saisir une URL valide d\'abord'))
+                                            ->send();
+
+                                        return;
+                                    }
+
+                                    $result = self::inspectAndFillUrl($state, $set, $get, force: true);
+
+                                    Notification::make()
+                                        ->success()
+                                        ->title(__('Métadonnées OpenGraph extraites avec succès'))
+                                        ->body($result['title'] ?? __('Informations mises à jour'))
+                                        ->send();
+                                })
+                        )
                         ->afterStateUpdated(function ($state, Set $set, Get $get) {
-                            if (empty($state)) {
-                                return;
-                            }
-
-                            $contentDetection = new ContentDetectionService;
-                            $analysis = $contentDetection->analyze($state);
-                            $type = $analysis['type'];
-                            $metadata = $analysis['metadata'] ?? [];
-
-                            // 1. Détection du type de contenu
-                            $set('content_type', $type);
-
-                            // 2. Favicon & Miniature
-                            if (! empty($metadata['favicon'])) {
-                                $set('favicon_url', $metadata['favicon']);
-                            }
-                            if (! empty($metadata['image']) && $metadata['image'] !== 'nom disponible') {
-                                $set('thumbnail_url', $metadata['image']);
-                            }
-
-                            // 3. Titre automatique du site ou de la vidéo
-                            $detectedTitle = ! empty($metadata['title'])
-                                ? $metadata['title']
-                                : $contentDetection->generateTitleFromUrl($state, $type);
-
-                            if (empty($get('title')) && ! empty($detectedTitle)) {
-                                $set('title', $detectedTitle);
-                            }
-
-                            // 4. Description automatique du site ou de la vidéo
-                            $detectedDescription = ! empty($metadata['description'])
-                                ? $metadata['description']
-                                : ($type === 'youtube' ? $contentDetection->getYoutubeVideoDescription($state) : null);
-
-                            if (empty($get('description')) && ! empty($detectedDescription)) {
-                                $set('description', $detectedDescription);
-                            }
-
-                            // 5. Métadonnées complètes
-                            if (! empty($metadata)) {
-                                $set('metadata', json_encode($metadata));
-                            }
+                            self::inspectAndFillUrl($state, $set, $get, force: false);
                         }),
                     TextInput::make('title')
                         ->label(__('Title'))
@@ -461,6 +445,65 @@ class LinkForm
                 ->label(__('AI Summary'))
                 ->columnSpanFull()
                 ->helperText(__('AI summary will be generated automatically')),
+        ];
+    }
+
+    /**
+     * Inspecter une URL, détecter le type de contenu et pré-remplir les champs avec OpenGraph/métadonnées.
+     *
+     * @return array{type: string, title: ?string, description: ?string, metadata: array<string, mixed>}|null
+     */
+    public static function inspectAndFillUrl(string $url, Set $set, Get $get, bool $force = false): ?array
+    {
+        $url = trim($url);
+        if (empty($url)) {
+            return null;
+        }
+
+        $contentDetection = new ContentDetectionService;
+        $analysis = $contentDetection->analyze($url);
+        $type = $analysis['type'];
+        $metadata = $analysis['metadata'] ?? [];
+
+        // 1. Détection du type de contenu
+        $set('content_type', $type);
+
+        // 2. Favicon & Miniature
+        if (! empty($metadata['favicon'])) {
+            $set('favicon_url', $metadata['favicon']);
+        }
+        if (! empty($metadata['image']) && $metadata['image'] !== 'nom disponible') {
+            $set('thumbnail_url', $metadata['image']);
+        }
+
+        // 3. Titre automatique du site ou de la vidéo (priorité OpenGraph)
+        $detectedTitle = ! empty($metadata['title'])
+            ? $metadata['title']
+            : $contentDetection->generateTitleFromUrl($url, $type);
+
+        if (($force || empty($get('title'))) && ! empty($detectedTitle)) {
+            $set('title', $detectedTitle);
+        }
+
+        // 4. Description automatique du site ou de la vidéo
+        $detectedDescription = ! empty($metadata['description'])
+            ? $metadata['description']
+            : ($type === 'youtube' ? $contentDetection->getYoutubeVideoDescription($url) : null);
+
+        if (($force || empty($get('description'))) && ! empty($detectedDescription)) {
+            $set('description', $detectedDescription);
+        }
+
+        // 5. Métadonnées complètes
+        if (! empty($metadata)) {
+            $set('metadata', json_encode($metadata));
+        }
+
+        return [
+            'type' => $type,
+            'title' => $detectedTitle,
+            'description' => $detectedDescription,
+            'metadata' => $metadata,
         ];
     }
 }

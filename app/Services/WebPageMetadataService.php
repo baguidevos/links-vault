@@ -347,11 +347,12 @@ class WebPageMetadataService
 
         $xpath = new DOMXPath($dom);
 
-        // A. Titre (priorité au tag <title>, puis og:title, twitter:title, <h1>)
+        // A. Titre (priorité absolue à og:title, twitter:title, meta[name=title], puis <title>, puis <h1>)
         $titleQueries = [
-            '//title/text()',
             "//meta[@property='og:title']/@content",
             "//meta[@name='twitter:title']/@content",
+            "//meta[@name='title']/@content",
+            '//title/text()',
             '//h1/text()',
         ];
 
@@ -360,7 +361,8 @@ class WebPageMetadataService
             if ($nodes && $nodes->length > 0) {
                 $text = trim($nodes->item(0)?->nodeValue ?? '');
                 if (! empty($text)) {
-                    $metadata['title'] = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
+                    $decoded = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
+                    $metadata['title'] = $this->cleanExtractedTitle($decoded, $baseUrl);
                     break;
                 }
             }
@@ -542,5 +544,21 @@ class WebPageMetadataService
         }
 
         return "{$scheme}://{$host}{$basePath}/{$url}";
+    }
+
+    /**
+     * Nettoyer un titre extrait des suffixes de sites répétitifs ou polluants.
+     */
+    protected function cleanExtractedTitle(string $title, string $url): string
+    {
+        $clean = trim($title);
+
+        // Supprimer les suffixes fréquents de marques : " - YouTube", " | GitHub", etc.
+        $clean = preg_replace('/\s*[-|·•–—]\s*(YouTube|GitHub|GitLab|LinkedIn|Medium|Notion|Reddit|Wikipedia|Twitter|X|Facebook|Instagram|TikTok|Vimeo|Dailymotion|Amazon|Google Docs|Google Sheets|Google Slides)\s*$/i', '', $clean);
+
+        // Supprimer "YouTube" ou "GitHub" en début si format "YouTube - ..."
+        $clean = preg_replace('/^(YouTube|GitHub)\s*[-|·•–—]\s*/i', '', $clean);
+
+        return trim($clean) ?: $title;
     }
 }
