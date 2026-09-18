@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace App\Actions\LinkActions;
 
+use App\Enums\ContentType;
 use App\Enums\LinkVisibility;
 use App\Jobs\GenerateLinkAiSummaryJob;
 use App\Jobs\GenerateLinkEmbeddingJob;
+use App\Models\Folder;
 use App\Models\Link;
+use App\Models\Tag;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\ContentDetectionService;
 use App\Services\SubscriptionQuotaService;
 use App\Services\WebPageMetadataService;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class CreateLinkAction
@@ -59,24 +63,57 @@ class CreateLinkAction
             $title = $contentDetection->generateTitleFromUrl($data['url'], $analysis['type']);
         }
 
-        // Traitement des tags si fournis sous forme de tableau
-        if (isset($data['tags']) && is_array($data['tags'])) {
-            $data['tags'] = implode(',', array_filter($data['tags']));
+        // Héritage de la catégorie du dossier si non fournie
+        if (! empty($data['folder_id']) && empty($data['category_id'])) {
+            $folder = Folder::find($data['folder_id']);
+            if ($folder && $folder->category_id) {
+                $data['category_id'] = $folder->category_id;
+            }
+        }
+
+        // Traitement des tags
+        $rawTags = $data['tags'] ?? null;
+        $tagNames = [];
+        if (is_array($rawTags)) {
+            $tagNames = array_values(array_filter(array_map('trim', $rawTags)));
+            $data['tags'] = implode(', ', $tagNames);
+        } elseif (is_string($rawTags) && ! empty($rawTags)) {
+            $tagNames = array_values(array_filter(array_map('trim', explode(',', $rawTags))));
+            $data['tags'] = implode(', ', $tagNames);
         }
 
         $faviconUrl = $data['favicon_url'] ?? ($metadata['favicon'] ?? (new WebPageMetadataService)->fetchFavicon($data['url']));
         $thumbnailUrl = $data['thumbnail_url'] ?? ($metadata['image'] ?? $metadata['og_image'] ?? null);
 
+        $contentType = ContentType::normalize($data['content_type'] ?? null, $analysis['type'] ?? null);
+
         $link = Link::create([
             ...$data,
             'title' => $title,
             'url_hash' => hash('sha256', $data['url']),
-            'content_type' => $data['content_type'] ?? $analysis['type'],
+            'content_type' => $contentType,
             'metadata' => $metadata,
             'favicon_url' => $faviconUrl,
             'thumbnail_url' => $thumbnailUrl,
             'ai_summary_status' => $generateAiSummary ? 'pending' : 'pending',
         ]);
+
+        // Synchronisation des étiquettes Tag dans la table pivot
+        if (! empty($tagNames) && $user) {
+            $teamId = $data['team_id'] ?? ($user->current_team_id ?? $user->personalTeam()?->id);
+            $tagIds = [];
+            foreach ($tagNames as $tagName) {
+                $tag = Tag::firstOrCreate([
+                    'user_id' => $user->id,
+                    'team_id' => $teamId,
+                    'slug' => Str::slug($tagName),
+                ], [
+                    'name' => $tagName,
+                ]);
+                $tagIds[] = $tag->id;
+            }
+            $link->tags()->sync($tagIds);
+        }
 
         // Synchronisation des membres restreints si applicable
         $vis = $link->visibility instanceof LinkVisibility

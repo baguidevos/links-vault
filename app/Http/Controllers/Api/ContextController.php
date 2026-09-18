@@ -44,7 +44,7 @@ class ContextController extends Controller
             $categoriesQuery->where('user_id', $user->id);
         }
         $categories = $categoriesQuery->orderBy('sort_order')->orderBy('name')->get([
-            'id', 'team_id', 'name', 'slug', 'color', 'icon',
+            'id', 'uuid', 'team_id', 'name', 'slug', 'color', 'icon',
         ]);
 
         // Load folders for the requested team/space accessible to the user
@@ -59,7 +59,7 @@ class ContextController extends Controller
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get([
-                'id', 'team_id', 'category_id', 'name', 'slug', 'color', 'icon',
+                'id', 'uuid', 'team_id', 'category_id', 'name', 'slug', 'color', 'icon',
             ]);
 
         // Load tags
@@ -69,7 +69,7 @@ class ContextController extends Controller
         } else {
             $tagsQuery->where('user_id', $user->id);
         }
-        $tags = $tagsQuery->orderBy('name')->get(['id', 'team_id', 'name', 'slug']);
+        $tags = $tagsQuery->orderBy('name')->get(['id', 'uuid', 'team_id', 'name', 'slug']);
 
         return response()->json([
             'user' => [

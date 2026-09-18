@@ -44,7 +44,7 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::TOPBAR_START, fn () => view('filament.components.navigation-history-buttons'))
             ->renderHook(PanelsRenderHook::SIMPLE_PAGE_START, fn () => view('filament.components.navigation-history-buttons'))
             ->maxContentWidth(Width::Full)
-            ->viteTheme('resources/css/filament/app/theme.css')
+            ->theme(asset('css/filament/filament/soft-compact.css'))
             ->spa(hasPrefetching: true)
             ->colors([
                 'primary' => Color::hex('#0099FF'),

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ContentType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\PreviewLinkRequest;
 use App\Http\Requests\Api\StoreLinkRequest;
 use App\Jobs\GenerateLinkAiSummaryJob;
+use App\Models\Category;
 use App\Models\Folder;
 use App\Models\Link;
 use App\Models\Tag;
@@ -87,23 +89,86 @@ class LinkController extends Controller
             ], 403);
         }
 
+        // Resolve folder and category
+        $folderId = $data['folder_id'] ?? null;
+        if (! $folderId && ! empty($data['folder_uuid'])) {
+            $folderId = Folder::where('uuid', $data['folder_uuid'])->value('id');
+        }
+        if (! $folderId && ! empty($data['folder_name'])) {
+            $folderId = Folder::where('team_id', $teamId)->where('name', $data['folder_name'])->value('id')
+                ?? Folder::where('user_id', $user->id)->where('name', $data['folder_name'])->value('id');
+        }
+
+        $categoryId = $data['category_id'] ?? null;
+        if (! $categoryId && ! empty($data['category_uuid'])) {
+            $categoryId = Category::where('uuid', $data['category_uuid'])->value('id');
+        }
+        if (! $categoryId && ! empty($data['category_name'])) {
+            $categoryId = Category::where('team_id', $teamId)->where('name', $data['category_name'])->value('id')
+                ?? Category::where('user_id', $user->id)->where('name', $data['category_name'])->value('id');
+        }
+        if ($folderId && empty($categoryId)) {
+            $folder = Folder::find($folderId);
+            if ($folder && $folder->category_id) {
+                $categoryId = $folder->category_id;
+            }
+        }
+
         // Check for duplicate
         $existing = Link::where('user_id', $user->id)
             ->where('url_hash', $urlHash)
             ->first();
 
         if ($existing) {
+            $updates = [];
+            if ($folderId !== null && $existing->folder_id !== $folderId) {
+                $updates['folder_id'] = $folderId;
+            }
+            if ($categoryId !== null && $existing->category_id !== $categoryId) {
+                $updates['category_id'] = $categoryId;
+            }
+            if (isset($data['is_favorite'])) {
+                $updates['is_favorite'] = (bool) $data['is_favorite'];
+            }
+            if (! empty($updates)) {
+                $existing->update($updates);
+            }
+
+            if (! empty($data['tags']) && is_array($data['tags'])) {
+                $tagIds = [];
+                $tagNames = [];
+                foreach ($data['tags'] as $tagItem) {
+                    $tagName = trim((string) $tagItem);
+                    if (empty($tagName)) {
+                        continue;
+                    }
+                    $tag = Tag::firstOrCreate([
+                        'user_id' => $user->id,
+                        'team_id' => $existing->team_id,
+                        'slug' => Str::slug($tagName),
+                    ], [
+                        'name' => $tagName,
+                    ]);
+                    $tagIds[] = $tag->id;
+                    $tagNames[] = $tagName;
+                }
+                if (! empty($tagIds)) {
+                    $existing->tags()->syncWithoutDetaching($tagIds);
+                    $existing->update(['tags' => implode(', ', $tagNames)]);
+                }
+            }
+
             $tenant = $existing->team;
             $webUrl = $tenant
                 ? url("/app/{$tenant->slug}/links/{$existing->id}")
                 : url('/app');
 
             return response()->json([
-                'message' => 'Ce lien existe déjà dans votre coffre-fort.',
+                'message' => 'Lien déjà présent dans votre coffre-fort (mis à jour dans le dossier choisi).',
                 'link' => $existing->load('tags', 'category', 'folder'),
                 'vault_url' => $webUrl,
                 'is_duplicate' => true,
-            ], 409);
+            ], 200);
         }
 
         // Auto-extract metadata if fields are missing
@@ -135,16 +200,6 @@ class LinkController extends Controller
             $thumbnailUrl = $thumbnailUrl ?: ($metadata['image'] ?? $metadata['og_image'] ?? null);
         }
 
-        $folderId = $data['folder_id'] ?? null;
-        $categoryId = $data['category_id'] ?? null;
-
-        if ($folderId && empty($categoryId)) {
-            $folder = Folder::find($folderId);
-            if ($folder && $folder->category_id) {
-                $categoryId = $folder->category_id;
-            }
-        }
-
         $link = Link::create([
             'user_id' => $user->id,
             'team_id' => $teamId,
@@ -152,7 +207,7 @@ class LinkController extends Controller
             'url_hash' => $urlHash,
             'title' => $title ?: Str::limit($url, 100),
             'description' => $description,
-            'content_type' => $type ?: 'other',
+            'content_type' => ContentType::normalize($type, $analysis['type'] ?? 'other'),
             'category_id' => $categoryId,
             'folder_id' => $folderId,
             'favicon_url' => $faviconUrl,

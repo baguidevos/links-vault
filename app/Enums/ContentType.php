@@ -16,6 +16,27 @@ enum ContentType: string
     case Image = 'image';
     case Other = 'other';
 
+    public static function normalize(string|self|null $type, ?string $fallback = null): self
+    {
+        if ($type instanceof self) {
+            return $type;
+        }
+
+        if (empty($type)) {
+            return self::tryFrom((string) $fallback) ?? self::Other;
+        }
+
+        $clean = strtolower(trim($type));
+
+        if ($clean === 'drive') {
+            return self::GoogleDrive;
+        }
+
+        return self::tryFrom($clean)
+            ?? self::tryFrom((string) $fallback)
+            ?? self::Other;
+    }
+
     public function label(): string
     {
         return match ($this) {

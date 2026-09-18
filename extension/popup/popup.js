@@ -240,7 +240,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (selectedTeamId) {
       linkFolder.innerHTML = '<option value="">Chargement...</option>';
       linkCategory.innerHTML = '<option value="">Chargement...</option>';
-      await loadContext(selectedTeamId);
+      const isDesktopOnline = await checkDesktopPing();
+      if (isDesktopOnline) {
+        try {
+          await loadContextFromDesktop(selectedTeamId);
+        } catch (_) {
+          if (currentConfig.serverUrl && currentConfig.apiToken) {
+            await loadContext(selectedTeamId);
+          }
+        }
+      } else if (currentConfig.serverUrl && currentConfig.apiToken) {
+        await loadContext(selectedTeamId);
+      }
     }
   });
 
@@ -263,13 +274,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.preventDefault();
     hideAlert();
 
+    const selectedFolderId = linkFolder.value ? parseInt(linkFolder.value) : null;
+    const selectedFolder = availableFolders.find((f) => String(f.id) === String(linkFolder.value));
+
+    const selectedCategoryId = linkCategory.value ? parseInt(linkCategory.value) : null;
+    const selectedCategory = availableCategories.find((c) => String(c.id) === String(linkCategory.value));
+
     const payload = {
       url: currentTabData.url,
       title: linkTitle.value.trim(),
       description: linkDescription.value.trim() || null,
       team_id: linkTeam.value ? parseInt(linkTeam.value) : null,
-      folder_id: linkFolder.value ? parseInt(linkFolder.value) : null,
-      category_id: linkCategory.value ? parseInt(linkCategory.value) : null,
+      folder_id: selectedFolderId,
+      folder_uuid: selectedFolder ? (selectedFolder.uuid || null) : null,
+      folder_name: selectedFolder ? (selectedFolder.name || null) : null,
+      category_id: selectedCategoryId,
+      category_uuid: selectedCategory ? (selectedCategory.uuid || null) : null,
+      category_name: selectedCategory ? (selectedCategory.name || null) : null,
       tags: currentTags,
       content_type: currentTabData.type || 'other',
       favicon_url: currentTabData.favicon || null,
@@ -291,14 +312,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         if (saveRes.ok) {
+          const saveJson = await saveRes.json().catch(() => ({}));
           linkForm.style.display = 'none';
           successBox.style.display = 'flex';
-          successMessage.textContent = "Enregistré avec succès dans l'application Desktop !";
+          successMessage.textContent = saveJson.message || "Enregistré avec succès dans l'application Desktop !";
           btnOpenVault.href = 'linksvault://';
           btnOpenVault.textContent = 'Ouvrir LinksVault ↗';
           return;
         } else {
-          throw new Error("Erreur lors de la sauvegarde locale dans l'application Desktop.");
+          const errJson = await saveRes.json().catch(() => ({}));
+          throw new Error(errJson.message || "Erreur lors de la sauvegarde locale dans l'application Desktop.");
         }
       }
 
@@ -316,12 +339,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const data = await res.json();
 
-        if (res.status === 409) {
-          showAlert('Ce lien est déjà présent dans votre Vault !', 'warning');
-          btnOpenVault.href = data.vault_url || `${currentConfig.serverUrl}/app`;
+        if (res.status === 409 || (data.is_duplicate && res.ok)) {
           linkForm.style.display = 'none';
           successBox.style.display = 'flex';
-          successMessage.textContent = 'Ce lien est déjà enregistré.';
+          successMessage.textContent = data.message || 'Lien déjà présent, mis à jour dans le dossier.';
+          btnOpenVault.href = data.vault_url || `${currentConfig.serverUrl}/app`;
           return;
         }
 
@@ -331,7 +353,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         linkForm.style.display = 'none';
         successBox.style.display = 'flex';
-        successMessage.textContent = 'Le lien a été enregistré avec succès !';
+        successMessage.textContent = data.message || 'Le lien a été enregistré avec succès !';
         btnOpenVault.href = data.vault_url || `${currentConfig.serverUrl}/app`;
         return;
       }
@@ -414,6 +436,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateDesktopStatus(true);
         showAlert('LinksVault Desktop est maintenant prêt !', 'success');
         setTimeout(hideAlert, 3000);
+        loadContextFromDesktop().catch(() => {});
       } else if (attempts > 25) {
         clearInterval(desktopWatcherTimer);
         desktopWatcherTimer = null;
@@ -450,8 +473,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       startDesktopWatcher();
     }
 
-    // 3. Si un serveur Web distant est configuré, charger le contexte en tâche de fond sans bloquer
-    if (currentConfig.serverUrl && currentConfig.apiToken) {
+    // 3. Charger le contexte (Dossiers, Catégories, Tags)
+    // Priorité 1: Desktop local s'il est en ligne
+    // Priorité 2: API Web distante si configurée
+    if (isDesktopOnline) {
+      loadContextFromDesktop().catch((e) => {
+        console.warn('Contexte Desktop local indisponible, repli vers API distante :', e);
+        if (currentConfig.serverUrl && currentConfig.apiToken) {
+          loadContext().then(() => enrichPreviewFromBackend()).catch(() => {});
+        }
+      });
+    } else if (currentConfig.serverUrl && currentConfig.apiToken) {
       loadContext().then(() => {
         enrichPreviewFromBackend();
       }).catch((e) => {
@@ -476,8 +508,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (ytMatch && ytMatch[1]) {
           currentTabData.image = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
         }
+      } else if (currentTabData.url.includes('docs.google.com/document/')) {
+        currentTabData.type = 'google_doc';
+      } else if (currentTabData.url.includes('docs.google.com/spreadsheets/')) {
+        currentTabData.type = 'google_sheet';
+      } else if (currentTabData.url.includes('docs.google.com/presentation/')) {
+        currentTabData.type = 'google_slides';
+      } else if (currentTabData.url.includes('docs.google.com/forms/')) {
+        currentTabData.type = 'google_form';
       } else if (currentTabData.url.includes('drive.google.com') || currentTabData.url.includes('docs.google.com')) {
-        currentTabData.type = 'drive';
+        currentTabData.type = 'google_drive';
       } else if (currentTabData.url.endsWith('.pdf')) {
         currentTabData.type = 'pdf';
       } else {
@@ -553,27 +593,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  async function loadContext(teamId = null) {
-    let url = `${currentConfig.serverUrl}/api/context`;
-    if (teamId) url += `?team_id=${teamId}`;
-
-    const res = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${currentConfig.apiToken}`,
-      },
-    });
-
-    if (!res.ok) {
-      let msg = `Erreur HTTP ${res.status}`;
-      try {
-        const errData = await res.json();
-        if (errData.message) msg = errData.message;
-      } catch (_) {}
-      throw new Error(msg);
-    }
-
-    const data = await res.json();
+  function populateContextData(data, teamId = null) {
     if (data.user) {
       currentConfig.user = data.user;
       userBadge.textContent = data.user.name || data.user.email;
@@ -641,6 +661,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  async function loadContextFromDesktop(teamId = null) {
+    let url = 'http://127.0.0.1:41234/context';
+    if (teamId) url += `?team_id=${teamId}`;
+
+    const res = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Erreur IPC Desktop ${res.status}`);
+    }
+
+    const data = await res.json();
+    populateContextData(data, teamId);
+    return data;
+  }
+
+  async function loadContext(teamId = null) {
+    let url = `${currentConfig.serverUrl}/api/context`;
+    if (teamId) url += `?team_id=${teamId}`;
+
+    const res = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${currentConfig.apiToken}`,
+      },
+    });
+
+    if (!res.ok) {
+      let msg = `Erreur HTTP ${res.status}`;
+      try {
+        const errData = await res.json();
+        if (errData.message) msg = errData.message;
+      } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const data = await res.json();
+    populateContextData(data, teamId);
+    return data;
+  }
+
   function populateSaveForm() {
     linkTitle.value = currentTabData.title;
     linkDescription.value = currentTabData.description;
@@ -654,7 +718,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       previewDomain.textContent = currentTabData.url;
     }
 
-    previewType.textContent = currentTabData.type;
+    previewType.textContent = formatContentTypeBadge(currentTabData.type);
 
     if (currentTabData.favicon) {
       previewFavicon.src = currentTabData.favicon;
@@ -672,6 +736,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (currentTabData.selectedText) {
       btnInsertSelection.style.display = 'inline-block';
     }
+  }
+
+  function formatContentTypeBadge(type) {
+    const labels = {
+      youtube: 'YOUTUBE',
+      youtube_playlist: 'PLAYLIST',
+      google_doc: 'DOC',
+      google_sheet: 'SHEET',
+      google_slides: 'SLIDES',
+      google_form: 'FORM',
+      google_drive: 'DRIVE',
+      drive: 'DRIVE',
+      article: 'ARTICLE',
+      pdf: 'PDF',
+      image: 'IMAGE',
+      other: 'LIEN',
+    };
+    return labels[type] || (type || 'ARTICLE').toUpperCase();
   }
 
   async function enrichPreviewFromBackend() {
@@ -707,7 +789,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       if (data.content_type) {
         currentTabData.type = data.content_type;
-        previewType.textContent = data.content_type;
+        previewType.textContent = formatContentTypeBadge(data.content_type);
       }
       if (data.favicon_url) {
         currentTabData.favicon = data.favicon_url;

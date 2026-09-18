@@ -6,6 +6,7 @@ use App\Models\Folder;
 use App\Models\Link;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use LaravelDaily\FilaTeams\Models\Team;
 
 uses(RefreshDatabase::class);
@@ -132,4 +133,108 @@ test('it can store a link from the API with folder', function () {
     expect($savedLink)->not->toBeNull()
         ->and($savedLink->folder_id)->toBe($folder->id)
         ->and($savedLink->category_id)->toBe($category->id);
+});
+
+test('it returns uuid in context response', function () {
+    $user = User::factory()->create();
+    $team = Team::create([
+        'name' => 'Mon Espace',
+        'slug' => 'mon-espace',
+        'user_id' => $user->id,
+        'is_personal' => true,
+    ]);
+    $user->teams()->attach($team->id, ['role' => 'owner']);
+    $user->update(['current_team_id' => $team->id]);
+
+    $category = Category::create([
+        'user_id' => $user->id,
+        'team_id' => $team->id,
+        'name' => 'Design',
+        'slug' => 'design',
+    ]);
+
+    $folder = Folder::create([
+        'user_id' => $user->id,
+        'team_id' => $team->id,
+        'name' => 'Inspiration',
+        'slug' => 'inspiration',
+        'visibility' => FolderVisibility::Team,
+    ]);
+
+    $response = $this->actingAs($user, 'sanctum')->getJson(route('api.context'));
+    $response->assertOk()
+        ->assertJsonPath('categories.0.uuid', $category->uuid)
+        ->assertJsonPath('folders.0.uuid', $folder->uuid);
+});
+
+test('it updates an existing link if submitted again with a new folder', function () {
+    $user = User::factory()->create();
+    $team = Team::create([
+        'name' => 'Mon Espace',
+        'slug' => 'mon-espace',
+        'user_id' => $user->id,
+        'is_personal' => true,
+    ]);
+    $user->teams()->attach($team->id, ['role' => 'owner']);
+    $user->update(['current_team_id' => $team->id]);
+
+    $folder = Folder::create([
+        'user_id' => $user->id,
+        'team_id' => $team->id,
+        'name' => 'Dossier Cible',
+        'slug' => 'dossier-cible',
+        'visibility' => FolderVisibility::Team,
+    ]);
+
+    // Initial link without folder
+    $link = Link::create([
+        'user_id' => $user->id,
+        'team_id' => $team->id,
+        'url' => 'https://tailwindcss.com',
+        'url_hash' => hash('sha256', 'https://tailwindcss.com'),
+        'title' => 'Tailwind CSS',
+    ]);
+
+    // Resubmit via API with folder_uuid
+    $response = $this->actingAs($user, 'sanctum')->postJson(route('api.links.store'), [
+        'url' => 'https://tailwindcss.com',
+        'folder_uuid' => $folder->uuid,
+        'tags' => ['css', 'styling'],
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('is_duplicate', true)
+        ->assertJsonPath('link.folder_id', $folder->id);
+
+    $link->refresh();
+    expect($link->folder_id)->toBe($folder->id)
+        ->and($link->tags()->pluck('name')->all())->toContain('css', 'styling');
+});
+
+test('it can store a link with legacy drive content_type without crashing', function () {
+    Http::fake();
+
+    $user = User::factory()->create();
+    $team = Team::create([
+        'name' => 'Mon Espace',
+        'slug' => 'mon-espace',
+        'user_id' => $user->id,
+        'is_personal' => true,
+    ]);
+    $user->teams()->attach($team->id, ['role' => 'owner']);
+    $user->update(['current_team_id' => $team->id]);
+
+    $response = $this->actingAs($user, 'sanctum')->postJson(route('api.links.store'), [
+        'url' => 'https://docs.google.com/document/d/test-doc/edit',
+        'title' => 'Document Partenaires',
+        'content_type' => 'drive',
+        'favicon_url' => 'https://docs.google.com/favicon.ico',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('is_duplicate', false);
+
+    $link = Link::where('url_hash', hash('sha256', 'https://docs.google.com/document/d/test-doc/edit'))->first();
+    expect($link)->not->toBeNull()
+        ->and($link->content_type->value)->toBe('google_drive');
 });

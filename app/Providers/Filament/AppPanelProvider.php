@@ -33,7 +33,7 @@ class AppPanelProvider extends PanelProvider
             ->id('app')
             ->path('app')
             ->maxContentWidth(Width::Full)
-            ->viteTheme('resources/css/filament/app/theme.css')
+            ->theme(asset('css/filament/filament/soft-compact.css'))
             ->spa(hasPrefetching: true)
             ->login()
             ->registration()
