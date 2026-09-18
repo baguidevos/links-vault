@@ -247,3 +247,19 @@ test('extension server saves google doc link correctly', function () {
     expect($link)->not->toBeNull()
         ->and($link->content_type->value)->toBe('google_doc');
 });
+
+test('extension server handles open request gracefully', function () {
+    $client = fopen('php://temp', 'r+');
+    $command = new ExtensionServerCommand;
+    $method = new ReflectionMethod($command, 'handleOpenRequest');
+    $method->setAccessible(true);
+
+    $method->invoke($command, $client);
+
+    rewind($client);
+    $response = stream_get_contents($client);
+    fclose($client);
+
+    expect($response)->toContain('HTTP/1.1 200 OK')
+        ->and($response)->toContain('"status":"ok"');
+});

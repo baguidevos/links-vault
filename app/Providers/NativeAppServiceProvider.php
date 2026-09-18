@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Nafiswatsiq\Subbase\Models\Plan as ModelsPlan;
 use Native\Desktop\Contracts\ProvidesPhpIni;
+use Native\Desktop\Events\App\OpenedFromURL;
 use Native\Desktop\Events\AutoUpdater\CheckingForUpdate;
 use Native\Desktop\Events\AutoUpdater\DownloadProgress;
 use Native\Desktop\Events\AutoUpdater\Error as AutoUpdaterError;
@@ -109,6 +110,20 @@ class NativeAppServiceProvider implements ProvidesPhpIni
 
         // Démarrage du mini-serveur local pour l'extension Chrome en arrière-plan
         ChildProcess::artisan('extension:server', 'extension-server', null, true);
+
+        // Écouteur pour ouvrir / mettre au premier plan la fenêtre lors d'un deep link (linksvault://)
+        Event::listen(OpenedFromURL::class, function () {
+            Window::open('main')
+                ->title('LinksVault')
+                ->width(1360)
+                ->height(860)
+                ->minWidth(980)
+                ->minHeight(650)
+                ->rememberState()
+                ->hideMenu()
+                ->showDevTools(false)
+                ->url(url('/app'));
+        });
     }
 
     /**

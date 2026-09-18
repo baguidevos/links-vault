@@ -92,7 +92,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (btnLaunchDesktop) {
-    btnLaunchDesktop.addEventListener('click', () => {
+    btnLaunchDesktop.addEventListener('click', async () => {
+      const isOnline = await checkDesktopPing();
+      if (isOnline) {
+        try {
+          await fetch('http://127.0.0.1:41234/open', { method: 'POST' });
+          return;
+        } catch (_) {}
+      }
       launchDesktopApp(currentTabData.url);
     });
   }
@@ -316,8 +323,20 @@ document.addEventListener('DOMContentLoaded', async () => {
           linkForm.style.display = 'none';
           successBox.style.display = 'flex';
           successMessage.textContent = saveJson.message || "Enregistré avec succès dans l'application Desktop !";
-          btnOpenVault.href = 'linksvault://';
+          btnOpenVault.href = '#';
           btnOpenVault.textContent = 'Ouvrir LinksVault ↗';
+          btnOpenVault.onclick = async (evt) => {
+            evt.preventDefault();
+            const online = await checkDesktopPing();
+            if (online) {
+              try {
+                await fetch('http://127.0.0.1:41234/open', { method: 'POST' });
+                window.close();
+                return;
+              } catch (_) {}
+            }
+            launchDesktopApp();
+          };
           return;
         } else {
           const errJson = await saveRes.json().catch(() => ({}));
@@ -343,6 +362,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           linkForm.style.display = 'none';
           successBox.style.display = 'flex';
           successMessage.textContent = data.message || 'Lien déjà présent, mis à jour dans le dossier.';
+          btnOpenVault.onclick = null;
           btnOpenVault.href = data.vault_url || `${currentConfig.serverUrl}/app`;
           return;
         }
@@ -354,6 +374,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         linkForm.style.display = 'none';
         successBox.style.display = 'flex';
         successMessage.textContent = data.message || 'Le lien a été enregistré avec succès !';
+        btnOpenVault.onclick = null;
         btnOpenVault.href = data.vault_url || `${currentConfig.serverUrl}/app`;
         return;
       }
@@ -414,11 +435,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       deepLink = `linksvault://save?url=${encodeURIComponent(saveUrl)}&title=${encodeURIComponent(linkTitle ? linkTitle.value : (currentTabData.title || ''))}`;
     }
 
-    const a = document.createElement('a');
-    a.href = deepLink;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try {
+      window.location.href = deepLink;
+    } catch (_) {
+      const a = document.createElement('a');
+      a.href = deepLink;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
 
     showAlert("Démarrage de l'application LinksVault Desktop...", 'success');
     startDesktopWatcher();

@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Native\Desktop\Facades\Window;
 
 class ExtensionServerCommand extends Command
 {
@@ -80,6 +81,8 @@ class ExtensionServerCommand extends Command
                     $this->handleContextRequest($client, $requestedTeamId);
                 } elseif (str_starts_with($firstLine, 'POST /save')) {
                     $this->handleSaveRequest($client, $body);
+                } elseif (str_starts_with($firstLine, 'POST /open') || str_starts_with($firstLine, 'GET /open')) {
+                    $this->handleOpenRequest($client);
                 } elseif (str_starts_with($firstLine, 'OPTIONS')) {
                     $this->sendCorsHeaders($client);
                 } else {
@@ -304,6 +307,29 @@ class ExtensionServerCommand extends Command
             }
         } catch (\Throwable $e) {
             Log::error('Extension IPC save error: '.$e->getMessage());
+            $this->sendJsonResponse($client, ['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    protected function handleOpenRequest($client)
+    {
+        try {
+            if (class_exists(Window::class)) {
+                Window::open('main')
+                    ->title('LinksVault')
+                    ->width(1360)
+                    ->height(860)
+                    ->minWidth(980)
+                    ->minHeight(650)
+                    ->rememberState()
+                    ->hideMenu()
+                    ->showDevTools(false)
+                    ->url(url('/app'));
+            }
+
+            $this->sendJsonResponse($client, ['status' => 'ok', 'message' => 'LinksVault Desktop ouvert avec succès']);
+        } catch (\Throwable $e) {
+            Log::error('Extension IPC open error: '.$e->getMessage());
             $this->sendJsonResponse($client, ['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }

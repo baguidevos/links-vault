@@ -183,9 +183,11 @@ class NativePHP {
                 } else {
                     app.on('second-instance', (event, commandLine) => {
                         // Someone tried to run a second instance, we should focus our window.
-                        if (this.mainWindow) {
-                            if (this.mainWindow.isMinimized()) this.mainWindow.restore();
-                            this.mainWindow.focus();
+                        const win: any = this.mainWindow || Object.values(state.windows)[0] || BrowserWindow.getAllWindows()[0];
+                        if (win) {
+                            if (win.isMinimized()) win.restore();
+                            win.show();
+                            win.focus();
                         }
 
                         // the commandLine is array of strings in which last element is deep link url
