@@ -101,14 +101,14 @@ class ManageEcosystemSettings extends Page
 
                                     TextInput::make('desktop_version')
                                         ->label('Version Desktop active')
-                                        ->placeholder('1.0.5')
+                                        ->placeholder('1.1.0')
                                         ->required()
                                         ->prefixIcon(TablerIcon::Tag),
                                 ]),
 
                                 TextInput::make('desktop_windows_url')
                                     ->label('Lien téléchargement Windows (.exe)')
-                                    ->placeholder('https://github.com/baguidevos/links-vault/releases/download/v1.0.5/LinksVault-1.0.5-setup.exe')
+                                    ->placeholder('https://github.com/baguidevos/links-vault/releases/download/v1.1.0/LinksVault-1.1.0-setup.exe')
                                     ->prefixIcon(TablerIcon::BrandWindows)
                                     ->helperText('Lien direct vers le setup installateur Windows GitHub Release.')
                                     ->columnSpanFull(),
@@ -128,7 +128,7 @@ class ManageEcosystemSettings extends Page
                                 Textarea::make('desktop_release_notes')
                                     ->label('Notes de mise à jour / Message Desktop')
                                     ->rows(3)
-                                    ->placeholder('Nouveautés de la version 1.0.5...')
+                                    ->placeholder('Nouveautés de la version 1.1.0...')
                                     ->columnSpanFull(),
                             ]),
 

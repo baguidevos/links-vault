@@ -18,7 +18,7 @@ return new class extends Migration
             $table->text('desktop_windows_url')->nullable();
             $table->text('desktop_mac_url')->nullable();
             $table->text('desktop_linux_url')->nullable();
-            $table->string('desktop_version')->default('1.0.5');
+            $table->string('desktop_version')->default('1.1.0');
             $table->boolean('desktop_is_active')->default(true);
             $table->text('desktop_release_notes')->nullable();
 
