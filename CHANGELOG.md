@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.1 — 2026-10-12
+
+> **Release v1.1.1** — Réduction de la taille et du temps d’installation Windows.
+
+### 🖥️ Desktop (NativePHP Electron)
+
+- Exclusion du paquet desktop des artefacts de compilation Android, caches Gradle, fichier local Android et métadonnées Git imbriquées.
+
+---
+
+
+
 ## v1.1.0 — 2026-10-12
 
 > **Release v1.1.0** — Panel Super Admin Écosystème (Desktop, Extensions, Mobiles) + Téléchargement direct Windows Setup .exe.

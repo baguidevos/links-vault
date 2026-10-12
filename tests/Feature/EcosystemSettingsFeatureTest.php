@@ -12,8 +12,8 @@ test('it creates default ecosystem settings with the provided windows setup url'
     $settings = AppEcosystemSetting::current();
 
     expect($settings)->not->toBeNull()
-        ->and($settings->desktop_windows_url)->toBe('https://github.com/baguidevos/links-vault/releases/download/v1.1.0/LinksVault-1.1.0-setup.exe')
-        ->and($settings->desktop_version)->toBe('1.1.0')
+        ->and($settings->desktop_windows_url)->toBe('https://github.com/baguidevos/links-vault/releases/download/v1.1.1/LinksVault-1.1.1-setup.exe')
+        ->and($settings->desktop_version)->toBe('1.1.1')
         ->and($settings->desktop_is_active)->toBeTrue()
         ->and($settings->extension_chrome_is_active)->toBeTrue()
         ->and($settings->extension_firefox_is_active)->toBeFalse()
