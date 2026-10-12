@@ -34,7 +34,8 @@ class SyncController extends Controller
 
         /** @var User $user */
         $user = $request->user();
-        $team = $this->resolveTeam($user, $validated['team_uuid'] ?? null, $validated['team_id'] ?? null);
+        $teamId = isset($validated['team_id']) && is_numeric($validated['team_id']) ? (int) $validated['team_id'] : null;
+        $team = $this->resolveTeam($user, $validated['team_uuid'] ?? null, $teamId);
 
         if (! $team) {
             return response()->json([
@@ -70,7 +71,8 @@ class SyncController extends Controller
 
         /** @var User $user */
         $user = $request->user();
-        $team = $this->resolveTeam($user, $validated['team_uuid'] ?? null, $validated['team_id'] ?? null);
+        $teamId = isset($validated['team_id']) && is_numeric($validated['team_id']) ? (int) $validated['team_id'] : null;
+        $team = $this->resolveTeam($user, $validated['team_uuid'] ?? null, $teamId);
 
         if (! $team) {
             return response()->json([
@@ -96,14 +98,15 @@ class SyncController extends Controller
     /**
      * Résout l'équipe pour l'utilisateur avec vérification des permissions.
      */
-    protected function resolveTeam(User $user, ?string $teamUuid = null, ?int $teamId = null): ?Team
+    protected function resolveTeam(User $user, ?string $teamUuid = null, int|string|null $teamId = null): ?Team
     {
+        $resolvedTeamId = $teamId !== null && is_numeric($teamId) ? (int) $teamId : null;
         $query = Team::query();
 
         if ($teamUuid) {
             $query->where('uuid', $teamUuid);
-        } elseif ($teamId) {
-            $query->where('id', $teamId);
+        } elseif ($resolvedTeamId) {
+            $query->where('id', $resolvedTeamId);
         } elseif ($user->current_team_id) {
             $query->where('id', $user->current_team_id);
         } else {
