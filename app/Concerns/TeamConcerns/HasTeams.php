@@ -29,12 +29,12 @@ trait HasTeams
 
     public function ownedTeams(): HasMany
     {
-        return $this->hasMany(Membership::class)->where('role', FilaTeams::ownerRole()->value);
+        return $this->hasMany(TeamMember::class)->where('role', FilaTeams::ownerRole()->value);
     }
 
     public function teamMemberships(): HasMany
     {
-        return $this->hasMany(Membership::class);
+        return $this->hasMany(TeamMember::class);
     }
 
     public function currentTeam(): BelongsTo

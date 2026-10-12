@@ -1,3 +1,6 @@
+@php
+    $ecosystem = $ecosystem ?? \App\Models\AppEcosystemSetting::current();
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
     <head>
@@ -176,27 +179,31 @@
                                 </svg>
                                 <span data-i18n="hero_cta_extension">Extension Chrome</span>
                             </a>
-                            <a href="https://github.com/baguidevos/links-vault/releases/latest" target="_blank" rel="noopener" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-sm sm:text-base font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-purple-400 dark:hover:border-purple-500 shadow-xs transition-all">
+                            <a href="{{ route('desktop.download') }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-sm sm:text-base font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-purple-400 dark:hover:border-purple-500 shadow-xs transition-all">
                                 <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 24 24">
                                     <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
                                 </svg>
-                                <span data-i18n="hero_cta_desktop">App Desktop</span>
+                                <span><span data-i18n="hero_cta_desktop">App Desktop</span> (v{{ $ecosystem->desktop_version }})</span>
                             </a>
                         </div>
 
                         <!-- Apps & Extensions Status Pills -->
                         <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 text-xs pt-0.5">
-                            <a href="https://github.com/baguidevos/links-vault/releases/latest" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-400 font-semibold hover:opacity-90 transition-opacity">
+                            <a href="{{ route('desktop.download') }}" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-400 font-semibold hover:opacity-90 transition-opacity">
                                 <span>🖥️</span>
-                                <span data-i18n="hero_status_desktop">Desktop : Windows & Mac (GitHub Releases)</span>
+                                <span>Desktop : Windows .exe (v{{ $ecosystem->desktop_version }})</span>
                             </a>
                             <a href="#extensions" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-semibold hover:opacity-90 transition-opacity">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                <span data-i18n="hero_ext_chrome_status">Chrome : Disponible</span>
+                                <span class="w-2 h-2 rounded-full {{ $ecosystem->extension_chrome_is_active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400' }}"></span>
+                                <span>Chrome : {{ $ecosystem->extension_chrome_is_active ? 'Disponible' : 'Bientôt disponible' }}</span>
                             </a>
-                            <a href="#extensions" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 font-medium hover:opacity-90 transition-opacity">
+                            <a href="#extensions" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full {{ $ecosystem->extension_firefox_is_active ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400' }} font-medium hover:opacity-90 transition-opacity">
                                 <span>🦊</span>
-                                <span data-i18n="hero_ext_firefox_status">Firefox : Bientôt disponible</span>
+                                <span>Firefox : {{ $ecosystem->extension_firefox_is_active ? 'Disponible' : 'Bientôt disponible' }}</span>
+                            </a>
+                            <a href="#mobile-apps" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full {{ ($ecosystem->mobile_android_is_active || $ecosystem->mobile_ios_is_active) ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400' : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-700 dark:text-indigo-400' }} font-medium hover:opacity-90 transition-opacity">
+                                <span>📱</span>
+                                <span>Mobile : {{ ($ecosystem->mobile_android_is_active || $ecosystem->mobile_ios_is_active) ? 'Disponible' : 'Bientôt sur iOS & Android' }}</span>
                             </a>
                         </div>
 
@@ -425,7 +432,7 @@
 
                 <div class="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
                     
-                    <!-- Card 1: Native Desktop App (GitHub Releases) -->
+                    <!-- Card 1: Native Desktop App (GitHub Releases & Setup .exe) -->
                     <div class="relative rounded-3xl p-7 bg-white dark:bg-slate-900 border-2 border-purple-500/40 dark:border-purple-500/40 shadow-xl shadow-purple-500/5 flex flex-col justify-between group hover:border-purple-500 transition-all duration-300">
                         <div>
                             <!-- Top status badge -->
@@ -436,12 +443,12 @@
                                     </div>
                                     <div>
                                         <h4 class="text-lg font-bold text-slate-900 dark:text-white" data-i18n="ext_desktop_title">App Desktop Native</h4>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="ext_desktop_compat">Windows 10/11 & macOS</p>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="ext_desktop_compat">Windows 10/11, macOS & Linux</p>
                                     </div>
                                 </div>
                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">
                                     <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                                    <span>v1.0.5</span>
+                                    <span>v{{ $ecosystem->desktop_version }}</span>
                                 </span>
                             </div>
 
@@ -461,18 +468,31 @@
                                 </div>
                                 <div class="flex items-start gap-2">
                                     <span class="text-purple-500 font-bold mt-0.5">✓</span>
-                                    <span data-i18n="ext_desktop_feat4">Mises à jour automatiques via GitHub Releases</span>
+                                    <span data-i18n="ext_desktop_feat4">Installateur Windows direct & GitHub Releases</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- CTA button -->
-                        <a href="https://github.com/baguidevos/links-vault/releases/latest" target="_blank" rel="noopener" class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-xs sm:text-sm text-white bg-slate-900 hover:bg-slate-800 dark:bg-purple-600 dark:hover:bg-purple-500 shadow-md transition-all">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-                            </svg>
-                            <span data-i18n="ext_desktop_cta">Télécharger sur GitHub Releases</span>
-                        </a>
+                        <div>
+                            <a href="{{ route('desktop.download') }}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-xs sm:text-sm text-white bg-slate-900 hover:bg-slate-800 dark:bg-purple-600 dark:hover:bg-purple-500 shadow-md transition-all">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-13.051-1.802"/>
+                                </svg>
+                                <span>Télécharger Windows (.exe v{{ $ecosystem->desktop_version }})</span>
+                            </a>
+                            <div class="mt-3 flex items-center justify-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                                @if($ecosystem->desktop_mac_url)
+                                    <a href="{{ $ecosystem->desktop_mac_url }}" target="_blank" rel="noopener" class="hover:text-purple-500 underline">macOS</a>
+                                    <span>•</span>
+                                @endif
+                                @if($ecosystem->desktop_linux_url)
+                                    <a href="{{ $ecosystem->desktop_linux_url }}" target="_blank" rel="noopener" class="hover:text-purple-500 underline">Linux</a>
+                                    <span>•</span>
+                                @endif
+                                <a href="https://github.com/baguidevos/links-vault/releases" target="_blank" rel="noopener" class="hover:text-purple-500 underline">GitHub Releases</a>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Card 2: Google Chrome Card (Available) -->
@@ -495,9 +515,9 @@
                                         <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="ext_chrome_compat">& Navigateurs Chromium</p>
                                     </div>
                                 </div>
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                    <span data-i18n="ext_status_ready">Disponible</span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold {{ $ecosystem->extension_chrome_is_active ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20' }}">
+                                    <span class="w-1.5 h-1.5 rounded-full {{ $ecosystem->extension_chrome_is_active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400' }}"></span>
+                                    <span>{{ $ecosystem->extension_chrome_is_active ? 'Disponible (v'.$ecosystem->extension_chrome_version.')' : 'Bientôt disponible' }}</span>
                                 </span>
                             </div>
 
@@ -523,16 +543,24 @@
                         </div>
 
                         <!-- CTA button -->
-                        <a href="{{ route('extension.download') }}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-[#0099FF] to-sky-600 hover:from-sky-500 hover:to-sky-700 shadow-md shadow-sky-500/25 transition-all">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                            </svg>
-                            <span data-i18n="ext_chrome_cta">Télécharger l'Extension (ZIP)</span>
-                        </a>
+                        <div>
+                            @if($ecosystem->extension_chrome_is_active)
+                                <a href="{{ route('extension.download') }}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-[#0099FF] to-sky-600 hover:from-sky-500 hover:to-sky-700 shadow-md shadow-sky-500/25 transition-all">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                    </svg>
+                                    <span data-i18n="ext_chrome_cta">Télécharger l'Extension (v{{ $ecosystem->extension_chrome_version }})</span>
+                                </a>
+                            @else
+                                <div class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-xs sm:text-sm text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 cursor-not-allowed">
+                                    <span data-i18n="ext_status_soon">Bientôt disponible</span>
+                                </div>
+                            @endif
+                        </div>
                     </div>
 
-                    <!-- Card 3: Mozilla Firefox Card (Coming Soon) -->
-                    <div class="relative rounded-3xl p-7 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-xl shadow-slate-900/5 flex flex-col justify-between">
+                    <!-- Card 3: Mozilla Firefox Card (Available or Coming Soon) -->
+                    <div class="relative rounded-3xl p-7 bg-white dark:bg-slate-900 border-2 {{ $ecosystem->extension_firefox_is_active ? 'border-amber-500/50 shadow-xl shadow-amber-500/10' : 'border-slate-200/80 dark:border-white/10 shadow-xl shadow-slate-900/5' }} flex flex-col justify-between">
                         <div>
                             <!-- Top status badge -->
                             <div class="flex items-center justify-between mb-6">
@@ -549,9 +577,9 @@
                                         <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="ext_firefox_compat">Firefox Desktop & Android</p>
                                     </div>
                                 </div>
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
-                                    <span data-i18n="ext_status_soon">Bientôt disponible</span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold {{ $ecosystem->extension_firefox_is_active ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' }}">
+                                    <span class="w-1.5 h-1.5 rounded-full {{ $ecosystem->extension_firefox_is_active ? 'bg-emerald-500' : 'bg-amber-500 animate-ping' }}"></span>
+                                    <span>{{ $ecosystem->extension_firefox_is_active ? 'Disponible (v'.$ecosystem->extension_firefox_version.')' : 'Bientôt disponible' }}</span>
                                 </span>
                             </div>
 
@@ -576,10 +604,102 @@
                             </div>
                         </div>
 
-                        <!-- Disabled preview button -->
-                        <div class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-xs sm:text-sm text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 cursor-not-allowed">
-                            <span data-i18n="ext_firefox_cta">Arrive très prochainement</span>
-                            <span class="text-xs">🦊</span>
+                        <!-- CTA button -->
+                        <div>
+                            @if($ecosystem->extension_firefox_is_active && $ecosystem->extension_firefox_url)
+                                <a href="{{ route('extension.firefox') }}" target="_blank" rel="noopener" class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-md shadow-orange-500/25 transition-all">
+                                    <span>Installer sur Firefox (AMO)</span>
+                                    <span class="text-xs">🦊</span>
+                                </a>
+                            @else
+                                <div class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-xs sm:text-sm text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 cursor-not-allowed">
+                                    <span data-i18n="ext_firefox_cta">Arrive très prochainement</span>
+                                    <span class="text-xs">🦊</span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================================= -->
+                <!-- Mobile Apps Banner Card (iOS & Android)                      -->
+                <!-- ============================================================= -->
+                <div id="mobile-apps" class="mt-8 max-w-6xl mx-auto rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-indigo-950/60 via-slate-900 to-sky-950/40 border-2 border-indigo-500/30 dark:border-indigo-500/20 shadow-2xl relative overflow-hidden">
+                    <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div class="relative grid lg:grid-cols-12 gap-8 items-center">
+                        <div class="lg:col-span-7 space-y-4">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold uppercase tracking-wider">
+                                <span>📱</span>
+                                <span>Arrivée Imminente</span>
+                            </div>
+                            <h4 class="text-2xl sm:text-3xl font-bold font-display text-white">
+                                LinksVault sur Smartphone : iOS & Android
+                            </h4>
+                            <p class="text-sm sm:text-base text-slate-300 leading-relaxed">
+                                {{ $ecosystem->mobile_notice ?: 'Emportez l\'ensemble de vos liens, tags et résumés IA dans votre poche. Synchronisation instantanée entre vos navigateurs, votre ordinateur et votre mobile.' }}
+                            </p>
+
+                            <div class="flex flex-wrap items-center gap-4 pt-1 text-xs text-slate-300">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-emerald-400 font-bold">✓</span>
+                                    <span>Partage natif iOS Share Sheet & Android Intent</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-emerald-400 font-bold">✓</span>
+                                    <span>Mode hors-ligne avec cache local</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-emerald-400 font-bold">✓</span>
+                                    <span>Widgets écran d'accueil</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-5 flex flex-col sm:flex-row lg:flex-col gap-3.5">
+                            <!-- Android Card -->
+                            <div class="flex-1 p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-emerald-500/40 transition-all flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xl text-emerald-400">
+                                        🤖
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-bold text-white">Google Android</div>
+                                        <div class="text-[11px] text-slate-400">Play Store & APK (v{{ $ecosystem->mobile_android_version }})</div>
+                                    </div>
+                                </div>
+                                @if($ecosystem->mobile_android_is_active && $ecosystem->mobile_android_url)
+                                    <a href="{{ $ecosystem->mobile_android_url }}" target="_blank" rel="noopener" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-all">
+                                        Télécharger
+                                    </a>
+                                @else
+                                    <span class="px-3 py-1 rounded-full bg-white/10 text-slate-300 text-[11px] font-medium">
+                                        Bientôt disponible
+                                    </span>
+                                @endif
+                            </div>
+
+                            <!-- iOS Card -->
+                            <div class="flex-1 p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-sky-500/40 transition-all flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-xl text-white">
+                                        🍏
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-bold text-white">Apple iOS</div>
+                                        <div class="text-[11px] text-slate-400">iPhone & iPad (v{{ $ecosystem->mobile_ios_version }})</div>
+                                    </div>
+                                </div>
+                                @if($ecosystem->mobile_ios_is_active && $ecosystem->mobile_ios_url)
+                                    <a href="{{ $ecosystem->mobile_ios_url }}" target="_blank" rel="noopener" class="px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-sm transition-all">
+                                        Télécharger
+                                    </a>
+                                @else
+                                    <span class="px-3 py-1 rounded-full bg-white/10 text-slate-300 text-[11px] font-medium">
+                                        Bientôt disponible
+                                    </span>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -989,7 +1109,7 @@
                     <a href="#features" data-i18n="nav_features" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Fonctionnalités</a>
                     <a href="#extensions" data-i18n="nav_extensions" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Extensions & Desktop</a>
                     <a href="#pricing" data-i18n="nav_pricing" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Tarifs</a>
-                    <a href="https://github.com/baguidevos/links-vault/releases/latest" target="_blank" rel="noopener" data-i18n="footer_desktop" class="hover:text-purple-500 transition-colors">App Desktop (GitHub)</a>
+                    <a href="{{ route('desktop.download') }}" target="_blank" rel="noopener" data-i18n="footer_desktop" class="hover:text-purple-500 transition-colors">App Desktop (v{{ $ecosystem->desktop_version }})</a>
                     <a href="{{ route('extension.download') }}" data-i18n="hero_cta_extension" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Extension Chrome</a>
                     <a href="#extensions" data-i18n="hero_ext_firefox_status" class="hover:text-amber-500 transition-colors">Firefox : Bientôt disponible</a>
                     <a href="{{ route('filament.app.auth.login') }}" data-i18n="nav_login" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Connexion</a>

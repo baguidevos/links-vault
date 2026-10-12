@@ -17,8 +17,8 @@ test('the landing page renders successfully with bilingual support, theme switch
     $response->assertSee(route('extension.download'), false);
 });
 
-test('desktop download route redirects to the latest github releases', function () {
+test('desktop download route redirects to the configured desktop release url', function () {
     $response = $this->get(route('desktop.download'));
 
-    $response->assertRedirect('https://github.com/baguidevos/links-vault/releases/latest');
+    $response->assertRedirect(\App\Models\AppEcosystemSetting::current()->getEffectiveDesktopWindowsUrl());
 });

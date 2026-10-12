@@ -8,26 +8,48 @@ use App\Http\Controllers\GlmController;
 use App\Http\Controllers\GoogleDriveAuthController;
 use App\Http\Controllers\LinkShareController;
 use App\Http\Controllers\LinkVisitController;
+use App\Models\AppEcosystemSetting;
 use App\Services\GlmService;
 use App\Services\WebPageMetadataService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    $ecosystem = AppEcosystemSetting::current();
+
+    return view('welcome', compact('ecosystem'));
 });
 
 Route::redirect('/login', '/app/login')->name('login');
 
-// Téléchargement du package de l'extension Chrome
-Route::get('/extension/download', ExtensionDownloadController::class)
-    ->name('extension.download');
+// Téléchargement du package de l'extension Chrome (ou redirection vers Chrome Web Store si configuré)
+Route::get('/extension/download', function (Request $request) {
+    $settings = AppEcosystemSetting::current();
+    if (filled($settings->extension_chrome_url)) {
+        return redirect()->away($settings->extension_chrome_url);
+    }
 
-// Téléchargement de l'application Desktop (Redirection GitHub Releases)
+    return app(ExtensionDownloadController::class)($request);
+})->name('extension.download');
+
+// Téléchargement de l'application Desktop (Redirection Windows Setup .exe ou GitHub Release configurée)
 Route::get('/desktop/download', function () {
-    return redirect('https://github.com/baguidevos/links-vault/releases/latest');
+    $url = AppEcosystemSetting::current()->getEffectiveDesktopWindowsUrl();
+
+    return redirect()->away($url);
 })->name('desktop.download');
+
+// Redirection vers l'extension Firefox (si configurée)
+Route::get('/extension/firefox', function () {
+    $settings = AppEcosystemSetting::current();
+    if (filled($settings->extension_firefox_url)) {
+        return redirect()->away($settings->extension_firefox_url);
+    }
+
+    return redirect('/#extensions');
+})->name('extension.firefox');
 
 // Retour après paiement SasPay
 Route::get('/billing/return', BillingReturnController::class)

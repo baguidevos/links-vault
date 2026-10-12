@@ -25,6 +25,7 @@ Homestead.yaml
 Thumbs.db
 /api/*
 /prototype-web
+/mobile-app
 /dist
 
 # EnvKit — never commit .env backups (they contain secrets)
