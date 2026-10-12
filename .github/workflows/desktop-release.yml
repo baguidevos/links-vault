@@ -75,8 +75,6 @@ jobs:
             $version = $Matches[1]
             (Get-Content .env) -replace '^NATIVEPHP_APP_VERSION=.*$', "NATIVEPHP_APP_VERSION=$version" | Set-Content .env
           }
-          (Get-Content .env) -replace '^GITHUB_TOKEN=.*$', "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" | Set-Content .env
-          (Get-Content .env) -replace '^GITHUB_AUTOUPDATE_TOKEN=.*$', "GITHUB_AUTOUPDATE_TOKEN=${{ secrets.GITHUB_TOKEN }}" | Set-Content .env
           php artisan key:generate --force
 
       - name: Install NPM dependencies
@@ -89,38 +87,57 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
-      - name: Build and Publish Desktop (Windows)
+      - name: Build Desktop (Windows)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_OWNER: ${{ github.repository_owner }}
-          GITHUB_REPO: links-vault
-          NATIVEPHP_UPDATER_PROVIDER: github
-          GITHUB_RELEASE_TYPE: ${{ inputs.release_type || 'draft' }}
           APP_ENV: production
-        run: php artisan native:publish win x64 --no-interaction
+        run: php artisan native:build win x64 --no-interaction
 
-      - name: Publish Windows repair installer
+      - name: Publish Windows release and repair installer
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $version = (Select-String -Path .env -Pattern '^NATIVEPHP_APP_VERSION=').Line.Split('=', 2)[1]
+          $tag = "v$version"
+
           if (-not (Test-Path nativephp/electron/dist)) {
             throw "Dossier nativephp/electron/dist introuvable. Le build electron n'a pas produit de dossier de sortie."
           }
+
           $setup = Get-ChildItem nativephp/electron/dist -Filter '*-setup.exe' -File | Select-Object -First 1
           if ($null -eq $setup) {
-            throw 'Installateur Windows introuvable.'
+            throw "Installateur Windows introuvable dans nativephp/electron/dist."
           }
+
           $packageDirectory = Join-Path $env:RUNNER_TEMP 'linksvault-windows-repair'
-          New-Item -ItemType Directory -Path $packageDirectory | Out-Null
+          New-Item -ItemType Directory -Path $packageDirectory -Force | Out-Null
           Copy-Item $setup.FullName $packageDirectory
           Copy-Item nativephp/electron/build/Install-LinksVault.cmd $packageDirectory
           Copy-Item nativephp/electron/build/Repair-LinksVaultInstall.ps1 $packageDirectory
           $archive = "nativephp/electron/dist/LinksVault-$version-windows-repair.zip"
-          Compress-Archive -Path "$packageDirectory\*" -DestinationPath $archive
-          gh release upload "v$version" $archive --repo $env:GITHUB_REPOSITORY --clobber
+          Compress-Archive -Path "$packageDirectory\*" -DestinationPath $archive -Force
+
+          $filesToUpload = @($setup.FullName, $archive)
+          $latestYml = Get-ChildItem nativephp/electron/dist -Filter 'latest.yml' -File | Select-Object -First 1
+          if ($latestYml) { $filesToUpload += $latestYml.FullName }
+          $blockmap = Get-ChildItem nativephp/electron/dist -Filter '*.blockmap' -File | Select-Object -First 1
+          if ($blockmap) { $filesToUpload += $blockmap.FullName }
+
+          $releaseExists = $false
+          try {
+            gh release view $tag --repo $env:GITHUB_REPOSITORY | Out-Null
+            $releaseExists = $true
+          } catch {
+            $releaseExists = $false
+          }
+
+          if ($releaseExists) {
+            Write-Host "Mise à jour de la release existante $tag..."
+            gh release upload $tag $filesToUpload --repo $env:GITHUB_REPOSITORY --clobber
+          } else {
+            Write-Host "Création de la release $tag..."
+            gh release create $tag $filesToUpload --repo $env:GITHUB_REPOSITORY --title "Release $tag" --notes "Release officielle $tag pour Windows"
+          }
 
       - name: Verify release was published
         shell: bash
@@ -131,7 +148,7 @@ jobs:
           TAG="v${VER}"
           echo "Verifying release ${TAG} on ${{ github.repository }}..."
           ASSETS=$(gh release view "$TAG" --repo ${{ github.repository }} --json assets --jq '[.assets[].name] | join(" ")') || {
-            echo "::error::Release ${TAG} introuvable sur ${{ github.repository }}. native:publish a pu échouer silencieusement."
+            echo "::error::Release ${TAG} introuvable sur ${{ github.repository }}."
             exit 1
           }
           echo "Assets trouvés : ${ASSETS}"
