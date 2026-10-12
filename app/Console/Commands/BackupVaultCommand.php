@@ -44,7 +44,7 @@ class BackupVaultCommand extends Command
         $this->info("Démarrage de la sauvegarde Cloud pour {$teams->count()} espace(s)...");
 
         foreach ($teams as $team) {
-            $owner = $team->owner;
+            $owner = $team->owner();
             $quotaService = app(SubscriptionQuotaService::class);
 
             if ($owner && ! $quotaService->canUseCloudBackup($owner)) {

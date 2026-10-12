@@ -9,9 +9,16 @@ use App\Models\User;
 use App\Services\BookmarksExportService;
 use App\Services\BookmarksImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use LaravelDaily\FilaTeams\Models\Team;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    Http::fake([
+        '*' => Http::response('<html><head><title>Mock Page</title></head><body>Content</body></html>', 200),
+    ]);
+});
 
 test('BookmarksImportService imports Netscape HTML with nested folders and tags', function () {
     $user = User::factory()->create();

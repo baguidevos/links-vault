@@ -67,7 +67,7 @@ class InvitationsManager extends TableWidget
                     ])
                     ->action(function (array $data) use ($team, $user): void {
                         $quotaService = app(SubscriptionQuotaService::class);
-                        $owner = $team->owner ?? $user;
+                        $owner = $team->owner() ?? $user;
 
                         if (! $quotaService->canAddTeamMember($team, $owner)) {
                             Notification::make()

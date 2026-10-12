@@ -62,6 +62,11 @@ class Team extends Model implements HasCurrentTenantLabel
         return $this->members()->wherePivot('role', FilaTeams::ownerRole()->value)->first();
     }
 
+    public function getOwnerAttribute(): ?Model
+    {
+        return $this->owner();
+    }
+
     protected static function newFactory(): TeamFactory
     {
         return TeamFactory::new();
