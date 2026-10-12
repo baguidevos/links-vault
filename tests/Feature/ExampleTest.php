@@ -10,4 +10,7 @@ test('the landing page renders successfully with bilingual support, theme switch
     $response->assertSee('theme-toggle', false);
     $response->assertSee('data-i18n', false);
     $response->assertSee('SasPay');
+    $response->assertSee('Google Chrome');
+    $response->assertSee('Mozilla Firefox');
+    $response->assertSee(route('extension.download'), false);
 });

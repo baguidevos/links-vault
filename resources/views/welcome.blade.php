@@ -61,6 +61,7 @@
                         <!-- Navigation Links -->
                         <div class="hidden lg:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-400">
                             <a href="#features" data-i18n="nav_features" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Fonctionnalités</a>
+                            <a href="#extensions" data-i18n="nav_extensions" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Extensions</a>
                             <a href="#how-it-works" data-i18n="nav_how_it_works" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Comment ça marche</a>
                             <a href="#pricing" data-i18n="nav_pricing" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Tarifs</a>
                             <a href="#faq" data-i18n="nav_faq" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">FAQ</a>
@@ -174,6 +175,18 @@
                                     <path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12 12-5.373 12-12S18.628 0 12 0zm0 4.25c4.28 0 7.75 3.47 7.75 7.75 0 1.09-.23 2.12-.64 3.06l-4.14-7.17A4.246 4.246 0 0012 7.75c-.24 0-.47.03-.7.07L7.68 4.73A7.712 7.712 0 0112 4.25z"/>
                                 </svg>
                                 <span data-i18n="hero_cta_extension">Extension Chrome</span>
+                            </a>
+                        </div>
+
+                        <!-- Browser Extensions Status Pill -->
+                        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs pt-0.5">
+                            <a href="#extensions" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-semibold hover:opacity-90 transition-opacity">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span data-i18n="hero_ext_chrome_status">Chrome : Disponible</span>
+                            </a>
+                            <a href="#extensions" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 font-medium hover:opacity-90 transition-opacity">
+                                <span>🦊</span>
+                                <span data-i18n="hero_ext_firefox_status">Firefox : Bientôt disponible</span>
                             </a>
                         </div>
 
@@ -333,16 +346,16 @@
                         </p>
                     </div>
 
-                    <!-- Feature 4: Chrome Extension & Desktop -->
+                    <!-- Feature 4: Chrome & Firefox Extension -->
                     <div class="p-8 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 hover:border-[#0099FF] dark:hover:border-sky-500/50 shadow-xs hover:shadow-xl transition-all duration-300 group">
                         <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
-                            ⚡
+                            🧩
                         </div>
                         <h4 class="text-xl font-bold mb-3 text-slate-900 dark:text-white" data-i18n="feat_4_title">
-                            Extension Chrome & Bureau
+                            Extension Chrome & Bientôt Firefox
                         </h4>
                         <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed" data-i18n="feat_4_desc">
-                            Sauvegardez vos liens instantanément d'un raccourci clavier depuis votre navigateur Chrome ou votre application Desktop Native.
+                            Capturez n'importe quelle page web en 1 clic. Extension Chrome disponible immédiatement (compatible Brave, Edge, Arc) et arrivée imminente sur Firefox !
                         </p>
                     </div>
 
@@ -373,6 +386,143 @@
                     </div>
 
                 </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- BROWSER EXTENSIONS SECTION (CHROME & FIREFOX)                             -->
+        <!-- ========================================================================= -->
+        <section id="extensions" class="py-24 relative overflow-hidden bg-white/60 dark:bg-slate-900/40 border-t border-slate-200/80 dark:border-white/5 transition-colors duration-300">
+            <!-- Background Radial Glow -->
+            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-sky-500/5 dark:bg-sky-500/10 rounded-full blur-[120px]"></div>
+            </div>
+
+            <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="text-center max-w-3xl mx-auto mb-16 space-y-4">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider shadow-xs">
+                        <span>🧩</span>
+                        <span data-i18n="ext_tag">Extensions Navigateurs</span>
+                    </div>
+                    <h3 class="text-3xl sm:text-5xl font-bold tracking-tight font-display text-slate-900 dark:text-white" data-i18n="ext_title">
+                        Capturez le Web à la Vitesse de la Pensée
+                    </h3>
+                    <p class="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed" data-i18n="ext_subtitle">
+                        Sauvegardez n'importe quel onglet en 1 clic sans quitter votre page. Disponible immédiatement pour Google Chrome (et Chromium) et très bientôt sur Mozilla Firefox.
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <!-- Google Chrome Card (Available) -->
+                    <div class="relative rounded-3xl p-8 bg-white dark:bg-slate-900 border-2 border-sky-500/50 dark:border-sky-500/40 shadow-xl shadow-sky-500/10 flex flex-col justify-between group hover:border-sky-500 transition-all duration-300">
+                        <div>
+                            <!-- Top status badge -->
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-950/60 flex items-center justify-center p-3 border border-sky-100 dark:border-sky-900/50 shadow-inner">
+                                        <!-- Chrome Icon SVG -->
+                                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                                            <circle cx="12" cy="12" r="4" fill="#4285F4"/>
+                                            <path d="M12 2C7.03 2 2.87 5.63 2.11 10.38L8.6 14.13C9.07 10.59 12.06 8 15.68 8h6.21C20.47 4.39 16.53 2 12 2z" fill="#EA4335"/>
+                                            <path d="M21.89 10.38H15.4C14.06 10.38 12.87 11.08 12.18 12.15L8.68 5.86C10.22 5.09 11.96 4.67 13.8 4.67c4.66 0 8.58 3.19 9.69 7.46.03.11.05.23.07.35z" fill="#FBBC05"/>
+                                            <path d="M12 22c4.34 0 8.08-2.76 9.48-6.62H14.1c-1.34 0-2.53-.7-3.22-1.77L4.38 17.38C6.18 20.19 9.32 22 12 22z" fill="#34A853"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xl font-bold text-slate-900 dark:text-white">Google Chrome</h4>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="ext_chrome_compat">& Navigateurs Chromium</p>
+                                    </div>
+                                </div>
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <span data-i18n="ext_status_ready">Disponible</span>
+                                </span>
+                            </div>
+
+                            <!-- Highlights -->
+                            <div class="space-y-3 mb-8 text-sm text-slate-600 dark:text-slate-300">
+                                <div class="flex items-start gap-2.5">
+                                    <span class="text-sky-500 font-bold mt-0.5">✓</span>
+                                    <span data-i18n="ext_chrome_feat1">Capture instantanée en 1-clic de n'importe quel onglet</span>
+                                </div>
+                                <div class="flex items-start gap-2.5">
+                                    <span class="text-sky-500 font-bold mt-0.5">✓</span>
+                                    <span data-i18n="ext_chrome_feat2">Sélection du dossier et ajout de tags sans quitter la page</span>
+                                </div>
+                                <div class="flex items-start gap-2.5">
+                                    <span class="text-sky-500 font-bold mt-0.5">✓</span>
+                                    <span data-i18n="ext_chrome_feat3">Compatible Brave, Edge, Arc & Opera</span>
+                                </div>
+                                <div class="flex items-start gap-2.5">
+                                    <span class="text-sky-500 font-bold mt-0.5">✓</span>
+                                    <span data-i18n="ext_chrome_feat4">Raccourci clavier de capture ultra-rapide</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CTA button -->
+                        <a href="{{ route('extension.download') }}" class="w-full inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[#0099FF] to-sky-600 hover:from-sky-500 hover:to-sky-700 shadow-lg shadow-sky-500/25 transition-all">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            <span data-i18n="ext_chrome_cta">Télécharger l'Extension Chrome (ZIP)</span>
+                        </a>
+                    </div>
+
+                    <!-- Mozilla Firefox Card (Coming Soon) -->
+                    <div class="relative rounded-3xl p-8 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-xl shadow-slate-900/5 flex flex-col justify-between">
+                        <div>
+                            <!-- Top status badge -->
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center p-3 border border-amber-100 dark:border-amber-900/50 shadow-inner">
+                                        <!-- Firefox Icon SVG -->
+                                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12c0 3.84 2.16 7.18 5.34 8.87-.21-.86-.34-1.84-.34-2.87 0-3.14 1.8-5.87 4.41-7.22-.44.82-.7 1.76-.7 2.76 0 2.21 1.25 4.14 3.09 5.12C15.22 17.9 16 16.54 16 15c0-1.86-1.12-3.46-2.73-4.18C15.34 11.23 17 13.41 17 16c0 .48-.06.94-.17 1.38C19.7 15.65 21.5 13.06 21.89 10 21.96 9.4 22 8.79 22 8.17 20.4 4.5 16.5 2 12 2z" fill="#FF7139"/>
+                                            <circle cx="14" cy="11" r="3" fill="#FF9400"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xl font-bold text-slate-900 dark:text-white">Mozilla Firefox</h4>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="ext_firefox_compat">Firefox Desktop & Android</p>
+                                    </div>
+                                </div>
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                                    <span data-i18n="ext_status_soon">Bientôt disponible</span>
+                                </span>
+                            </div>
+
+                            <!-- Highlights -->
+                            <div class="space-y-3 mb-8 text-sm text-slate-600 dark:text-slate-300">
+                                <div class="flex items-start gap-2.5">
+                                    <span class="text-amber-500 font-bold mt-0.5">⚡</span>
+                                    <span data-i18n="ext_firefox_feat1">En cours de validation finale pour Firefox Add-ons (AMO)</span>
+                                </div>
+                                <div class="flex items-start gap-2.5">
+                                    <span class="text-amber-500 font-bold mt-0.5">⚡</span>
+                                    <span data-i18n="ext_firefox_feat2">Conçu sur le standard WebExtensions moderne</span>
+                                </div>
+                                <div class="flex items-start gap-2.5">
+                                    <span class="text-amber-500 font-bold mt-0.5">⚡</span>
+                                    <span data-i18n="ext_firefox_feat3">Respect strict de la confidentialité et zero tracking</span>
+                                </div>
+                                <div class="flex items-start gap-2.5">
+                                    <span class="text-amber-500 font-bold mt-0.5">⚡</span>
+                                    <span data-i18n="ext_firefox_feat4">Synchronisation immédiate avec votre compte LinksVault</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Disabled preview button -->
+                        <div class="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 cursor-not-allowed">
+                            <span data-i18n="ext_firefox_cta">Arrive très prochainement sur Firefox</span>
+                            <span class="text-xs">🦊</span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </section>
 
@@ -727,6 +877,16 @@
                         </p>
                     </div>
 
+                    <!-- Item 5 -->
+                    <div class="p-6 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-xs">
+                        <h4 class="text-base font-bold text-slate-900 dark:text-white mb-2" data-i18n="faq_q5">
+                            Sur quels navigateurs l'extension fonctionne-t-elle ?
+                        </h4>
+                        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed" data-i18n="faq_a5">
+                            L'extension LinksVault est disponible immédiatement pour Google Chrome ainsi que tous les navigateurs Chromium (Brave, Microsoft Edge, Opera, Arc). L'extension officielle pour Mozilla Firefox est en cours de développement actif et arrive très prochainement !
+                        </p>
+                    </div>
+
                 </div>
 
             </div>
@@ -764,10 +924,12 @@
                     <span class="font-bold text-slate-900 dark:text-white font-display">LinksVault</span>
                     <span>• © {{ date('Y') }} Tous droits réservés.</span>
                 </div>
-                <div class="flex items-center gap-6">
+                <div class="flex flex-wrap items-center gap-6">
                     <a href="#features" data-i18n="nav_features" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Fonctionnalités</a>
+                    <a href="#extensions" data-i18n="nav_extensions" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Extensions</a>
                     <a href="#pricing" data-i18n="nav_pricing" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Tarifs</a>
                     <a href="{{ route('extension.download') }}" data-i18n="hero_cta_extension" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Extension Chrome</a>
+                    <a href="#extensions" data-i18n="hero_ext_firefox_status" class="hover:text-amber-500 transition-colors">Firefox : Bientôt disponible</a>
                     <a href="{{ route('filament.app.auth.login') }}" data-i18n="nav_login" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Connexion</a>
                 </div>
             </div>
@@ -797,6 +959,7 @@
             const translations = {
                 fr: {
                     nav_features: "Fonctionnalités",
+                    nav_extensions: "Extensions",
                     nav_how_it_works: "Comment ça marche",
                     nav_pricing: "Tarifs",
                     nav_faq: "FAQ",
@@ -810,6 +973,8 @@
                     hero_subtitle: "Le gestionnaire intelligent de favoris et bookmarks augmenté par l'IA. Résumés automatiques, scan des liens morts (404), sauvegarde Google Drive 1-clic et extension Chrome instantanée.",
                     hero_cta_primary: "Créer un compte gratuit",
                     hero_cta_extension: "Extension Chrome",
+                    hero_ext_chrome_status: "Chrome : Disponible",
+                    hero_ext_firefox_status: "Firefox : Bientôt disponible",
                     hero_trust_1: "100 liens offerts à vie",
                     hero_trust_2: "Sans engagement",
                     hero_trust_3: "Paiements Mobile Money sécurisés",
@@ -823,12 +988,30 @@
                     feat_2_desc: "Fini les favoris expirés : détection proactive des erreurs 404, redirections et sites inaccessibles pour garder une base toujours saine.",
                     feat_3_title: "Google Drive Sync Cloud",
                     feat_3_desc: "Connectez votre compte Google Drive en 1 clic pour des sauvegardes automatiques d'archives ZIP compressées et sécurisées.",
-                    feat_4_title: "Extension Chrome & Bureau",
-                    feat_4_desc: "Sauvegardez vos liens instantanément d'un raccourci clavier depuis votre navigateur Chrome ou votre application Desktop Native.",
+                    feat_4_title: "Extension Chrome & Bientôt Firefox",
+                    feat_4_desc: "Capturez n'importe quelle page web en 1 clic. Extension Chrome disponible immédiatement (compatible Brave, Edge, Arc) et arrivée imminente sur Firefox !",
                     feat_5_title: "Espaces d'Équipe & Collaboration",
                     feat_5_desc: "Partagez des dossiers de veille avec vos associés, attribuez des permissions granulaires et collaborez en temps réel.",
                     feat_6_title: "Paiement Local SasPay",
                     feat_6_desc: "Abonnez-vous facilement en FCFA via Mobile Money (Wave, MTN, Orange, Moov) ou carte bancaire sans aucune contrainte de devise.",
+
+                    ext_tag: "Extensions Navigateurs",
+                    ext_title: "Capturez le Web à la Vitesse de la Pensée",
+                    ext_subtitle: "Sauvegardez n'importe quel onglet en 1 clic sans quitter votre page. Disponible immédiatement pour Google Chrome (et Chromium) et très bientôt sur Mozilla Firefox.",
+                    ext_chrome_compat: "& Navigateurs Chromium",
+                    ext_status_ready: "Disponible",
+                    ext_chrome_feat1: "Capture instantanée en 1-clic de n'importe quel onglet",
+                    ext_chrome_feat2: "Sélection du dossier et ajout de tags sans quitter la page",
+                    ext_chrome_feat3: "Compatible Brave, Edge, Arc & Opera",
+                    ext_chrome_feat4: "Raccourci clavier de capture ultra-rapide",
+                    ext_chrome_cta: "Télécharger l'Extension Chrome (ZIP)",
+                    ext_firefox_compat: "Firefox Desktop & Android",
+                    ext_status_soon: "Bientôt disponible",
+                    ext_firefox_feat1: "En cours de validation finale pour Firefox Add-ons (AMO)",
+                    ext_firefox_feat2: "Conçu sur le standard WebExtensions moderne",
+                    ext_firefox_feat3: "Respect strict de la confidentialité et zero tracking",
+                    ext_firefox_feat4: "Synchronisation immédiate avec votre compte LinksVault",
+                    ext_firefox_cta: "Arrive très prochainement sur Firefox",
 
                     step_tag: "Simplicité Absolue",
                     step_title: "Prêt en moins de 2 minutes",
@@ -890,6 +1073,8 @@
                     faq_a3: "Les sauvegardes sont envoyées directement sur VOTRE propre compte Google Drive personnel dans un dossier dédié sécurisé sous forme d'archives ZIP téléchargeables à tout moment.",
                     faq_q4: "Puis-je exporter mes favoris vers un autre navigateur ?",
                     faq_a4: "Oui. Vous pouvez exporter l'intégralité de votre bibliothèque aux formats standards HTML (compatible Chrome, Safari, Firefox, Edge), JSON ou CSV en 1 clic.",
+                    faq_q5: "Sur quels navigateurs l'extension fonctionne-t-elle ?",
+                    faq_a5: "L'extension LinksVault est disponible immédiatement pour Google Chrome ainsi que tous les navigateurs Chromium (Brave, Microsoft Edge, Opera, Arc). L'extension officielle pour Mozilla Firefox est en cours de développement actif et arrive très prochainement !",
 
                     cta_final_title: "Prêt à organiser votre savoir numérique ?",
                     cta_final_desc: "Rejoignez les professionnels qui ne perdent plus jamais un lien important. Démarrez gratuitement en 30 secondes.",
@@ -897,6 +1082,7 @@
                 },
                 en: {
                     nav_features: "Features",
+                    nav_extensions: "Extensions",
                     nav_how_it_works: "How it works",
                     nav_pricing: "Pricing",
                     nav_faq: "FAQ",
@@ -910,6 +1096,8 @@
                     hero_subtitle: "The intelligent bookmark and knowledge manager powered by AI. Automatic summaries, broken link (404) scanner, 1-click Google Drive backup, and Chrome extension.",
                     hero_cta_primary: "Start For Free",
                     hero_cta_extension: "Chrome Extension",
+                    hero_ext_chrome_status: "Chrome: Available",
+                    hero_ext_firefox_status: "Firefox: Coming Soon",
                     hero_trust_1: "100 links free forever",
                     hero_trust_2: "Cancel anytime",
                     hero_trust_3: "Secure Mobile Money & Cards",
@@ -923,12 +1111,30 @@
                     feat_2_desc: "No more expired bookmarks: proactive detection of 404 errors, redirects, and dead links to keep your vault clean.",
                     feat_3_title: "Google Drive Cloud Sync",
                     feat_3_desc: "Connect your Google Drive account in 1 click for automatic, encrypted ZIP backup archives.",
-                    feat_4_title: "Chrome Extension & Desktop",
-                    feat_4_desc: "Save links instantly with a keyboard shortcut from your Chrome browser or Native Desktop app.",
+                    feat_4_title: "Chrome & Soon Firefox Extension",
+                    feat_4_desc: "Save your links instantly in 1 click. Chrome extension available right now (compatible with Brave, Edge, Arc) and coming soon to Mozilla Firefox.",
                     feat_5_title: "Team Workspaces & Roles",
                     feat_5_desc: "Share curated folders with your teammates, assign granular roles, and collaborate in real-time.",
                     feat_6_title: "Local SasPay Payments",
                     feat_6_desc: "Subscribe easily in FCFA via Mobile Money (Wave, MTN, Orange, Moov) or credit card with zero currency hassle.",
+
+                    ext_tag: "Browser Extensions",
+                    ext_title: "Capture the Web at the Speed of Thought",
+                    ext_subtitle: "Save any browser tab in 1 click without leaving your web page. Available right now for Google Chrome (and Chromium) and very soon on Mozilla Firefox.",
+                    ext_chrome_compat: "Compatible with Chrome, Brave, Edge & Opera",
+                    ext_status_ready: "Available Now",
+                    ext_chrome_feat1: "Instant 1-click capture from any active browser tab",
+                    ext_chrome_feat2: "Select destination folder and tags without leaving the page",
+                    ext_chrome_feat3: "Compatible with Brave, Edge, Arc & Opera",
+                    ext_chrome_feat4: "Ultra-fast customizable keyboard shortcut",
+                    ext_chrome_cta: "Download Chrome Extension (ZIP)",
+                    ext_firefox_compat: "Firefox Desktop & Mobile",
+                    ext_status_soon: "Coming Soon",
+                    ext_firefox_feat1: "Under final packaging for Firefox Add-ons (AMO)",
+                    ext_firefox_feat2: "Built upon the modern standard WebExtensions API",
+                    ext_firefox_feat3: "Strict privacy guarantee with zero telemetry tracking",
+                    ext_firefox_feat4: "Instant bi-directional sync with your LinksVault account",
+                    ext_firefox_cta: "Coming very soon to Firefox",
 
                     step_tag: "Absolute Simplicity",
                     step_title: "Ready in under 2 minutes",
@@ -990,6 +1196,8 @@
                     faq_a3: "Backups are saved directly into YOUR own personal Google Drive account in a dedicated secure folder as downloadable ZIP archives.",
                     faq_q4: "Can I export my bookmarks to another browser?",
                     faq_a4: "Yes. You can export your entire library at any time to standard HTML (Chrome, Safari, Firefox, Edge compatible), JSON, or CSV in 1 click.",
+                    faq_q5: "Which browsers are supported by the extension?",
+                    faq_a5: "The LinksVault extension is immediately available for Google Chrome as well as all Chromium-based browsers (Brave, Microsoft Edge, Opera, Arc). The official extension for Mozilla Firefox is actively being finalized and will be launched very soon!",
 
                     cta_final_title: "Ready to organize your digital universe?",
                     cta_final_desc: "Join thousands of professionals who never lose an important link again. Start free in 30 seconds.",
