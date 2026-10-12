@@ -1,6 +1,23 @@
 # Changelog
 
-## v1.0.0 — 2026-09-10
+## v1.0.5 — 2026-10-12
+
+> **Release v1.0.5** — Panel Super Admin Écosystème (Desktop, Extensions, Mobiles) + Téléchargement direct Windows Setup .exe.
+
+### 🖥️ Desktop (NativePHP Electron) & Écosystème
+
+- **Propulsion de version vers v1.0.5** : Bump de version pour déclencher la mise à jour automatique et la publication desktop.
+- **Lien direct Windows Setup (.exe)** : Configuration du lien direct GitHub Releases `LinksVault-1.0.5-setup.exe` avec redirection automatique `/desktop/download`.
+- **Panel Super Admin Écosystème (`/admin/ecosystem-settings`)** : Nouvelle interface Filament d'administration complète permettant de configurer et synchroniser en temps réel les liens de téléchargement, versions et statuts pour Desktop (Windows, macOS, Linux), Extensions (Chrome & Firefox) et Mobiles (Android & iOS).
+- **Landing Page dynamique & bilingue** : Intégration du bandeau d'annonce pour les futures applications mobiles (Android Play Store & Apple App Store) et badges de disponibilité connectés au panneau d'administration.
+
+---
+
+## v1.0.4 — 2026-09-16
+
+- **Desktop Release v1.0.4** : Correctifs de formulaires et ajustements de l'auto-updater.
+
+---
 
 > **Première release stable** — Application desktop (Windows) + Web + Extension navigateur.
 
