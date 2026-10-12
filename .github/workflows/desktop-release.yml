@@ -75,10 +75,16 @@ jobs:
             $version = $Matches[1]
             (Get-Content .env) -replace '^NATIVEPHP_APP_VERSION=.*$', "NATIVEPHP_APP_VERSION=$version" | Set-Content .env
           }
+          (Get-Content .env) -replace '^GITHUB_TOKEN=.*$', "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" | Set-Content .env
+          (Get-Content .env) -replace '^GITHUB_AUTOUPDATE_TOKEN=.*$', "GITHUB_AUTOUPDATE_TOKEN=${{ secrets.GITHUB_TOKEN }}" | Set-Content .env
           php artisan key:generate --force
 
       - name: Install NPM dependencies
         run: npm ci
+
+      - name: Install Electron dependencies
+        run: npm ci
+        working-directory: nativephp/electron
 
       - name: Build frontend assets
         run: npm run build
@@ -92,7 +98,7 @@ jobs:
           NATIVEPHP_UPDATER_PROVIDER: github
           GITHUB_RELEASE_TYPE: ${{ inputs.release_type || 'draft' }}
           APP_ENV: production
-        run: php artisan native:publish win
+        run: php artisan native:publish win x64 --no-interaction
 
       - name: Publish Windows repair installer
         shell: pwsh
@@ -100,6 +106,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $version = (Select-String -Path .env -Pattern '^NATIVEPHP_APP_VERSION=').Line.Split('=', 2)[1]
+          if (-not (Test-Path nativephp/electron/dist)) {
+            throw "Dossier nativephp/electron/dist introuvable. Le build electron n'a pas produit de dossier de sortie."
+          }
           $setup = Get-ChildItem nativephp/electron/dist -Filter '*-setup.exe' -File | Select-Object -First 1
           if ($null -eq $setup) {
             throw 'Installateur Windows introuvable.'
