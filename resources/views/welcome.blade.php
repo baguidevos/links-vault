@@ -163,23 +163,33 @@
                         </p>
 
                         <!-- CTA Group -->
-                        <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center pt-2">
-                            <a href="{{ route('filament.app.auth.register') }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl text-base font-bold text-white bg-gradient-to-r from-[#0099FF] to-sky-600 hover:from-sky-500 hover:to-sky-700 shadow-xl shadow-sky-500/25 hover:shadow-sky-500/35 transition-all">
+                        <div class="flex flex-col sm:flex-row gap-3.5 justify-center lg:justify-start items-center pt-2">
+                            <a href="{{ route('filament.app.auth.register') }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm sm:text-base font-bold text-white bg-gradient-to-r from-[#0099FF] to-sky-600 hover:from-sky-500 hover:to-sky-700 shadow-xl shadow-sky-500/25 hover:shadow-sky-500/35 transition-all">
                                 <span data-i18n="hero_cta_primary">Créer un compte gratuit</span>
-                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                 </svg>
                             </a>
-                            <a href="{{ route('extension.download') }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-base font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-sky-400 dark:hover:border-sky-500 shadow-xs transition-all">
+                            <a href="{{ route('extension.download') }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-sm sm:text-base font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-sky-400 dark:hover:border-sky-500 shadow-xs transition-all">
                                 <svg class="w-5 h-5 text-sky-500" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12 12-5.373 12-12S18.628 0 12 0zm0 4.25c4.28 0 7.75 3.47 7.75 7.75 0 1.09-.23 2.12-.64 3.06l-4.14-7.17A4.246 4.246 0 0012 7.75c-.24 0-.47.03-.7.07L7.68 4.73A7.712 7.712 0 0112 4.25z"/>
                                 </svg>
                                 <span data-i18n="hero_cta_extension">Extension Chrome</span>
                             </a>
+                            <a href="https://github.com/baguidevos/links-vault/releases/latest" target="_blank" rel="noopener" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-sm sm:text-base font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-purple-400 dark:hover:border-purple-500 shadow-xs transition-all">
+                                <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                                </svg>
+                                <span data-i18n="hero_cta_desktop">App Desktop</span>
+                            </a>
                         </div>
 
-                        <!-- Browser Extensions Status Pill -->
-                        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs pt-0.5">
+                        <!-- Apps & Extensions Status Pills -->
+                        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 text-xs pt-0.5">
+                            <a href="https://github.com/baguidevos/links-vault/releases/latest" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-400 font-semibold hover:opacity-90 transition-opacity">
+                                <span>🖥️</span>
+                                <span data-i18n="hero_status_desktop">Desktop : Windows & Mac (GitHub Releases)</span>
+                            </a>
                             <a href="#extensions" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-semibold hover:opacity-90 transition-opacity">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                                 <span data-i18n="hero_ext_chrome_status">Chrome : Disponible</span>
@@ -390,39 +400,90 @@
         </section>
 
         <!-- ========================================================================= -->
-        <!-- BROWSER EXTENSIONS SECTION (CHROME & FIREFOX)                             -->
+        <!-- ECOSYSTEM: DESKTOP APPS & BROWSER EXTENSIONS                              -->
         <!-- ========================================================================= -->
         <section id="extensions" class="py-24 relative overflow-hidden bg-white/60 dark:bg-slate-900/40 border-t border-slate-200/80 dark:border-white/5 transition-colors duration-300">
             <!-- Background Radial Glow -->
             <div class="absolute inset-0 pointer-events-none overflow-hidden">
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-sky-500/5 dark:bg-sky-500/10 rounded-full blur-[120px]"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-purple-500/5 dark:bg-sky-500/10 rounded-full blur-[120px]"></div>
             </div>
 
             <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 
                 <div class="text-center max-w-3xl mx-auto mb-16 space-y-4">
-                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider shadow-xs">
-                        <span>🧩</span>
-                        <span data-i18n="ext_tag">Extensions Navigateurs</span>
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 text-xs font-bold uppercase tracking-wider shadow-xs">
+                        <span>💻</span>
+                        <span data-i18n="ext_tag">Écosystème Desktop & Extensions</span>
                     </div>
                     <h3 class="text-3xl sm:text-5xl font-bold tracking-tight font-display text-slate-900 dark:text-white" data-i18n="ext_title">
-                        Capturez le Web à la Vitesse de la Pensée
+                        Votre Mémoire Numérique sur Tous Vos Appareils
                     </h3>
                     <p class="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed" data-i18n="ext_subtitle">
-                        Sauvegardez n'importe quel onglet en 1 clic sans quitter votre page. Disponible immédiatement pour Google Chrome (et Chromium) et très bientôt sur Mozilla Firefox.
+                        Profitez de la puissance de LinksVault où que vous soyez : application de bureau native ultra-rapide sur GitHub Releases, extension Chrome instantanée, et arrivée imminente sur Firefox.
                     </p>
                 </div>
 
-                <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                    <!-- Google Chrome Card (Available) -->
-                    <div class="relative rounded-3xl p-8 bg-white dark:bg-slate-900 border-2 border-sky-500/50 dark:border-sky-500/40 shadow-xl shadow-sky-500/10 flex flex-col justify-between group hover:border-sky-500 transition-all duration-300">
+                <div class="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+                    
+                    <!-- Card 1: Native Desktop App (GitHub Releases) -->
+                    <div class="relative rounded-3xl p-7 bg-white dark:bg-slate-900 border-2 border-purple-500/40 dark:border-purple-500/40 shadow-xl shadow-purple-500/5 flex flex-col justify-between group hover:border-purple-500 transition-all duration-300">
                         <div>
                             <!-- Top status badge -->
                             <div class="flex items-center justify-between mb-6">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-950/60 flex items-center justify-center p-3 border border-sky-100 dark:border-sky-900/50 shadow-inner">
+                                    <div class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/60 flex items-center justify-center p-2.5 border border-purple-100 dark:border-purple-900/50 shadow-inner text-2xl">
+                                        🖥️
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-bold text-slate-900 dark:text-white" data-i18n="ext_desktop_title">App Desktop Native</h4>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="ext_desktop_compat">Windows 10/11 & macOS</p>
+                                    </div>
+                                </div>
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                                    <span>v1.0.5</span>
+                                </span>
+                            </div>
+
+                            <!-- Highlights -->
+                            <div class="space-y-3 mb-8 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                                <div class="flex items-start gap-2">
+                                    <span class="text-purple-500 font-bold mt-0.5">✓</span>
+                                    <span data-i18n="ext_desktop_feat1">Propulsé par NativePHP Electron avec base SQLite locale</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <span class="text-purple-500 font-bold mt-0.5">✓</span>
+                                    <span data-i18n="ext_desktop_feat2">Mode hors-ligne complet & synchronisation bidirectionnelle</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <span class="text-purple-500 font-bold mt-0.5">✓</span>
+                                    <span data-i18n="ext_desktop_feat3">Menu bar, System Tray et raccourcis globaux</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <span class="text-purple-500 font-bold mt-0.5">✓</span>
+                                    <span data-i18n="ext_desktop_feat4">Mises à jour automatiques via GitHub Releases</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CTA button -->
+                        <a href="https://github.com/baguidevos/links-vault/releases/latest" target="_blank" rel="noopener" class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-xs sm:text-sm text-white bg-slate-900 hover:bg-slate-800 dark:bg-purple-600 dark:hover:bg-purple-500 shadow-md transition-all">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                            </svg>
+                            <span data-i18n="ext_desktop_cta">Télécharger sur GitHub Releases</span>
+                        </a>
+                    </div>
+
+                    <!-- Card 2: Google Chrome Card (Available) -->
+                    <div class="relative rounded-3xl p-7 bg-white dark:bg-slate-900 border-2 border-sky-500/50 dark:border-sky-500/40 shadow-xl shadow-sky-500/10 flex flex-col justify-between group hover:border-sky-500 transition-all duration-300">
+                        <div>
+                            <!-- Top status badge -->
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950/60 flex items-center justify-center p-2.5 border border-sky-100 dark:border-sky-900/50 shadow-inner">
                                         <!-- Chrome Icon SVG -->
-                                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                                        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
                                             <circle cx="12" cy="12" r="4" fill="#4285F4"/>
                                             <path d="M12 2C7.03 2 2.87 5.63 2.11 10.38L8.6 14.13C9.07 10.59 12.06 8 15.68 8h6.21C20.47 4.39 16.53 2 12 2z" fill="#EA4335"/>
                                             <path d="M21.89 10.38H15.4C14.06 10.38 12.87 11.08 12.18 12.15L8.68 5.86C10.22 5.09 11.96 4.67 13.8 4.67c4.66 0 8.58 3.19 9.69 7.46.03.11.05.23.07.35z" fill="#FBBC05"/>
@@ -430,31 +491,31 @@
                                         </svg>
                                     </div>
                                     <div>
-                                        <h4 class="text-xl font-bold text-slate-900 dark:text-white">Google Chrome</h4>
+                                        <h4 class="text-lg font-bold text-slate-900 dark:text-white">Google Chrome</h4>
                                         <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="ext_chrome_compat">& Navigateurs Chromium</p>
                                     </div>
                                 </div>
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                     <span data-i18n="ext_status_ready">Disponible</span>
                                 </span>
                             </div>
 
                             <!-- Highlights -->
-                            <div class="space-y-3 mb-8 text-sm text-slate-600 dark:text-slate-300">
-                                <div class="flex items-start gap-2.5">
+                            <div class="space-y-3 mb-8 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                                <div class="flex items-start gap-2">
                                     <span class="text-sky-500 font-bold mt-0.5">✓</span>
                                     <span data-i18n="ext_chrome_feat1">Capture instantanée en 1-clic de n'importe quel onglet</span>
                                 </div>
-                                <div class="flex items-start gap-2.5">
+                                <div class="flex items-start gap-2">
                                     <span class="text-sky-500 font-bold mt-0.5">✓</span>
                                     <span data-i18n="ext_chrome_feat2">Sélection du dossier et ajout de tags sans quitter la page</span>
                                 </div>
-                                <div class="flex items-start gap-2.5">
+                                <div class="flex items-start gap-2">
                                     <span class="text-sky-500 font-bold mt-0.5">✓</span>
                                     <span data-i18n="ext_chrome_feat3">Compatible Brave, Edge, Arc & Opera</span>
                                 </div>
-                                <div class="flex items-start gap-2.5">
+                                <div class="flex items-start gap-2">
                                     <span class="text-sky-500 font-bold mt-0.5">✓</span>
                                     <span data-i18n="ext_chrome_feat4">Raccourci clavier de capture ultra-rapide</span>
                                 </div>
@@ -462,53 +523,53 @@
                         </div>
 
                         <!-- CTA button -->
-                        <a href="{{ route('extension.download') }}" class="w-full inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[#0099FF] to-sky-600 hover:from-sky-500 hover:to-sky-700 shadow-lg shadow-sky-500/25 transition-all">
+                        <a href="{{ route('extension.download') }}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-[#0099FF] to-sky-600 hover:from-sky-500 hover:to-sky-700 shadow-md shadow-sky-500/25 transition-all">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                             </svg>
-                            <span data-i18n="ext_chrome_cta">Télécharger l'Extension Chrome (ZIP)</span>
+                            <span data-i18n="ext_chrome_cta">Télécharger l'Extension (ZIP)</span>
                         </a>
                     </div>
 
-                    <!-- Mozilla Firefox Card (Coming Soon) -->
-                    <div class="relative rounded-3xl p-8 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-xl shadow-slate-900/5 flex flex-col justify-between">
+                    <!-- Card 3: Mozilla Firefox Card (Coming Soon) -->
+                    <div class="relative rounded-3xl p-7 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-xl shadow-slate-900/5 flex flex-col justify-between">
                         <div>
                             <!-- Top status badge -->
                             <div class="flex items-center justify-between mb-6">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center p-3 border border-amber-100 dark:border-amber-900/50 shadow-inner">
+                                    <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center p-2.5 border border-amber-100 dark:border-amber-900/50 shadow-inner">
                                         <!-- Firefox Icon SVG -->
-                                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                                        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
                                             <path d="M12 2C6.48 2 2 6.48 2 12c0 3.84 2.16 7.18 5.34 8.87-.21-.86-.34-1.84-.34-2.87 0-3.14 1.8-5.87 4.41-7.22-.44.82-.7 1.76-.7 2.76 0 2.21 1.25 4.14 3.09 5.12C15.22 17.9 16 16.54 16 15c0-1.86-1.12-3.46-2.73-4.18C15.34 11.23 17 13.41 17 16c0 .48-.06.94-.17 1.38C19.7 15.65 21.5 13.06 21.89 10 21.96 9.4 22 8.79 22 8.17 20.4 4.5 16.5 2 12 2z" fill="#FF7139"/>
                                             <circle cx="14" cy="11" r="3" fill="#FF9400"/>
                                         </svg>
                                     </div>
                                     <div>
-                                        <h4 class="text-xl font-bold text-slate-900 dark:text-white">Mozilla Firefox</h4>
+                                        <h4 class="text-lg font-bold text-slate-900 dark:text-white">Mozilla Firefox</h4>
                                         <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="ext_firefox_compat">Firefox Desktop & Android</p>
                                     </div>
                                 </div>
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
                                     <span data-i18n="ext_status_soon">Bientôt disponible</span>
                                 </span>
                             </div>
 
                             <!-- Highlights -->
-                            <div class="space-y-3 mb-8 text-sm text-slate-600 dark:text-slate-300">
-                                <div class="flex items-start gap-2.5">
+                            <div class="space-y-3 mb-8 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                                <div class="flex items-start gap-2">
                                     <span class="text-amber-500 font-bold mt-0.5">⚡</span>
-                                    <span data-i18n="ext_firefox_feat1">En cours de validation finale pour Firefox Add-ons (AMO)</span>
+                                    <span data-i18n="ext_firefox_feat1">En cours de validation Firefox Add-ons (AMO)</span>
                                 </div>
-                                <div class="flex items-start gap-2.5">
+                                <div class="flex items-start gap-2">
                                     <span class="text-amber-500 font-bold mt-0.5">⚡</span>
                                     <span data-i18n="ext_firefox_feat2">Conçu sur le standard WebExtensions moderne</span>
                                 </div>
-                                <div class="flex items-start gap-2.5">
+                                <div class="flex items-start gap-2">
                                     <span class="text-amber-500 font-bold mt-0.5">⚡</span>
                                     <span data-i18n="ext_firefox_feat3">Respect strict de la confidentialité et zero tracking</span>
                                 </div>
-                                <div class="flex items-start gap-2.5">
+                                <div class="flex items-start gap-2">
                                     <span class="text-amber-500 font-bold mt-0.5">⚡</span>
                                     <span data-i18n="ext_firefox_feat4">Synchronisation immédiate avec votre compte LinksVault</span>
                                 </div>
@@ -516,8 +577,8 @@
                         </div>
 
                         <!-- Disabled preview button -->
-                        <div class="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 cursor-not-allowed">
-                            <span data-i18n="ext_firefox_cta">Arrive très prochainement sur Firefox</span>
+                        <div class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-xs sm:text-sm text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 cursor-not-allowed">
+                            <span data-i18n="ext_firefox_cta">Arrive très prochainement</span>
                             <span class="text-xs">🦊</span>
                         </div>
                     </div>
@@ -926,8 +987,9 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-6">
                     <a href="#features" data-i18n="nav_features" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Fonctionnalités</a>
-                    <a href="#extensions" data-i18n="nav_extensions" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Extensions</a>
+                    <a href="#extensions" data-i18n="nav_extensions" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Extensions & Desktop</a>
                     <a href="#pricing" data-i18n="nav_pricing" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Tarifs</a>
+                    <a href="https://github.com/baguidevos/links-vault/releases/latest" target="_blank" rel="noopener" data-i18n="footer_desktop" class="hover:text-purple-500 transition-colors">App Desktop (GitHub)</a>
                     <a href="{{ route('extension.download') }}" data-i18n="hero_cta_extension" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Extension Chrome</a>
                     <a href="#extensions" data-i18n="hero_ext_firefox_status" class="hover:text-amber-500 transition-colors">Firefox : Bientôt disponible</a>
                     <a href="{{ route('filament.app.auth.login') }}" data-i18n="nav_login" class="hover:text-[#0099FF] dark:hover:text-white transition-colors">Connexion</a>
@@ -973,6 +1035,8 @@
                     hero_subtitle: "Le gestionnaire intelligent de favoris et bookmarks augmenté par l'IA. Résumés automatiques, scan des liens morts (404), sauvegarde Google Drive 1-clic et extension Chrome instantanée.",
                     hero_cta_primary: "Créer un compte gratuit",
                     hero_cta_extension: "Extension Chrome",
+                    hero_cta_desktop: "App Desktop",
+                    hero_status_desktop: "Desktop : Windows & Mac (GitHub Releases)",
                     hero_ext_chrome_status: "Chrome : Disponible",
                     hero_ext_firefox_status: "Firefox : Bientôt disponible",
                     hero_trust_1: "100 liens offerts à vie",
@@ -995,23 +1059,31 @@
                     feat_6_title: "Paiement Local SasPay",
                     feat_6_desc: "Abonnez-vous facilement en FCFA via Mobile Money (Wave, MTN, Orange, Moov) ou carte bancaire sans aucune contrainte de devise.",
 
-                    ext_tag: "Extensions Navigateurs",
-                    ext_title: "Capturez le Web à la Vitesse de la Pensée",
-                    ext_subtitle: "Sauvegardez n'importe quel onglet en 1 clic sans quitter votre page. Disponible immédiatement pour Google Chrome (et Chromium) et très bientôt sur Mozilla Firefox.",
+                    ext_tag: "Écosystème Desktop & Extensions",
+                    ext_title: "Votre Mémoire Numérique sur Tous Vos Appareils",
+                    ext_subtitle: "Profitez de la puissance de LinksVault où que vous soyez : application de bureau native ultra-rapide sur GitHub Releases, extension Chrome instantanée, et arrivée imminente sur Firefox.",
+                    ext_desktop_title: "App Desktop Native",
+                    ext_desktop_compat: "Windows 10/11 & macOS",
+                    ext_desktop_feat1: "Propulsé par NativePHP Electron avec base SQLite locale",
+                    ext_desktop_feat2: "Mode hors-ligne complet & synchronisation bidirectionnelle",
+                    ext_desktop_feat3: "Menu bar, System Tray et raccourcis globaux",
+                    ext_desktop_feat4: "Mises à jour automatiques via GitHub Releases",
+                    ext_desktop_cta: "Télécharger sur GitHub Releases",
                     ext_chrome_compat: "& Navigateurs Chromium",
                     ext_status_ready: "Disponible",
                     ext_chrome_feat1: "Capture instantanée en 1-clic de n'importe quel onglet",
                     ext_chrome_feat2: "Sélection du dossier et ajout de tags sans quitter la page",
                     ext_chrome_feat3: "Compatible Brave, Edge, Arc & Opera",
                     ext_chrome_feat4: "Raccourci clavier de capture ultra-rapide",
-                    ext_chrome_cta: "Télécharger l'Extension Chrome (ZIP)",
+                    ext_chrome_cta: "Télécharger l'Extension (ZIP)",
                     ext_firefox_compat: "Firefox Desktop & Android",
                     ext_status_soon: "Bientôt disponible",
                     ext_firefox_feat1: "En cours de validation finale pour Firefox Add-ons (AMO)",
                     ext_firefox_feat2: "Conçu sur le standard WebExtensions moderne",
                     ext_firefox_feat3: "Respect strict de la confidentialité et zero tracking",
                     ext_firefox_feat4: "Synchronisation immédiate avec votre compte LinksVault",
-                    ext_firefox_cta: "Arrive très prochainement sur Firefox",
+                    ext_firefox_cta: "Arrive très prochainement",
+                    footer_desktop: "App Desktop (GitHub)",
 
                     step_tag: "Simplicité Absolue",
                     step_title: "Prêt en moins de 2 minutes",
@@ -1096,6 +1168,8 @@
                     hero_subtitle: "The intelligent bookmark and knowledge manager powered by AI. Automatic summaries, broken link (404) scanner, 1-click Google Drive backup, and Chrome extension.",
                     hero_cta_primary: "Start For Free",
                     hero_cta_extension: "Chrome Extension",
+                    hero_cta_desktop: "Desktop App",
+                    hero_status_desktop: "Desktop: Windows & Mac (GitHub Releases)",
                     hero_ext_chrome_status: "Chrome: Available",
                     hero_ext_firefox_status: "Firefox: Coming Soon",
                     hero_trust_1: "100 links free forever",
@@ -1118,23 +1192,31 @@
                     feat_6_title: "Local SasPay Payments",
                     feat_6_desc: "Subscribe easily in FCFA via Mobile Money (Wave, MTN, Orange, Moov) or credit card with zero currency hassle.",
 
-                    ext_tag: "Browser Extensions",
-                    ext_title: "Capture the Web at the Speed of Thought",
-                    ext_subtitle: "Save any browser tab in 1 click without leaving your web page. Available right now for Google Chrome (and Chromium) and very soon on Mozilla Firefox.",
+                    ext_tag: "Desktop & Extensions Ecosystem",
+                    ext_title: "Your Digital Memory on Every Device",
+                    ext_subtitle: "Experience LinksVault everywhere: blazing fast native desktop application on GitHub Releases, instant Chrome extension, and upcoming Firefox add-on.",
+                    ext_desktop_title: "Native Desktop App",
+                    ext_desktop_compat: "Windows 10/11 & macOS",
+                    ext_desktop_feat1: "Powered by NativePHP Electron with local SQLite database",
+                    ext_desktop_feat2: "Full offline mode & automated bi-directional cloud sync",
+                    ext_desktop_feat3: "Menu bar, System Tray integration and global shortcuts",
+                    ext_desktop_feat4: "Automated updates powered by GitHub Releases",
+                    ext_desktop_cta: "Download on GitHub Releases",
                     ext_chrome_compat: "Compatible with Chrome, Brave, Edge & Opera",
                     ext_status_ready: "Available Now",
                     ext_chrome_feat1: "Instant 1-click capture from any active browser tab",
                     ext_chrome_feat2: "Select destination folder and tags without leaving the page",
                     ext_chrome_feat3: "Compatible with Brave, Edge, Arc & Opera",
                     ext_chrome_feat4: "Ultra-fast customizable keyboard shortcut",
-                    ext_chrome_cta: "Download Chrome Extension (ZIP)",
+                    ext_chrome_cta: "Download Extension (ZIP)",
                     ext_firefox_compat: "Firefox Desktop & Mobile",
                     ext_status_soon: "Coming Soon",
                     ext_firefox_feat1: "Under final packaging for Firefox Add-ons (AMO)",
                     ext_firefox_feat2: "Built upon the modern standard WebExtensions API",
                     ext_firefox_feat3: "Strict privacy guarantee with zero telemetry tracking",
                     ext_firefox_feat4: "Instant bi-directional sync with your LinksVault account",
-                    ext_firefox_cta: "Coming very soon to Firefox",
+                    ext_firefox_cta: "Coming very soon",
+                    footer_desktop: "Desktop App (GitHub)",
 
                     step_tag: "Absolute Simplicity",
                     step_title: "Ready in under 2 minutes",

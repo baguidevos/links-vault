@@ -12,5 +12,13 @@ test('the landing page renders successfully with bilingual support, theme switch
     $response->assertSee('SasPay');
     $response->assertSee('Google Chrome');
     $response->assertSee('Mozilla Firefox');
+    $response->assertSee('App Desktop');
+    $response->assertSee('github.com/baguidevos/links-vault/releases', false);
     $response->assertSee(route('extension.download'), false);
+});
+
+test('desktop download route redirects to the latest github releases', function () {
+    $response = $this->get(route('desktop.download'));
+
+    $response->assertRedirect('https://github.com/baguidevos/links-vault/releases/latest');
 });

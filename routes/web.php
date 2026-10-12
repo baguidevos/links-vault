@@ -24,6 +24,11 @@ Route::redirect('/login', '/app/login')->name('login');
 Route::get('/extension/download', ExtensionDownloadController::class)
     ->name('extension.download');
 
+// Téléchargement de l'application Desktop (Redirection GitHub Releases)
+Route::get('/desktop/download', function () {
+    return redirect('https://github.com/baguidevos/links-vault/releases/latest');
+})->name('desktop.download');
+
 // Retour après paiement SasPay
 Route::get('/billing/return', BillingReturnController::class)
     ->middleware(['web', 'auth'])
