@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use App\Services\SubscriptionQuotaService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -65,6 +66,19 @@ class InvitationsManager extends TableWidget
                             ->required(),
                     ])
                     ->action(function (array $data) use ($team, $user): void {
+                        $quotaService = app(SubscriptionQuotaService::class);
+                        $owner = $team->owner ?? $user;
+
+                        if (! $quotaService->canAddTeamMember($team, $owner)) {
+                            Notification::make()
+                                ->danger()
+                                ->title(__('Limite de collaborateurs atteinte'))
+                                ->body(__('Votre forfait actuel ne vous permet pas d\'inviter d\'autres membres. Veuillez passer à l\'offre Pro ou Équipe pour agrandir votre équipe.'))
+                                ->send();
+
+                            return;
+                        }
+
                         $invitation = TeamInvitation::create([
                             'team_id' => $team->id,
                             'email' => $data['email'],
@@ -81,6 +95,7 @@ class InvitationsManager extends TableWidget
                             ->title(__('filateams::filateams.notifications.invitation_sent.title', ['email' => $data['email']]))
                             ->send();
                     })
+
                     ->visible(fn () => $user->hasTeamPermission($team, 'invitation:create')),
             ])
             ->columns([

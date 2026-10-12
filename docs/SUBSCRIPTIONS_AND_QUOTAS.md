@@ -14,8 +14,9 @@ L'application intègre 3 paliers d'abonnements conçus pour s'adapter à la fois
 
 | Fonctionnalité | Plan Gratuit (Free) | Plan Pro | Plan Team |
 |---|:---:|:---:|:---:|
-| **Prix Mensuel (EUR / XOF)** | **0 €** / 0 FCFA | **4.99 €** / 3 000 FCFA | **14.99 €** / 9 000 FCFA |
-| **Prix Annuel (-20% / 2 mois offerts)** | — | **49 €** / 30 000 FCFA | **149 €** / 90 000 FCFA |
+| **Prix Mensuel (XOF / EUR)** | **0 FCFA** / 0 € | **800 FCFA** / 1.49 € | **2 000 FCFA** / 3.49 € |
+| **Prix Annuel (-20% / 2 mois offerts)** | — | **8 000 FCFA** / 14.90 € | **20 000 FCFA** / 34.90 € |
+
 | **Limite de Liens** | 100 liens | **Illimité** (∞) | **Illimité** (∞) |
 | **Résumés & Tags IA / mois** | 10 | **500** | **2 000** |
 | **Sauvegarde Google Drive Cloud** | ❌ (Locale uniquement) | ✅ **1-clic illimité** | ✅ **Multi-comptes** |

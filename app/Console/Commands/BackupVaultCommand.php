@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Models\Team;
 use App\Services\CloudBackup\VaultBackupService;
+use App\Services\SubscriptionQuotaService;
 use Illuminate\Console\Command;
 
 class BackupVaultCommand extends Command
@@ -43,6 +44,15 @@ class BackupVaultCommand extends Command
         $this->info("Démarrage de la sauvegarde Cloud pour {$teams->count()} espace(s)...");
 
         foreach ($teams as $team) {
+            $owner = $team->owner;
+            $quotaService = app(SubscriptionQuotaService::class);
+
+            if ($owner && ! $quotaService->canUseCloudBackup($owner)) {
+                $this->line("Sauvegarde de l'équipe : {$team->name} (ID: {$team->id}) -> [Ignoré : plan gratuit, Google Drive Cloud réservé aux plans Pro/Team]");
+
+                continue;
+            }
+
             $this->line("Sauvegarde de l'équipe : {$team->name} (ID: {$team->id})...");
 
             try {

@@ -1,6 +1,7 @@
 <x-filament-panels::page>
     @php
-        $curr = $currency ?? 'EUR';
+        $curr = $currency ?? 'XOF';
+
         $currSymbol = match($curr) {
             'XOF', 'XAF' => 'FCFA',
             'USD' => '$',

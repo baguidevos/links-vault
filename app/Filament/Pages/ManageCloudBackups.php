@@ -12,6 +12,7 @@ use App\Services\CloudBackup\CloudStorageManager;
 use App\Services\CloudBackup\Connectors\GoogleDriveConnector;
 use App\Services\CloudBackup\VaultBackupService;
 use App\Services\CloudBackup\VaultRestoreService;
+use App\Services\SubscriptionQuotaService;
 use BackedEnum;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\Action;
@@ -214,7 +215,26 @@ class ManageCloudBackups extends Page implements HasTable
                                 ->helperText('Votre secret client OAuth 2.0.'),
                         ];
                     })
-                    ->action(function (array $data) use ($teamId) {
+                    ->action(function (array $data) use ($team, $teamId) {
+                        $user = Auth::user();
+                        $quotaService = app(SubscriptionQuotaService::class);
+
+                        if ($user && ! $quotaService->canUseCloudBackup($user)) {
+                            $tenantSlug = $team?->slug ?? 'default';
+                            Notification::make()
+                                ->title('Fonctionnalité réservée aux plans Pro et Équipe')
+                                ->body('La synchronisation Google Drive Cloud est réservée aux abonnés Pro et Équipe. Passez à l\'offre supérieure pour débloquer la sauvegarde cloud.')
+                                ->warning()
+                                ->actions([
+                                    \Filament\Notifications\Actions\Action::make('upgrade')
+                                        ->label('Voir les offres')
+                                        ->url(url("/app/{$tenantSlug}/manage-subscription")),
+                                ])
+                                ->send();
+
+                            return null;
+                        }
+
                         $config = CloudStorageConfig::where('team_id', $teamId)
                             ->where('provider', 'google_drive')
                             ->first();
@@ -376,8 +396,37 @@ class ManageCloudBackups extends Page implements HasTable
                 ])
                 ->action(function (array $data, VaultBackupService $backupService) use ($team): void {
                     $user = Auth::user();
+                    $quotaService = app(SubscriptionQuotaService::class);
+                    $canCloud = $user ? $quotaService->canUseCloudBackup($user) : false;
 
-                    $provider = $data['destination'] === 'all' ? null : $data['destination'];
+                    $destination = $data['destination'];
+
+                    if ($destination === 'google_drive' && ! $canCloud) {
+                        $tenantSlug = $team?->slug ?? 'default';
+                        Notification::make()
+                            ->title('Fonctionnalité réservée aux plans Pro et Équipe')
+                            ->body('La sauvegarde Google Drive Cloud requiert un abonnement Pro ou Équipe.')
+                            ->warning()
+                            ->actions([
+                                \Filament\Notifications\Actions\Action::make('upgrade')
+                                    ->label('Voir les offres')
+                                    ->url(url("/app/{$tenantSlug}/manage-subscription")),
+                            ])
+                            ->send();
+
+                        return;
+                    }
+
+                    if ($destination === 'all' && ! $canCloud) {
+                        $destination = 'local';
+                        Notification::make()
+                            ->title('Sauvegarde Google Drive ignorée')
+                            ->body('Votre forfait actuel n\'inclut pas la synchronisation Google Drive. La sauvegarde a été enregistrée en local uniquement.')
+                            ->info()
+                            ->send();
+                    }
+
+                    $provider = $destination === 'all' ? null : $destination;
 
                     try {
                         $backups = $backupService->backupTeam($team, $provider, $user);

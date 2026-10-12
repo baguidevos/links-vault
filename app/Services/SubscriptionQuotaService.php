@@ -154,9 +154,12 @@ class SubscriptionQuotaService
         }
 
         $limit = (int) $limitValue;
-        $currentMembers = $team->members()->count() + 1; // +1 pour le propriétaire
+        $currentCount = $team->members()->count();
+        if ($currentCount === 0) {
+            $currentCount = 1; // Le propriétaire compte au minimum pour 1 membre
+        }
 
-        return $currentMembers <= $limit;
+        return ($currentCount + 1) <= $limit;
     }
 
     /**

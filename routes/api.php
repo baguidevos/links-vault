@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ContextController;
 use App\Http\Controllers\Api\LinkController;
 use App\Http\Controllers\Api\SyncController;
+use App\Http\Controllers\Webhook\SasPayWebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,3 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/v1/sync/push', [SyncController::class, 'push'])->name('api.sync.push');
     Route::get('/v1/sync/pull', [SyncController::class, 'pull'])->name('api.sync.pull');
 });
+
+// SasPay Webhook
+Route::post('/webhooks/saspay', [SasPayWebhookController::class, 'handle'])
+    ->name('webhooks.saspay');

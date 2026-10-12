@@ -2,6 +2,7 @@
 
 use App\Ai\Agents\TagFinderAgent;
 use App\Http\Controllers\AcceptInvitationController;
+use App\Http\Controllers\BillingReturnController;
 use App\Http\Controllers\ExtensionDownloadController;
 use App\Http\Controllers\GlmController;
 use App\Http\Controllers\GoogleDriveAuthController;
@@ -22,6 +23,11 @@ Route::redirect('/login', '/app/login')->name('login');
 // Téléchargement du package de l'extension Chrome
 Route::get('/extension/download', ExtensionDownloadController::class)
     ->name('extension.download');
+
+// Retour après paiement SasPay
+Route::get('/billing/return', BillingReturnController::class)
+    ->middleware(['web', 'auth'])
+    ->name('billing.return');
 
 Route::get('/test-email', function () {
     $to = request('to', 'test@example.com');

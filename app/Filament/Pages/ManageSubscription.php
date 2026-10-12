@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Services\SasPayService;
 use App\Services\SubscriptionQuotaService;
 use BackedEnum;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
@@ -26,7 +27,7 @@ class ManageSubscription extends Page
 
     public string $billingPeriod = 'monthly';
 
-    public string $currency = 'EUR';
+    public string $currency = 'XOF';
 
     public function mount(): void
     {
@@ -39,9 +40,9 @@ class ManageSubscription extends Page
                 'fr-TG' => 'XOF',
                 'fr-CM' => 'XAF',
                 'en-US' => 'USD',
-                'fr' => 'EUR',
+                'fr' => 'XOF',
             ];
-            $this->currency = $currencyMap[$user->locale] ?? 'EUR';
+            $this->currency = $currencyMap[$user->locale] ?? 'XOF';
         }
     }
 
@@ -75,7 +76,7 @@ class ManageSubscription extends Page
         $this->currency = in_array($currency, ['EUR', 'XOF', 'USD'], true) ? $currency : 'EUR';
     }
 
-    public function switchPlan(string $planSlug, SubscriptionQuotaService $quotaService): void
+    public function switchPlan(string $planSlug, SubscriptionQuotaService $quotaService, SasPayService $sasPayService): void
     {
         $user = auth()->user();
         if (! $user) {
@@ -92,13 +93,46 @@ class ManageSubscription extends Page
             return;
         }
 
-        $quotaService->subscribeToPlan($user, $plan);
+        // Si passage vers le plan gratuit : bascule directe
+        if ($plan->slug === 'free') {
+            $quotaService->subscribeToPlan($user, $plan);
 
-        Notification::make()
-            ->title(__('Abonnement mis à jour avec succès ! 🎉'))
-            ->body(__('Vous êtes désormais sur le plan :plan.', ['plan' => $plan->name[app()->getLocale()] ?? $plan->name['fr'] ?? $plan->slug]))
-            ->success()
-            ->send();
+            Notification::make()
+                ->title(__('Passage au plan Gratuit effectué'))
+                ->body(__('Votre abonnement est désormais repassé sur l\'offre Gratuite.'))
+                ->info()
+                ->send();
+
+            return;
+        }
+
+        // Pour les plans payants (Pro, Team) : initiation du Checkout SasPay
+        try {
+            $result = $sasPayService->createCheckoutSession(
+                user: $user,
+                plan: $plan,
+                period: $this->billingPeriod,
+                currency: $this->currency
+            );
+
+            if ($result['success'] && ! empty($result['checkout_url'])) {
+                $this->redirect($result['checkout_url']);
+
+                return;
+            }
+
+            Notification::make()
+                ->title(__('Impossible d\'initialiser le paiement'))
+                ->body($result['error'] ?? __('Une erreur est survenue lors de la communication avec SasPay.'))
+                ->danger()
+                ->send();
+        } catch (\Throwable $e) {
+            Notification::make()
+                ->title(__('Erreur de configuration paiement'))
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 
     /**
