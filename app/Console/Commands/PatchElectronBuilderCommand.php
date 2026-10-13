@@ -14,13 +14,40 @@ class PatchElectronBuilderCommand extends Command
 
     public function handle(): int
     {
-        $path = $this->option('path')
-            ?? base_path('vendor/nativephp/desktop/resources/electron/electron-builder.mjs');
+        $explicitPath = $this->option('path');
 
+        if ($explicitPath !== null) {
+            $this->patchFile($explicitPath);
+
+            return self::SUCCESS;
+        }
+
+        $candidates = array_unique([
+            base_path('nativephp/electron/electron-builder.mjs'),
+            base_path('vendor/nativephp/desktop/resources/electron/electron-builder.mjs'),
+        ]);
+
+        $found = false;
+        foreach ($candidates as $path) {
+            if (file_exists($path)) {
+                $this->patchFile($path);
+                $found = true;
+            }
+        }
+
+        if (! $found) {
+            $this->warn('electron-builder.mjs not found in any candidate path.');
+        }
+
+        return self::SUCCESS;
+    }
+
+    private function patchFile(string $path): void
+    {
         if (! file_exists($path)) {
             $this->warn("electron-builder.mjs not found at: {$path}");
 
-            return self::SUCCESS;
+            return;
         }
 
         $content = file_get_contents($path);
@@ -33,8 +60,6 @@ class PatchElectronBuilderCommand extends Command
         if ($changed) {
             file_put_contents($path, $content);
         }
-
-        return self::SUCCESS;
     }
 
     /**

@@ -75,6 +75,8 @@ jobs:
             $version = $Matches[1]
             (Get-Content .env) -replace '^NATIVEPHP_APP_VERSION=.*$', "NATIVEPHP_APP_VERSION=$version" | Set-Content .env
           }
+          (Get-Content .env) -replace '^NATIVEPHP_UPDATER_ENABLED=.*$', "NATIVEPHP_UPDATER_ENABLED=true" | Set-Content .env
+          (Get-Content .env) -replace '^GITHUB_RELEASE_TYPE=.*$', "GITHUB_RELEASE_TYPE=release" | Set-Content .env
           php artisan key:generate --force
 
       - name: Install NPM dependencies
@@ -90,6 +92,8 @@ jobs:
       - name: Build Desktop (Windows)
         env:
           APP_ENV: production
+          NATIVEPHP_UPDATER_ENABLED: 'true'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: php artisan native:build win x64 --no-interaction
 
       - name: Publish Windows release and repair installer
@@ -119,7 +123,12 @@ jobs:
 
           $filesToUpload = @($setup.FullName, $archive)
           $latestYml = Get-ChildItem nativephp/electron/dist -Filter 'latest.yml' -File | Select-Object -First 1
-          if ($latestYml) { $filesToUpload += $latestYml.FullName }
+          if ($latestYml) {
+            Write-Host "Manifeste de mise à jour détecté : $($latestYml.FullName)"
+            $filesToUpload += $latestYml.FullName
+          } else {
+            Write-Warning "Attention : latest.yml introuvable dans dist. Les mises à jour automatiques nécessitent ce manifeste."
+          }
           $blockmap = Get-ChildItem nativephp/electron/dist -Filter '*.blockmap' -File | Select-Object -First 1
           if ($blockmap) { $filesToUpload += $blockmap.FullName }
 
@@ -155,5 +164,8 @@ jobs:
           echo "${ASSETS}" | grep -qiE '\.exe($| )' || {
             echo "::error::La release ${TAG} existe mais aucun installateur Windows .exe n'a été téléversé !"
             exit 1
+          }
+          echo "${ASSETS}" | grep -qiE 'latest\.yml($| )' || {
+            echo "::warning::Le manifeste latest.yml n'est pas présent dans les assets de ${TAG} !"
           }
           echo "Release ${TAG} validée avec succès avec son installateur Windows .exe."

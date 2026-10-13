@@ -23,9 +23,34 @@ class PatchAutoUpdaterCommand extends Command
 
     private function patchIndexJs(): void
     {
-        $path = $this->option('index-path')
-            ?? base_path(self::ELECTRON_PLUGIN_DIR.'/index.js');
+        $explicitPath = $this->option('index-path');
 
+        if ($explicitPath !== null) {
+            $this->patchFile($explicitPath);
+
+            return;
+        }
+
+        $candidates = array_unique([
+            base_path('nativephp/electron/electron-plugin/dist/index.js'),
+            base_path(self::ELECTRON_PLUGIN_DIR.'/index.js'),
+        ]);
+
+        $found = false;
+        foreach ($candidates as $path) {
+            if (file_exists($path)) {
+                $this->patchFile($path);
+                $found = true;
+            }
+        }
+
+        if (! $found) {
+            $this->warn('index.js not found in any candidate path.');
+        }
+    }
+
+    private function patchFile(string $path): void
+    {
         if (! file_exists($path)) {
             $this->warn("index.js not found at: {$path}");
 

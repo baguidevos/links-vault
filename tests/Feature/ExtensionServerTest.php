@@ -249,6 +249,10 @@ test('extension server saves google doc link correctly', function () {
 });
 
 test('extension server handles open request gracefully', function () {
+    Http::fake([
+        '*' => Http::response(['status' => 'ok'], 200),
+    ]);
+
     $client = fopen('php://temp', 'r+');
     $command = new ExtensionServerCommand;
     $method = new ReflectionMethod($command, 'handleOpenRequest');

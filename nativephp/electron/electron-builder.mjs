@@ -10,7 +10,6 @@ const fileName = process.env.NATIVEPHP_APP_FILENAME;
 const appVersion = process.env.NATIVEPHP_APP_VERSION;
 const appCopyright = process.env.NATIVEPHP_APP_COPYRIGHT;
 const deepLinkProtocol = process.env.NATIVEPHP_DEEPLINK_SCHEME;
-const updaterEnabled = process.env.NATIVEPHP_UPDATER_ENABLED === 'true';
 const deleteAppDataOnUninstall = process.env.NATIVEPHP_NSIS_DELETE_APP_DATA === 'true';
 
 // Azure signing configuration
@@ -46,11 +45,14 @@ try {
     updaterConfig = {};
 }
 
+const updaterEnabled = process.env.NATIVEPHP_UPDATER_ENABLED !== 'false' && Object.keys(updaterConfig).length > 0;
+
 if (isBuilding) {
     console.log('  • updater config', updaterConfig);
 }
 
 export default {
+    electronLanguages: ['fr', 'en-US'],
     appId: appId,
     productName: appName,
     copyright: appCopyright,
@@ -86,6 +88,7 @@ export default {
         ...(azureEndpoint && azureCertificateProfileName && azureCodeSigningAccountName
             ? {
                   azureSignOptions: {
+                      publisherName: process.env.NATIVEPHP_AZURE_PUBLISHER_NAME,
                       endpoint: azureEndpoint,
                       certificateProfileName: azureCertificateProfileName,
                       codeSigningAccountName: azureCodeSigningAccountName,
@@ -127,6 +130,7 @@ export default {
     appImage: {
         artifactName: appName + '-${version}.${ext}',
     },
+    compression: 'normal',
     npmRebuild: false,
     extraMetadata: {
         name: fileName,

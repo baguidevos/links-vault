@@ -11,7 +11,7 @@
 ; Without this the NSIS wizard spawns behind other windows during auto-updates.
 !macro customInit
     BringToFront
-    ; Attempt to forcefully kill the running app silently before installation to avoid file lock errors
+    ; Attempt to forcefully kill running app processes silently to avoid file lock errors during uninstall/update
     nsExec::Exec 'taskkill /IM "LinksVault.exe" /F'
     nsExec::Exec 'taskkill /IM "linksvault.exe" /F'
 !macroend

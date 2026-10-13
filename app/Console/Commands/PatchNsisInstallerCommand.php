@@ -23,9 +23,34 @@ class PatchNsisInstallerCommand extends Command
 
     private function patchElectronBuilder(): void
     {
-        $path = $this->option('path')
-            ?? base_path('vendor/nativephp/desktop/resources/electron/electron-builder.mjs');
+        $explicitPath = $this->option('path');
 
+        if ($explicitPath !== null) {
+            $this->patchElectronBuilderFile($explicitPath);
+
+            return;
+        }
+
+        $candidates = array_unique([
+            base_path('nativephp/electron/electron-builder.mjs'),
+            base_path('vendor/nativephp/desktop/resources/electron/electron-builder.mjs'),
+        ]);
+
+        $found = false;
+        foreach ($candidates as $path) {
+            if (file_exists($path)) {
+                $this->patchElectronBuilderFile($path);
+                $found = true;
+            }
+        }
+
+        if (! $found) {
+            $this->warn('electron-builder.mjs not found in any candidate path.');
+        }
+    }
+
+    private function patchElectronBuilderFile(string $path): void
+    {
         if (! file_exists($path)) {
             $this->warn("electron-builder.mjs not found at: {$path}");
 
@@ -64,9 +89,34 @@ class PatchNsisInstallerCommand extends Command
 
     private function createInstallerNsh(): void
     {
-        $buildDir = $this->option('build-dir')
-            ?? base_path('vendor/nativephp/desktop/resources/electron/build');
+        $explicitBuildDir = $this->option('build-dir');
 
+        if ($explicitBuildDir !== null) {
+            $this->writeInstallerNshToDir($explicitBuildDir);
+
+            return;
+        }
+
+        $candidates = array_unique([
+            base_path('nativephp/electron/build'),
+            base_path('vendor/nativephp/desktop/resources/electron/build'),
+        ]);
+
+        $found = false;
+        foreach ($candidates as $dir) {
+            if (is_dir($dir)) {
+                $this->writeInstallerNshToDir($dir);
+                $found = true;
+            }
+        }
+
+        if (! $found) {
+            $this->warn('Build directory not found in any candidate path.');
+        }
+    }
+
+    private function writeInstallerNshToDir(string $buildDir): void
+    {
         if (! is_dir($buildDir)) {
             $this->warn("Build directory not found at: {$buildDir}");
 

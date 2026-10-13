@@ -8,7 +8,7 @@ return [
      * It is used to determine if the app needs to be updated.
      * Increment this value every time you release a new version of your app.
      */
-    'version' => env('NATIVEPHP_APP_VERSION', '1.1.1'),
+    'version' => env('NATIVEPHP_APP_VERSION', '1.1.2'),
 
     /**
      * The ID of your application. This should be a unique identifier
@@ -110,11 +110,7 @@ return [
         'stubs',
 
         // Android build outputs and machine-local files (not used by desktop)
-        'mobile-app/nativephp/android/app/build',
-        'mobile-app/nativephp/android/app/.cxx',
-        'mobile-app/nativephp/android/.gradle',
-        'mobile-app/nativephp/android/local.properties',
-        'mobile-app/.git',
+        'mobile-app',
 
         // Tests (app + vendor)
         '*/tests',
