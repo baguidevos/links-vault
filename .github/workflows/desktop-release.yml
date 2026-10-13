@@ -134,13 +134,9 @@ jobs:
           $blockmap = Get-ChildItem nativephp/electron/dist -Filter '*.blockmap' -File | Select-Object -First 1
           if ($blockmap) { $filesToUpload += $blockmap.FullName }
 
-          $releaseExists = $false
-          try {
-            gh release view $tag --repo $env:GITHUB_REPOSITORY | Out-Null
-            $releaseExists = $true
-          } catch {
-            $releaseExists = $false
-          }
+          # Vérifier si la release GitHub existe déjà pour ce tag
+          gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null | Out-Null
+          $releaseExists = ($LASTEXITCODE -eq 0)
 
           if ($releaseExists) {
             Write-Host "Mise à jour de la release existante $tag..."

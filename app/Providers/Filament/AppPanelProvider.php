@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Resources\Pages\CreateTeamPage;
 use App\Filament\Resources\Pages\EditTeam;
+use App\Livewire\Auth\RestoreAccount;
 use App\Models\Team;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -21,6 +22,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use LaravelDaily\FilaTeams\FilaTeamsPlugin;
 
@@ -39,6 +41,10 @@ class AppPanelProvider extends PanelProvider
             ->login()
             ->registration()
             ->passwordReset()
+            ->routes(function () {
+                Route::get('/restore-account', RestoreAccount::class)
+                    ->name('auth.restore-account');
+            })
             ->profile(EditProfile::class)
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
@@ -56,6 +62,7 @@ class AppPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::TOPBAR_START, fn () => view('filament.components.navigation-history-buttons'))
             ->renderHook(PanelsRenderHook::SIMPLE_PAGE_START, fn () => view('filament.components.navigation-history-buttons'))
             ->renderHook(PanelsRenderHook::SIDEBAR_FOOTER, fn () => view('filament.components.sidebar-version-updater'))
+            ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, fn () => view('filament.components.auth-restore-account-link'))
             // SOLUTION 2 (COMMENTÉE) : Décommentez pour afficher la barre de titre personnalisée tout en haut
             // ->renderHook(PanelsRenderHook::BODY_START, fn () => view('filament.components.desktop-custom-titlebar'))
             ->colors([
