@@ -83,7 +83,9 @@ jobs:
         run: npm ci
 
       - name: Install Electron dependencies
-        run: npm ci
+        run: |
+          npm ci
+          npm run plugin:build
         working-directory: nativephp/electron
 
       - name: Build frontend assets

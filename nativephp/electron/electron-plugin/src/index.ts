@@ -1,7 +1,7 @@
 import { electronApp, optimizer } from '@electron-toolkit/utils';
 import { initialize } from '@electron/remote/main/index.js';
 import { ChildProcessWithoutNullStreams } from 'child_process';
-import CrossProcessExports, { app, powerMonitor, session } from 'electron';
+import CrossProcessExports, { app, BrowserWindow, powerMonitor, session } from 'electron';
 import killSync from 'kill-sync';
 import { resolve } from 'path';
 import ps from 'ps-node';
