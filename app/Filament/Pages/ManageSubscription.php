@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Models\SyncSetting;
+use App\Models\Team;
 use App\Services\SasPayService;
 use App\Services\SubscriptionQuotaService;
+use App\Services\Sync\DesktopSyncService;
 use BackedEnum;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Facades\Filament;
@@ -29,9 +32,21 @@ class ManageSubscription extends Page
 
     public string $currency = 'XOF';
 
+    public bool $is_syncing_subscription = false;
+
+    public bool $is_desktop = false;
+
+    public ?string $web_server_url = null;
+
     public function mount(): void
     {
+        $this->is_desktop = DesktopSyncSettings::isDesktop();
         $user = auth()->user();
+        if ($user) {
+            $settings = SyncSetting::where('user_id', $user->id)->first();
+            $this->web_server_url = $settings?->server_url;
+        }
+
         if ($user && $user->locale) {
             $currencyMap = [
                 'fr-CI' => 'XOF',
@@ -76,6 +91,39 @@ class ManageSubscription extends Page
         $this->currency = in_array($currency, ['EUR', 'XOF', 'USD'], true) ? $currency : 'EUR';
     }
 
+    public function syncSubscriptionWithCloud(DesktopSyncService $syncService): void
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return;
+        }
+
+        $this->is_syncing_subscription = true;
+        $tenant = Filament::getTenant();
+        $team = $tenant instanceof Team ? $tenant : ($tenant ? Team::find($tenant->id) : $user->teams()->first());
+
+        $result = $syncService->sync($user, $team);
+        $this->is_syncing_subscription = false;
+
+        if ($result['success'] ?? false) {
+            $quotaService = app(SubscriptionQuotaService::class);
+            $plan = $quotaService->getCurrentPlan($user);
+            $planName = $plan->name['fr'] ?? $plan->name['en'] ?? ucfirst($plan->slug);
+
+            Notification::make()
+                ->title(__('Abonnement synchronisé avec succès !'))
+                ->body(__('Votre formule active sur ce poste est désormais : :plan.', ['plan' => $planName]))
+                ->success()
+                ->send();
+        } else {
+            Notification::make()
+                ->title(__('Erreur de synchronisation'))
+                ->body($result['error'] ?? __('Impossible de contacter le serveur Web pour actualiser l\'abonnement.'))
+                ->danger()
+                ->send();
+        }
+    }
+
     public function switchPlan(string $planSlug, SubscriptionQuotaService $quotaService, SasPayService $sasPayService): void
     {
         $user = auth()->user();
@@ -102,6 +150,23 @@ class ManageSubscription extends Page
                 ->body(__('Votre abonnement est désormais repassé sur l\'offre Gratuite.'))
                 ->info()
                 ->send();
+
+            return;
+        }
+
+        // Sur Desktop, si les clés SasPay ne sont pas configurées en local mais qu'un serveur Web est lié
+        if ($this->is_desktop && empty(config('services.saspay.api_key')) && $this->web_server_url) {
+            $tenant = Filament::getTenant();
+            $tenantSlug = $tenant?->slug ?? 'personal';
+            $webManageUrl = rtrim($this->web_server_url, '/')."/app/{$tenantSlug}/manage-subscription";
+
+            Notification::make()
+                ->title(__('Paiement centralisé sur le Web'))
+                ->body(__('Redirection vers votre interface Web LinksVault pour finaliser le paiement sécurisé.'))
+                ->info()
+                ->send();
+
+            $this->redirect($webManageUrl);
 
             return;
         }

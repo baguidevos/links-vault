@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Link;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Model;
 use Laravelcm\Subscriptions\Models\Subscription;
 use Nafiswatsiq\Subbase\Models\Plan;
@@ -79,10 +80,20 @@ class SubscriptionQuotaService
         }
 
         $limit = (int) $limitValue;
-        $teamId = $team ? $team->id : ($user->current_team_id ?? $user->personalTeam()?->id);
+        $tenantId = class_exists(Filament::class) ? Filament::getTenant()?->id : null;
+        $teamId = $team ? $team->id : ($tenantId ?? $user->current_team_id ?? $user->personalTeam()?->id);
 
         $currentCount = Link::query()
-            ->when($teamId, fn ($q) => $q->where('team_id', $teamId), fn ($q) => $q->where('user_id', $user->id))
+            ->where(function ($q) use ($teamId, $user) {
+                if ($teamId) {
+                    $q->where('team_id', $teamId)
+                        ->orWhere(function ($sub) use ($user) {
+                            $sub->whereNull('team_id')->where('user_id', $user->id);
+                        });
+                } else {
+                    $q->where('user_id', $user->id);
+                }
+            })
             ->count();
 
         return $currentCount < $limit;

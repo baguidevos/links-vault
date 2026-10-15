@@ -41,6 +41,8 @@ class DesktopSyncSettings extends Page
 
     public bool $auto_sync_enabled = true;
 
+    public bool $verify_ssl = true;
+
     public ?string $last_synced_at = null;
 
     public ?string $sync_status = 'idle';
@@ -126,6 +128,7 @@ class DesktopSyncSettings extends Page
         $this->server_url = $settings->server_url;
         $this->api_token = $settings->api_token;
         $this->auto_sync_enabled = (bool) $settings->auto_sync_enabled;
+        $this->verify_ssl = (bool) ($settings->verify_ssl ?? true);
         $this->sync_status = $settings->sync_status ?? 'idle';
         $this->last_error = $settings->last_error;
 
@@ -171,6 +174,7 @@ class DesktopSyncSettings extends Page
             'server_url' => ['nullable', 'url'],
             'api_token' => ['nullable', 'string'],
             'auto_sync_enabled' => ['boolean'],
+            'verify_ssl' => ['boolean'],
         ]);
 
         $user = Auth::user();
@@ -183,6 +187,7 @@ class DesktopSyncSettings extends Page
             'server_url' => $this->server_url,
             'api_token' => $this->api_token,
             'auto_sync_enabled' => $this->auto_sync_enabled,
+            'verify_ssl' => $this->verify_ssl,
         ]);
 
         Notification::make()
@@ -209,9 +214,14 @@ class DesktopSyncSettings extends Page
         $this->mount(); // Recharger les états
 
         if ($result['success'] ?? false) {
+            $msg = 'Les deltas ont été appliqués avec succès.';
+            if (! empty($result['stats']['subscription'])) {
+                $msg .= ' Abonnement Cloud synchronisé : Plan '.ucfirst((string) $result['stats']['subscription']).'.';
+            }
+
             Notification::make()
                 ->title('Synchronisation réussie !')
-                ->body('Les deltas ont été appliqués avec succès.')
+                ->body($msg)
                 ->success()
                 ->send();
         } else {
@@ -221,6 +231,13 @@ class DesktopSyncSettings extends Page
                 ->danger()
                 ->send();
         }
+    }
+
+    public function fixSslAndSyncNow(DesktopSyncService $syncService): void
+    {
+        $this->verify_ssl = false;
+        $this->saveSettings();
+        $this->syncNow($syncService);
     }
 
     public static function isDesktop(): bool
@@ -278,11 +295,30 @@ class DesktopSyncSettings extends Page
                 ->action(function (array $data) {
                     try {
                         $serverUrl = rtrim($data['modal_server_url'], '/');
-                        $response = Http::acceptJson()->post("{$serverUrl}/api/auth/token", [
-                            'email' => $data['modal_email'],
-                            'password' => $data['modal_password'],
-                            'device_name' => 'LinksVault Desktop (Auto-Sync)',
-                        ]);
+                        $httpClient = Http::acceptJson();
+                        if (! $this->verify_ssl) {
+                            $httpClient = $httpClient->withoutVerifying();
+                        }
+
+                        try {
+                            $response = $httpClient->post("{$serverUrl}/api/auth/token", [
+                                'email' => $data['modal_email'],
+                                'password' => $data['modal_password'],
+                                'device_name' => 'LinksVault Desktop (Auto-Sync)',
+                            ]);
+                        } catch (Throwable $e) {
+                            $msg = $e->getMessage();
+                            if (str_contains($msg, 'cURL error 60') || str_contains($msg, 'untrusted root') || str_contains($msg, 'certificate verify failed')) {
+                                $this->verify_ssl = false;
+                                $response = Http::withoutVerifying()->acceptJson()->post("{$serverUrl}/api/auth/token", [
+                                    'email' => $data['modal_email'],
+                                    'password' => $data['modal_password'],
+                                    'device_name' => 'LinksVault Desktop (Auto-Sync)',
+                                ]);
+                            } else {
+                                throw $e;
+                            }
+                        }
 
                         if (! $response->successful()) {
                             throw new \RuntimeException($response->json('message') ?? 'Identifiants invalides.');

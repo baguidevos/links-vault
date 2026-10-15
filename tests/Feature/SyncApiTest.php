@@ -11,10 +11,14 @@ use App\Models\SyncTombstone;
 use App\Models\Tag;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\SubscriptionQuotaService;
 use App\Services\Sync\DesktopSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Nafiswatsiq\Subbase\Models\Plan;
 
 uses(RefreshDatabase::class);
 
@@ -332,4 +336,151 @@ test('it records sync timestamps on server and detects active status in settings
         ->and($page->is_sync_active)->toBeTrue()
         ->and($page->last_synced_at)->not->toBeNull()
         ->and($page->last_synced_diff)->not->toBeNull();
+});
+
+test('it includes subscription details in pull and push responses on Web', function () {
+    $user = User::factory()->create();
+    $team = Team::create(['name' => 'Web Team', 'slug' => 'web-team-sub', 'is_personal' => true]);
+    $user->teams()->attach($team->id, ['role' => 'owner']);
+    $user->update(['current_team_id' => $team->id]);
+
+    $quotaService = app(SubscriptionQuotaService::class);
+    $quotaService->getOrCreateSubscription($user);
+
+    $pullResponse = $this->actingAs($user, 'sanctum')->getJson(route('api.sync.pull', ['team_uuid' => $team->uuid]));
+    $pullResponse->assertOk();
+    $pullData = $pullResponse->json();
+
+    expect($pullData)->toHaveKey('subscription')
+        ->and($pullData['subscription'])->toHaveKey('plan_slug')
+        ->and($pullData['subscription']['plan_slug'])->toBe('free');
+
+    $pushResponse = $this->actingAs($user, 'sanctum')->postJson(route('api.sync.push'), [
+        'team_uuid' => $team->uuid,
+        'entities' => ['links' => []],
+    ]);
+    $pushResponse->assertOk();
+    $pushData = $pushResponse->json();
+
+    expect($pushData)->toHaveKey('subscription')
+        ->and($pushData['subscription']['plan_slug'])->toBe('free');
+});
+
+test('it synchronizes subscription plan from cloud web server into local desktop SQLite database', function () {
+    $user = User::factory()->create();
+    $team = Team::create(['name' => 'Desktop Team', 'slug' => 'desktop-team-sub', 'is_personal' => true]);
+    $user->teams()->attach($team->id, ['role' => 'owner']);
+    $user->update(['current_team_id' => $team->id]);
+
+    $quotaService = app(SubscriptionQuotaService::class);
+    $initialSub = $quotaService->getOrCreateSubscription($user);
+    expect($initialSub->plan->slug)->toBe('free');
+
+    SyncSetting::create([
+        'user_id' => $user->id,
+        'team_id' => $team->id,
+        'server_url' => 'https://web.linksvault.test',
+        'api_token' => 'sanctum-token-sub-test',
+        'verify_ssl' => true,
+    ]);
+
+    Http::fake([
+        'https://web.linksvault.test/api/v1/sync/push' => Http::response([
+            'success' => true,
+            'processed' => ['links' => 0],
+            'server_time' => now()->toIso8601String(),
+            'subscription' => [
+                'plan_slug' => 'pro',
+                'plan_name' => ['fr' => 'Pro', 'en' => 'Pro'],
+                'status' => 'active',
+                'ends_at' => now()->addMonth()->toIso8601String(),
+            ],
+        ], 200),
+        'https://web.linksvault.test/api/v1/sync/pull*' => Http::response([
+            'server_time' => now()->toIso8601String(),
+            'subscription' => [
+                'plan_slug' => 'pro',
+                'plan_name' => ['fr' => 'Pro', 'en' => 'Pro'],
+                'status' => 'active',
+                'ends_at' => now()->addMonth()->toIso8601String(),
+                'features' => [
+                    ['slug' => 'links_limit', 'value' => 'unlimited'],
+                    ['slug' => 'ai_summaries_monthly', 'value' => '500'],
+                    ['slug' => 'cloud_backup', 'value' => 'true'],
+                ],
+            ],
+            'entities' => [
+                'folders' => [],
+                'categories' => [],
+                'tags' => [],
+                'links' => [],
+                'deleted' => [],
+            ],
+        ], 200),
+    ]);
+
+    /** @var DesktopSyncService $service */
+    $service = app(DesktopSyncService::class);
+    $result = $service->sync($user, $team);
+
+    expect($result['success'])->toBeTrue()
+        ->and($result['stats']['subscription'] ?? null)->toBe('pro');
+
+    // Vérifier que le plan local a bien été promu à Pro
+    $user->unsetRelation('planSubscriptions');
+    $currentPlan = $quotaService->getCurrentPlan($user);
+    expect($currentPlan->slug)->toBe('pro');
+});
+
+test('it automatically falls back and disables SSL verification when cURL 60 SSL error occurs during sync', function () {
+    $user = User::factory()->create();
+    $team = Team::create(['name' => 'SSL Team', 'slug' => 'ssl-team', 'is_personal' => true]);
+    $user->teams()->attach($team->id, ['role' => 'owner']);
+    $user->update(['current_team_id' => $team->id]);
+
+    $settings = SyncSetting::create([
+        'user_id' => $user->id,
+        'team_id' => $team->id,
+        'server_url' => 'https://web.linksvault.test',
+        'api_token' => 'sanctum-ssl-test-token',
+        'verify_ssl' => true,
+    ]);
+
+    $callCount = 0;
+    Http::fake(function (Request $request) use (&$callCount) {
+        $callCount++;
+        // Si première requête (avec vérification SSL active), simuler l'exception cURL 60
+        if ($callCount === 1) {
+            throw new ConnectionException(
+                'cURL error 60: schannel: the certificate or certificate chain is based on an untrusted root for https://web.linksvault.test/api/v1/sync/push'
+            );
+        }
+
+        // Si requêtes suivantes (retry sans SSL ou pull)
+        if (str_contains($request->url(), '/api/v1/sync/push')) {
+            return Http::response(['success' => true, 'processed' => []], 200);
+        }
+
+        return Http::response([
+            'server_time' => now()->toIso8601String(),
+            'entities' => [
+                'folders' => [],
+                'categories' => [],
+                'tags' => [],
+                'links' => [],
+                'deleted' => [],
+            ],
+        ], 200);
+    });
+
+    /** @var DesktopSyncService $service */
+    $service = app(DesktopSyncService::class);
+    $result = $service->sync($user, $team);
+
+    expect($result['success'])->toBeTrue();
+
+    // Vérifier que verify_ssl a été automatiquement passé à false pour éviter toute interruption future
+    $settings->refresh();
+    expect($settings->verify_ssl)->toBeFalse()
+        ->and($settings->sync_status)->toBe('idle');
 });

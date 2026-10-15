@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\ContentDetectionService;
 use App\Services\SubscriptionQuotaService;
 use App\Services\WebPageMetadataService;
+use Filament\Facades\Filament;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -24,9 +25,11 @@ class CreateLinkAction
     public static function execute(array $data): Link
     {
         $user = auth()->user() ?? (isset($data['user_id']) ? User::find($data['user_id']) : null);
+        $tenant = class_exists(Filament::class) ? Filament::getTenant() : null;
+        $team = isset($data['team_id']) ? Team::find($data['team_id']) : $tenant;
+
         if ($user) {
             $quotaService = app(SubscriptionQuotaService::class);
-            $team = isset($data['team_id']) ? Team::find($data['team_id']) : null;
             if (! $quotaService->canCreateLink($user, $team)) {
                 throw ValidationException::withMessages([
                     'url' => [__('Limite de liens atteinte pour votre plan actuel (:limit liens max). Veuillez passer au plan supérieur pour continuer à ajouter des liens.', ['limit' => $quotaService->getLinksLimit($user)])],
@@ -87,8 +90,12 @@ class CreateLinkAction
 
         $contentType = ContentType::normalize($data['content_type'] ?? null, $analysis['type'] ?? null);
 
+        $resolvedTeamId = $data['team_id'] ?? ($team?->id ?? ($user?->current_team_id ?? $user?->personalTeam()?->id));
+
         $link = Link::create([
             ...$data,
+            'user_id' => $data['user_id'] ?? $user?->id,
+            'team_id' => $resolvedTeamId,
             'title' => $title,
             'url_hash' => hash('sha256', $data['url']),
             'content_type' => $contentType,

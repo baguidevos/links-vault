@@ -7,6 +7,7 @@ use App\Models\Link;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\SubscriptionQuotaService;
+use App\Services\Sync\WebSyncService;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -168,4 +169,77 @@ test('it renders manage subscription page for authenticated user', function () {
         ->assertSee('Gérer mon Abonnement')
         ->assertSee('Gratuit')
         ->assertSee('Pro');
+});
+
+test('it blocks link creation via CreateLinkAction even when team_id is omitted from data', function () {
+    $user = User::factory()->create();
+    $team = Team::create([
+        'user_id' => $user->id,
+        'name' => 'Omitted Team',
+        'slug' => 'omitted-team',
+        'is_personal' => true,
+    ]);
+    $user->teams()->attach($team->id, ['role' => 'owner']);
+    $user->update(['current_team_id' => $team->id]);
+    $this->actingAs($user);
+
+    for ($i = 1; $i <= 100; $i++) {
+        Link::create([
+            'user_id' => $user->id,
+            'team_id' => $team->id,
+            'url' => "https://example.com/omitted/{$i}",
+            'url_hash' => hash('sha256', "https://example.com/omitted/{$i}"),
+            'title' => "Link {$i}",
+        ]);
+    }
+
+    $service = app(SubscriptionQuotaService::class);
+    expect($service->canCreateLink($user))->toBeFalse();
+
+    $this->expectException(ValidationException::class);
+
+    CreateLinkAction::execute([
+        'url' => 'https://example.com/omitted/101',
+        'title' => 'Link 101',
+    ]);
+});
+
+test('it rejects creating new links via WebSyncService push when user link quota is exceeded', function () {
+    $user = User::factory()->create();
+    $team = Team::create([
+        'user_id' => $user->id,
+        'name' => 'Push Quota Team',
+        'slug' => 'push-quota-team',
+        'is_personal' => true,
+    ]);
+    $user->teams()->attach($team->id, ['role' => 'owner']);
+    $user->update(['current_team_id' => $team->id]);
+
+    for ($i = 1; $i <= 100; $i++) {
+        Link::create([
+            'user_id' => $user->id,
+            'team_id' => $team->id,
+            'url' => "https://example.com/push/{$i}",
+            'url_hash' => hash('sha256', "https://example.com/push/{$i}"),
+            'title' => "Link {$i}",
+        ]);
+    }
+
+    $syncService = app(WebSyncService::class);
+    $result = $syncService->handlePush($user, $team, [
+        'entities' => [
+            'links' => [
+                [
+                    'uuid' => (string) Str::uuid(),
+                    'url' => 'https://example.com/push/101',
+                    'title' => 'Link 101 Over Quota',
+                ],
+            ],
+        ],
+    ]);
+
+    expect($result['success'])->toBeTrue()
+        ->and($result['processed']['links'])->toBe(0);
+
+    expect(Link::where('url', 'https://example.com/push/101')->exists())->toBeFalse();
 });

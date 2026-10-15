@@ -11,8 +11,10 @@ use App\Models\SyncTombstone;
 use App\Models\Tag;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\SubscriptionQuotaService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class WebSyncService
@@ -87,6 +89,7 @@ class WebSyncService
 
         return [
             'success' => true,
+            'subscription' => $this->getSubscriptionData($user),
             'processed' => $processed,
             'server_time' => now()->toIso8601String(),
         ];
@@ -195,6 +198,7 @@ class WebSyncService
 
         return [
             'server_time' => now()->toIso8601String(),
+            'subscription' => $this->getSubscriptionData($user),
             'entities' => [
                 'folders' => $folders,
                 'categories' => $categories,
@@ -202,6 +206,36 @@ class WebSyncService
                 'links' => $links,
                 'deleted' => $deleted,
             ],
+        ];
+    }
+
+    /**
+     * Extrait l'état de l'abonnement actif et ses caractéristiques pour le client Desktop.
+     *
+     * @return array<string, mixed>
+     */
+    public function getSubscriptionData(User $user): array
+    {
+        /** @var SubscriptionQuotaService $quotaService */
+        $quotaService = app(SubscriptionQuotaService::class);
+        $currentPlan = $quotaService->getCurrentPlan($user);
+        $activeSub = $user->activePlanSubscriptions()->first();
+
+        return [
+            'plan_slug' => $currentPlan->slug,
+            'plan_name' => $currentPlan->name,
+            'status' => $activeSub ? ($activeSub->canceled() ? 'canceled' : 'active') : 'active',
+            'starts_at' => $activeSub?->starts_at?->toIso8601String(),
+            'ends_at' => $activeSub?->ends_at?->toIso8601String(),
+            'trial_ends_at' => $activeSub?->trial_ends_at?->toIso8601String(),
+            'canceled_at' => $activeSub?->canceled_at?->toIso8601String(),
+            'features' => $currentPlan->features->map(fn ($f) => [
+                'name' => $f->name,
+                'slug' => $f->slug,
+                'value' => (string) $f->value,
+                'resettable_period' => $f->resettable_period,
+                'resettable_interval' => $f->resettable_interval,
+            ])->values()->all(),
         ];
     }
 
@@ -395,6 +429,13 @@ class WebSyncService
             $this->syncTagsForLink($team, $user, $link, $data['tags'] ?? []);
 
             return true;
+        }
+
+        $quotaService = app(SubscriptionQuotaService::class);
+        if (! $quotaService->canCreateLink($user, $team)) {
+            Log::warning("WebSyncService: Quota de liens dépassé pour l'utilisateur {$user->id} ({$user->email}). Lien ignoré lors du push: {$url}");
+
+            return false;
         }
 
         $newLink = Link::create([

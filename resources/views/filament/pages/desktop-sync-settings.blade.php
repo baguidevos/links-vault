@@ -153,9 +153,24 @@
                 @endif
 
                 @if ($last_error)
-                    <p class="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-2 rounded-lg max-w-xl font-mono">
-                        {{ $last_error }}
-                    </p>
+                    <div class="space-y-2 max-w-2xl">
+                        <p class="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-lg font-mono">
+                            {{ $last_error }}
+                        </p>
+                        @if (str_contains($last_error, 'cURL error 60') || str_contains($last_error, 'untrusted root') || str_contains($last_error, 'certificate'))
+                            <div class="flex items-center gap-2 pt-1">
+                                <button 
+                                    type="button" 
+                                    wire:click="fixSslAndSyncNow" 
+                                    wire:loading.attr="disabled"
+                                    class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+                                >
+                                    <x-tabler-shield-off class="w-4 h-4" />
+                                    <span>Résoudre et synchroniser (Ignorer le certificat SSL Windows)</span>
+                                </button>
+                            </div>
+                        @endif
+                    </div>
                 @endif
             </div>
 
@@ -240,6 +255,23 @@
                         <label for="auto_sync_enabled" class="text-sm text-gray-700 dark:text-gray-300 font-medium cursor-pointer">
                             Activer la synchronisation automatique en arrière-plan (au démarrage et récurrent)
                         </label>
+                    </div>
+
+                    <div class="flex items-start gap-3 pt-1">
+                        <input 
+                            type="checkbox" 
+                            id="verify_ssl" 
+                            wire:model="verify_ssl" 
+                            class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500 w-4 h-4 mt-0.5"
+                        />
+                        <div>
+                            <label for="verify_ssl" class="text-sm text-gray-700 dark:text-gray-300 font-medium cursor-pointer">
+                                Vérifier le certificat SSL / HTTPS
+                            </label>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                Décochez cette option si vous rencontrez l'erreur "cURL error 60: schannel: untrusted root" sur Windows Desktop.
+                            </p>
+                        </div>
                     </div>
 
                     <div class="pt-4 flex justify-end">

@@ -36,11 +36,7 @@
                             class="flex items-center justify-center w-14 h-14 rounded-2xl shadow-sm shrink-0 border border-gray-100 dark:border-gray-800"
                             style="background-color: {{ $folderColor }}18; color: {{ $folderColor }};"
                         >
-                            @if ($record->icon)
-                                <x-filament::icon :icon="$record->icon" class="w-7 h-7" />
-                            @else
-                                <x-filament::icon icon="heroicon-o-folder" class="w-7 h-7" />
-                            @endif
+                            <x-filament::icon :icon="$record->getSafeIcon()" class="w-7 h-7" />
                         </div>
 
                         <div class="space-y-1.5 min-w-0">

@@ -11,6 +11,7 @@ use App\Filament\Resources\Folders\FolderResource;
 use App\Filament\Resources\Links\Schemas\LinkForm;
 use App\Models\Folder;
 use App\Models\Link;
+use App\Services\SubscriptionQuotaService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -56,16 +57,20 @@ class ViewFolder extends ViewRecord
                 ->label(__('Ajouter un lien'))
                 ->icon('heroicon-o-plus')
                 ->color('primary')
-                ->form(LinkForm::getComponents())
+                ->disabled(fn () => auth()->user() && ! app(SubscriptionQuotaService::class)->canCreateLink(auth()->user(), $this->record->team ?? Filament::getTenant()))
+                ->tooltip(fn () => (auth()->user() && ! app(SubscriptionQuotaService::class)->canCreateLink(auth()->user(), $this->record->team ?? Filament::getTenant())) ? __('Limite de liens atteinte pour votre plan.') : null)
+                ->schema(LinkForm::getComponents())
                 ->fillForm([
                     'folder_id' => $this->record->id,
                     'category_id' => $this->record->category_id,
+                    'team_id' => $this->record->team_id,
                     'visibility' => $this->record->visibility instanceof FolderVisibility
                         ? $this->record->visibility->value
                         : (string) $this->record->visibility,
                 ])
                 ->action(function (array $data) {
                     $data['folder_id'] = $this->record->id;
+                    $data['team_id'] = $this->record->team_id ?? Filament::getTenant()?->id;
                     if (empty($data['category_id']) && $this->record->category_id) {
                         $data['category_id'] = $this->record->category_id;
                     }

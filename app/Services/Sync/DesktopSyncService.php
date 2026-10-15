@@ -12,12 +12,16 @@ use App\Models\SyncTombstone;
 use App\Models\Tag;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\SubscriptionQuotaService;
 use Carbon\Carbon;
+use Database\Seeders\PlanSeeder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Nafiswatsiq\Subbase\Models\Plan;
 use Throwable;
 
 class DesktopSyncService
@@ -57,17 +61,24 @@ class DesktopSyncService
 
         try {
             $serverUrl = rtrim($settings->server_url, '/');
-            $apiToken = $settings->api_token;
             $lastSyncedAt = $settings->last_synced_at;
             $lastSyncedAtIso = $lastSyncedAt?->toIso8601String();
 
             // 1. PUSH : Collecter et envoyer les modifications locales vers le Web
             $pushPayload = $this->buildPushPayload($team, $lastSyncedAt);
 
-            $pushResponse = Http::withToken($apiToken)
-                ->acceptJson()
-                ->timeout(20)
-                ->post("{$serverUrl}/api/v1/sync/push", $pushPayload);
+            try {
+                $pushResponse = $this->buildHttpClient($settings)->post("{$serverUrl}/api/v1/sync/push", $pushPayload);
+            } catch (Throwable $e) {
+                if ($this->isSslVerificationError($e) && ($settings->verify_ssl ?? true)) {
+                    Log::warning('DesktopSyncService: Erreur SSL cURL 60 détectée lors du PUSH. Bascule automatique sans vérification SSL.');
+                    $settings->update(['verify_ssl' => false]);
+                    $pushResponse = $this->buildHttpClient($settings, forceWithoutVerifying: true)
+                        ->post("{$serverUrl}/api/v1/sync/push", $pushPayload);
+                } else {
+                    throw $e;
+                }
+            }
 
             if (! $pushResponse->successful()) {
                 throw new \RuntimeException('Échec de l\'envoi (Push) : '.$pushResponse->body());
@@ -82,10 +93,18 @@ class DesktopSyncService
                 $pullParams['since'] = $lastSyncedAtIso;
             }
 
-            $pullResponse = Http::withToken($apiToken)
-                ->acceptJson()
-                ->timeout(20)
-                ->get($pullUrl, $pullParams);
+            try {
+                $pullResponse = $this->buildHttpClient($settings)->get($pullUrl, $pullParams);
+            } catch (Throwable $e) {
+                if ($this->isSslVerificationError($e) && ($settings->verify_ssl ?? true)) {
+                    Log::warning('DesktopSyncService: Erreur SSL cURL 60 détectée lors du PULL. Bascule automatique sans vérification SSL.');
+                    $settings->update(['verify_ssl' => false]);
+                    $pullResponse = $this->buildHttpClient($settings, forceWithoutVerifying: true)
+                        ->get($pullUrl, $pullParams);
+                } else {
+                    throw $e;
+                }
+            }
 
             if (! $pullResponse->successful()) {
                 throw new \RuntimeException('Échec de la récupération (Pull) : '.$pullResponse->body());
@@ -97,7 +116,16 @@ class DesktopSyncService
             // 3. Appliquer les données reçues du Web dans la base SQLite locale
             $appliedStats = $this->applyPullData($user, $team, $pullData['entities'] ?? []);
 
-            // 4. Mettre à jour l'état de synchronisation
+            // 4. Synchroniser l'abonnement reçu du Web Cloud
+            $subscriptionData = $pullData['subscription'] ?? $pushResponse->json('subscription');
+            if (! empty($subscriptionData)) {
+                $syncedPlan = $this->applySubscriptionData($user, $subscriptionData);
+                if ($syncedPlan) {
+                    $appliedStats['subscription'] = $syncedPlan;
+                }
+            }
+
+            // 5. Mettre à jour l'état de synchronisation
             $settings->update([
                 'last_synced_at' => Carbon::parse($serverTime),
                 'sync_status' => 'idle',
@@ -548,5 +576,101 @@ class DesktopSyncService
         }
 
         return $link->tags()->pluck('name')->all();
+    }
+
+    /**
+     * Construit le client HTTP pour la synchronisation en tenant compte des paramètres SSL.
+     */
+    protected function buildHttpClient(SyncSetting $settings, bool $forceWithoutVerifying = false): PendingRequest
+    {
+        $client = Http::withToken($settings->api_token)
+            ->acceptJson()
+            ->timeout(25);
+
+        $verifySsl = $forceWithoutVerifying ? false : ($settings->verify_ssl ?? true);
+        if (! $verifySsl) {
+            $client = $client->withoutVerifying();
+        }
+
+        return $client;
+    }
+
+    /**
+     * Détecte si l'exception est liée à un échec de vérification du certificat SSL (cURL 60 / Schannel).
+     */
+    protected function isSslVerificationError(Throwable $e): bool
+    {
+        $message = $e->getMessage();
+
+        return str_contains($message, 'cURL error 60')
+            || str_contains($message, 'certificate verify failed')
+            || str_contains($message, 'untrusted root')
+            || str_contains($message, 'SSL certificate problem')
+            || str_contains($message, 'schannel: the certificate or certificate chain');
+    }
+
+    /**
+     * Applique les données de l'abonnement distant dans la base locale SQLite du Desktop.
+     *
+     * @param  array<string, mixed>  $subscriptionData
+     */
+    public function applySubscriptionData(User $user, array $subscriptionData): ?string
+    {
+        $planSlug = $subscriptionData['plan_slug'] ?? null;
+        if (! $planSlug) {
+            return null;
+        }
+
+        $plan = Plan::where('slug', $planSlug)->first();
+
+        if (! $plan) {
+            // Tenter d'exécuter le PlanSeeder si les plans par défaut manquent
+            if (class_exists(PlanSeeder::class)) {
+                app(PlanSeeder::class)->run();
+                $plan = Plan::where('slug', $planSlug)->first();
+            }
+        }
+
+        // Si le plan n'existe toujours pas localement dans la base SQLite Desktop, on le crée
+        if (! $plan) {
+            $plan = Plan::create([
+                'slug' => $planSlug,
+                'name' => $subscriptionData['plan_name'] ?? ['fr' => ucfirst($planSlug), 'en' => ucfirst($planSlug)],
+                'description' => ['fr' => 'Plan synchronisé depuis le Cloud Web', 'en' => 'Cloud synchronized plan'],
+                'is_active' => true,
+                'price' => 0.00,
+                'currency' => 'EUR',
+            ]);
+
+            if (! empty($subscriptionData['features']) && is_array($subscriptionData['features'])) {
+                foreach ($subscriptionData['features'] as $f) {
+                    $plan->features()->create([
+                        'name' => $f['name'] ?? ['fr' => $f['slug'], 'en' => $f['slug']],
+                        'slug' => $f['slug'],
+                        'value' => (string) ($f['value'] ?? ''),
+                        'resettable_period' => (int) ($f['resettable_period'] ?? 0),
+                        'resettable_interval' => ! empty($f['resettable_interval']) ? $f['resettable_interval'] : 'month',
+                    ]);
+                }
+            }
+        }
+
+        /** @var SubscriptionQuotaService $quotaService */
+        $quotaService = app(SubscriptionQuotaService::class);
+        $subscription = $quotaService->subscribeToPlan($user, $plan);
+
+        $subscription->update([
+            'starts_at' => ! empty($subscriptionData['starts_at']) ? Carbon::parse($subscriptionData['starts_at']) : $subscription->starts_at,
+            'ends_at' => ! empty($subscriptionData['ends_at']) ? Carbon::parse($subscriptionData['ends_at']) : null,
+            'trial_ends_at' => ! empty($subscriptionData['trial_ends_at']) ? Carbon::parse($subscriptionData['trial_ends_at']) : null,
+            'canceled_at' => ! empty($subscriptionData['canceled_at']) ? Carbon::parse($subscriptionData['canceled_at']) : null,
+        ]);
+
+        $user->unsetRelation('planSubscriptions');
+        $subscription->unsetRelation('plan');
+
+        Log::info("DesktopSyncService: Abonnement synchronisé pour l'utilisateur {$user->id} -> Plan {$planSlug}");
+
+        return $planSlug;
     }
 }

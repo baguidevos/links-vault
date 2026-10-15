@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Categories\Tables;
 
-use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -33,7 +32,7 @@ class CategoriesTable
                     ->searchable()
                     ->sortable(),
                 IconColumn::make('icon')
-                    ->icon(fn ($state) => $state ?? TablerIcon::AccessPoint)
+                    ->icon(fn ($state, ?Category $record) => $record ? $record->getSafeIcon() : Category::resolveSafeIcon($state))
                     ->label(__('Icon'))
                     ->searchable()
                     ->sortable(),

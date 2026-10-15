@@ -5,11 +5,13 @@ use App\Enums\ContentType;
 use App\Enums\FolderRole;
 use App\Enums\FolderVisibility;
 use App\Enums\LinkVisibility;
+use App\Filament\Resources\Folders\Pages\ListFolders;
 use App\Filament\Resources\Folders\Pages\ViewFolder;
 use App\Models\Category;
 use App\Models\Folder;
 use App\Models\Link;
 use App\Models\User;
+use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
@@ -531,4 +533,65 @@ test('a user can add existing tenant links to a folder and detach them', functio
 
     expect($link1->fresh()->folder_id)->toBeNull();
     expect($link2->fresh()->folder_id)->toBe($folder->id);
+});
+
+test('folder icon safely resolves invalid, missing, or default icon values without crashing', function () {
+    expect(Folder::resolveSafeIcon(null))->toBe(TablerIcon::Folder);
+    expect(Folder::resolveSafeIcon(''))->toBe(TablerIcon::Folder);
+    expect(Folder::resolveSafeIcon('folder'))->toBe(TablerIcon::Folder);
+    expect(Folder::resolveSafeIcon('nonexistent-icon-name'))->toBe(TablerIcon::Folder);
+    expect(Folder::resolveSafeIcon(TablerIcon::Folder))->toBe(TablerIcon::Folder);
+    expect(Folder::resolveSafeIcon('heroicon-o-folder'))->toBe('heroicon-o-folder');
+});
+
+test('list folders and view folder pages render successfully even when folder icon is folder or missing', function () {
+    $folderWithFolderIcon = Folder::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'name' => 'Dossier Icone Folder',
+        'slug' => 'dossier-icone-folder',
+        'icon' => 'folder',
+        'visibility' => FolderVisibility::Team,
+    ]);
+
+    $folderWithNullIcon = Folder::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'name' => 'Dossier Icone Null',
+        'slug' => 'dossier-icone-null',
+        'icon' => null,
+        'visibility' => FolderVisibility::Team,
+    ]);
+
+    $folderWithValidIcon = Folder::create([
+        'user_id' => $this->owner->id,
+        'team_id' => $this->team->id,
+        'name' => 'Dossier Icone Heroicon',
+        'slug' => 'dossier-icone-heroicon',
+        'icon' => 'heroicon-o-folder',
+        'visibility' => FolderVisibility::Team,
+    ]);
+
+    // 1. HTTP GET on the folders list page for this tenant
+    $response = $this->actingAs($this->owner)
+        ->get("/app/{$this->team->slug}/folders");
+
+    $response->assertOk();
+    $response->assertSee('Dossier Icone Folder');
+    $response->assertSee('Dossier Icone Null');
+    $response->assertSee('Dossier Icone Heroicon');
+
+    // 2. Livewire test for ListFolders
+    Livewire::actingAs($this->owner);
+    Filament::setTenant($this->team);
+
+    Livewire::test(ListFolders::class)
+        ->assertSuccessful()
+        ->assertCanSeeTableRecords([$folderWithFolderIcon, $folderWithNullIcon, $folderWithValidIcon]);
+
+    // 3. HTTP GET on the folder view page
+    $this->actingAs($this->owner)
+        ->get("/app/{$this->team->slug}/folders/{$folderWithFolderIcon->id}")
+        ->assertOk()
+        ->assertSee('Dossier Icone Folder');
 });

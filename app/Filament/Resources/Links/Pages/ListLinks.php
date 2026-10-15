@@ -12,6 +12,7 @@ use App\Services\BookmarksExportService;
 use App\Services\BookmarksImportService;
 use App\Services\LinkHealthService;
 use App\Services\SemanticSearchService;
+use App\Services\SubscriptionQuotaService;
 use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -345,7 +346,14 @@ class ListLinks extends ListRecords
                 ->form(LinkForm::getComponents())
                 ->label(__('Nouveau lien'))
                 ->icon(TablerIcon::Plus)
+                ->disabled(fn () => auth()->user() && ! app(SubscriptionQuotaService::class)->canCreateLink(auth()->user(), Filament::getTenant()))
+                ->tooltip(fn () => (auth()->user() && ! app(SubscriptionQuotaService::class)->canCreateLink(auth()->user(), Filament::getTenant())) ? __('Limite de liens atteinte pour votre plan.') : null)
                 ->action(function (array $data) {
+                    $tenant = Filament::getTenant();
+                    if ($tenant && empty($data['team_id'])) {
+                        $data['team_id'] = $tenant->id;
+                    }
+
                     CreateLinkAction::execute($data);
                 }),
         ];

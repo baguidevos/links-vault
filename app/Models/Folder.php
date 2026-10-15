@@ -10,6 +10,9 @@ use App\Concerns\BelongsToTeam;
 use App\Concerns\Syncable;
 use App\Enums\FolderRole;
 use App\Enums\FolderVisibility;
+use BackedEnum;
+use BladeUI\Icons\Factory;
+use Daljo25\FilamentTablerIcons\Enums\TablerIcon;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -180,5 +183,32 @@ class Folder extends Model
         }
 
         return false;
+    }
+
+    /**
+     * Safely resolves an icon to a valid SVG icon or default fallback.
+     */
+    public static function resolveSafeIcon(mixed $icon): string|TablerIcon
+    {
+        if (blank($icon) || $icon === 'folder') {
+            return TablerIcon::Folder;
+        }
+
+        if ($icon instanceof BackedEnum) {
+            return $icon;
+        }
+
+        try {
+            app(Factory::class)->svg((string) $icon);
+
+            return (string) $icon;
+        } catch (\Throwable) {
+            return TablerIcon::Folder;
+        }
+    }
+
+    public function getSafeIcon(): string|TablerIcon
+    {
+        return static::resolveSafeIcon($this->icon);
     }
 }

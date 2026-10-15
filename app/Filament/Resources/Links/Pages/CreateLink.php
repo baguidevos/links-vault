@@ -4,6 +4,9 @@ namespace App\Filament\Resources\Links\Pages;
 
 use App\Enums\LinkVisibility;
 use App\Filament\Resources\Links\LinkResource;
+use App\Services\SubscriptionQuotaService;
+use Filament\Facades\Filament;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Contracts\Support\Htmlable;
 
@@ -21,8 +24,35 @@ class CreateLink extends CreateRecord
         return __('Ajouter');
     }
 
+    protected function beforeCreate(): void
+    {
+        $user = auth()->user();
+        if ($user) {
+            $quotaService = app(SubscriptionQuotaService::class);
+            $tenant = Filament::getTenant();
+
+            if (! $quotaService->canCreateLink($user, $tenant)) {
+                Notification::make()
+                    ->title(__('Limite de liens atteinte'))
+                    ->body(__('Vous avez atteint la limite maximale autorisée par votre plan (:limit liens max). Veuillez passer au plan supérieur pour continuer à ajouter des liens.', [
+                        'limit' => $quotaService->getLinksLimit($user),
+                    ]))
+                    ->danger()
+                    ->persistent()
+                    ->send();
+
+                $this->halt();
+            }
+        }
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        $tenant = Filament::getTenant();
+        if ($tenant && empty($data['team_id'])) {
+            $data['team_id'] = $tenant->id;
+        }
+
         if (isset($data['tags']) && is_array($data['tags'])) {
             $data['tags'] = implode(',', $data['tags']);
         }

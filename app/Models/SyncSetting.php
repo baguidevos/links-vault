@@ -15,6 +15,7 @@ class SyncSetting extends Model
         'last_synced_at',
         'sync_status',
         'auto_sync_enabled',
+        'verify_ssl',
         'last_error',
     ];
 
@@ -22,6 +23,7 @@ class SyncSetting extends Model
         'api_token' => 'encrypted',
         'last_synced_at' => 'datetime',
         'auto_sync_enabled' => 'boolean',
+        'verify_ssl' => 'boolean',
     ];
 
     public function user(): BelongsTo

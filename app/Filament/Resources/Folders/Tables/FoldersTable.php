@@ -39,7 +39,7 @@ class FoldersTable
             ->columns([
                 IconColumn::make('icon')
                     ->label(__('Icône'))
-                    ->icon(fn ($state) => ! empty($state) ? $state : TablerIcon::Folder)
+                    ->icon(fn ($state, ?Folder $record) => $record ? $record->getSafeIcon() : Folder::resolveSafeIcon($state))
                     ->default(TablerIcon::Folder)
                     ->extraAttributes(fn ($record) => [
                         'style' => $record?->color ? "color: {$record->color} !important;" : '',

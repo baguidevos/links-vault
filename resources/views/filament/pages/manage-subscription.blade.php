@@ -12,6 +12,41 @@
     @endphp
 
     <div class="space-y-8">
+        @if ($is_desktop)
+            <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+                <div class="flex items-start sm:items-center gap-3">
+                    <div class="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 shrink-0">
+                        <x-filament::icon icon="heroicon-o-arrow-path" class="w-5 h-5 {{ $is_syncing_subscription ? 'animate-spin' : '' }}" />
+                    </div>
+                    <div class="space-y-0.5">
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-sm font-bold text-gray-900 dark:text-white">
+                                {{ __('Environnement Desktop (Local SQLite)') }}
+                            </h4>
+                            <span class="px-2 py-0.5 text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 rounded-full">
+                                {{ __('Appairé Cloud') }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 max-w-2xl">
+                            {{ __('Vos paiements et abonnements sont gérés sur votre instance Web centralisée. Si vous venez de payer un abonnement sur le Web, synchronisez votre poste pour débloquer immédiatement vos quotas.') }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                    <button 
+                        type="button" 
+                        wire:click="syncSubscriptionWithCloud" 
+                        wire:loading.attr="disabled"
+                        class="px-4 py-2.5 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center gap-2 transition shadow-sm cursor-pointer disabled:opacity-50"
+                    >
+                        <x-filament::icon icon="heroicon-o-arrow-path" class="w-4 h-4" wire:loading.class="animate-spin" />
+                        <span>{{ __('Synchroniser mon abonnement') }}</span>
+                    </button>
+                </div>
+            </div>
+        @endif
+
         {{-- 1. CARTE DE L'ABONNEMENT ACTUEL & JAUGES DE QUOTAS --}}
         <div class="overflow-hidden bg-white border border-gray-200/80 shadow-xs rounded-2xl dark:bg-gray-900 dark:border-gray-800">
             <div class="p-6 sm:p-8 bg-gradient-to-r from-primary-500/10 via-primary-500/5 to-transparent border-b border-gray-200/80 dark:border-gray-800">
