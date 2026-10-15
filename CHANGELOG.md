@@ -1,5 +1,53 @@
 # Changelog
 
+## v1.1.5 — 2026-10-15
+
+> **Release v1.1.5** — Mises à jour différentielles ultra-légères (Hot-Patch OTA), script d'automatisation des releases et intégration CI.
+
+### ⚡ Hot-Patching & Auto-Updater (Desktop)
+- **Mises à jour différentielles (Hot-Patch OTA)** : Plus besoin de retélécharger les 150 Mo de l'installeur Windows pour les mises à jour de code ! Le nouveau `DesktopHotPatchService` ne télécharge que les fichiers modifiés (~200 Ko) via une archive zip ciblée.
+- **Barre de progression en direct** : Suivi en direct du téléchargement (pourcentage, octets transférés et vitesse en Mo/s) dans le composant `AppVersionUpdater` de la barre latérale et sur la page de synchronisation Desktop.
+- **Application à chaud & Redémarrage** : Décompression sécurisée, exécution automatique des migrations de base de données, purge des caches et bouton de redémarrage immédiat via `App::relaunch()`.
+- **Commande de génération de patch** : `php artisan desktop:make-patch {from_tag?} {to_tag?}` analyse le `git diff` et génère l'archive et le manifest SHA-256 automatiquement.
+- **Automatisation via `release.bat`** : Nouveau script batch sous Windows automatisant le bump de version, `npm run build`, les tests critiques, le formatage Pint, la génération du patch, le commit, le tag et le push Git.
+- **Publication automatique CI GitHub Actions** : Mise à jour de `desktop-release.yml` pour générer et attacher automatiquement le patch différentiel `patch-{version}.zip` aux assets de la Release GitHub en parallèle du fichier `.exe`.
+
+---
+
+## v1.1.4 — 2026-10-15
+
+> **Release v1.1.4** — Respect strict des quotas de liens, synchronisation bidirectionnelle des abonnements et résilience SSL Windows.
+
+### 🔒 Quotas de liens & Formulaires
+- **Blocage strict des quotas** : Correction d'une anomalie permettant l'ajout de liens au-delà de la limite du plan (ex: 100 liens sur le plan Gratuit).
+- **Désactivation des actions UI** : Les boutons « Nouveau lien » et « Ajouter un lien » (dans les dossiers) sont automatiquement désactivés avec infobulle explicative lorsque le quota est atteint.
+- **Protection serveur & Cloud Push** : Blocage immédiat avec notification dans `CreateLink`, `CreateLinkAction` et `WebSyncService` lors de la réception de liens depuis l'application Desktop.
+
+### ☁️ Synchronisation & Abonnements
+- **Synchronisation des abonnements Desktop ↔ Web** : Les abonnements souscrits sur le Web sont désormais synchronisés vers l'application Desktop locale avec mise à jour automatique des fonctionnalités du plan.
+- **Bouton dédié « Synchroniser mon abonnement »** sur la page de gestion des abonnements de l'application Desktop.
+- **Résilience SSL Windows (cURL error 60)** : Repli automatique avec `withoutVerifying()` lors d'erreurs de certificats racines locaux sur Windows et toggle dédié dans les paramètres de synchronisation.
+
+---
+
+## v1.1.3 — 2026-10-14
+
+> **Release v1.1.3** — Flux de restauration de compte sans authentification et correctifs de publication CI.
+
+- **Restauration de compte** : Ajout du flux de restauration sécurisé accessible sans être authentifié au préalable.
+- **Pipeline CI** : Amélioration du runner Windows avec support natif PowerShell (`pwsh`) pour la vérification et la publication des artefacts.
+
+---
+
+## v1.1.2 — 2026-10-13
+
+> **Release v1.1.2** — Activation de l'auto-updater in-app et suivi du build electron-plugin dist.
+
+- **Auto-updater in-app** : Activation de l'écouteur d'événements et des notifications de mise à jour dans Electron.
+- **Electron Plugin Dist** : Build et suivi de `nativephp/electron/electron-plugin/dist/index.js` pour fiabiliser les appels d'API internes et l'arrêt propre de l'application.
+
+---
+
 ## v1.1.1 — 2026-10-12
 
 > **Release v1.1.1** — Réduction de la taille et du temps d’installation Windows.
@@ -9,8 +57,6 @@
 - Exclusion du paquet desktop des artefacts de compilation Android, caches Gradle, fichier local Android et métadonnées Git imbriquées.
 
 ---
-
-
 
 ## v1.1.0 — 2026-10-12
 
