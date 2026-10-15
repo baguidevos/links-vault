@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.1.6 — 2026-10-15
+
+> **Release v1.1.6** — Correctif de robustesse pour l'extraction du Hot-Patch sur Windows (`mkdir File exists`).
+
+### ⚡ Hot-Patching (Desktop)
+- **Création de répertoires sécurisée (`ensureDirectory`)** : Utilisation d'une création de dossiers idempotente avec `@mkdir` et vérification préalable `is_dir()` pour éliminer l'erreur `mkdir(): File exists` lorsque plusieurs fichiers modifiés partagent le même dossier parent.
+- **Gestion des droits d'écriture** : Détection des dossiers d'installation protégés et affichage d'un message explicite demandant de relancer en tant qu'administrateur si nécessaire.
+
+---
+
 ## v1.1.5 — 2026-10-15
 
 > **Release v1.1.5** — Mises à jour différentielles ultra-légères (Hot-Patch OTA), script d'automatisation des releases et intégration CI.

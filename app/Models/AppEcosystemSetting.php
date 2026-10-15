@@ -66,12 +66,12 @@ class AppEcosystemSetting extends Model
             }
 
             return static::query()->create([
-                'desktop_windows_url' => 'https://github.com/baguidevos/links-vault/releases/download/v1.1.5/LinksVault-1.1.5-setup.exe',
+                'desktop_windows_url' => 'https://github.com/baguidevos/links-vault/releases/download/v1.1.6/LinksVault-1.1.6-setup.exe',
                 'desktop_mac_url' => 'https://github.com/baguidevos/links-vault/releases/latest',
                 'desktop_linux_url' => null,
-                'desktop_version' => '1.1.5',
+                'desktop_version' => '1.1.6',
                 'desktop_is_active' => true,
-                'desktop_release_notes' => 'Release officielle v1.1.5 pour Windows et Mac.',
+                'desktop_release_notes' => 'Release officielle v1.1.6 pour Windows et Mac.',
                 'extension_chrome_url' => null,
                 'extension_chrome_is_active' => true,
                 'extension_chrome_version' => '1.0.0',
@@ -88,10 +88,10 @@ class AppEcosystemSetting extends Model
             ]);
         } catch (\Throwable) {
             return new static([
-                'desktop_windows_url' => 'https://github.com/baguidevos/links-vault/releases/download/v1.1.5/LinksVault-1.1.5-setup.exe',
+                'desktop_windows_url' => 'https://github.com/baguidevos/links-vault/releases/download/v1.1.6/LinksVault-1.1.6-setup.exe',
                 'desktop_mac_url' => 'https://github.com/baguidevos/links-vault/releases/latest',
                 'desktop_linux_url' => null,
-                'desktop_version' => '1.1.5',
+                'desktop_version' => '1.1.6',
                 'desktop_is_active' => true,
                 'extension_chrome_url' => null,
                 'extension_chrome_is_active' => true,

@@ -113,9 +113,7 @@ class DesktopHotPatchService
     public function downloadPatch(string $downloadUrl, string $targetVersion): string
     {
         $tempDir = storage_path('app/patch_temp');
-        if (! File::isDirectory($tempDir)) {
-            File::makeDirectory($tempDir, 0755, true);
-        }
+        $this->ensureDirectory($tempDir);
 
         $destPath = $tempDir.'/patch-'.$targetVersion.'.zip';
         if (File::exists($destPath)) {
@@ -247,7 +245,7 @@ class DesktopHotPatchService
         }
 
         $backupDir = storage_path('app/patch_backup/'.now()->format('Ymd_His'));
-        File::makeDirectory($backupDir, 0755, true);
+        $this->ensureDirectory($backupDir);
 
         // Extract and copy files
         $appliedCount = 0;
@@ -265,15 +263,21 @@ class DesktopHotPatchService
             // Backup existing file if present
             if (File::exists($destination)) {
                 $backupDest = $backupDir.'/'.$relPath;
-                File::makeDirectory(dirname($backupDest), 0755, true);
+                $this->ensureDirectory(dirname($backupDest));
                 File::copy($destination, $backupDest);
             }
 
-            if (! File::isDirectory($destinationDir)) {
-                File::makeDirectory($destinationDir, 0755, true);
+            $this->ensureDirectory($destinationDir);
+
+            try {
+                File::put($destination, $content);
+            } catch (Throwable $e) {
+                if (! is_writable($destinationDir) || (File::exists($destination) && ! is_writable($destination))) {
+                    throw new RuntimeException("Droits d'écriture insuffisants sur {$relPath}. Veuillez exécuter LinksVault en tant qu'administrateur.");
+                }
+                throw $e;
             }
 
-            File::put($destination, $content);
             $appliedCount++;
         }
 
@@ -379,5 +383,17 @@ class DesktopHotPatchService
         }
 
         return $bytes.' octets';
+    }
+
+    /**
+     * Ensure a directory exists safely without triggering PHP "File exists" warnings.
+     */
+    protected function ensureDirectory(string $path): void
+    {
+        $normalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
+
+        if (! is_dir($normalized)) {
+            @mkdir($normalized, 0755, true);
+        }
     }
 }
