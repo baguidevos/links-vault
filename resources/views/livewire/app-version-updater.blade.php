@@ -7,10 +7,10 @@
         <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2 min-w-0">
                 <span class="relative flex h-2 w-2">
-                    @if ($updateDownloaded)
+                    @if ($patchInstalled || $updateDownloaded)
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                         <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    @elseif ($updateAvailable)
+                    @elseif ($patchAvailable || $updateAvailable)
                         <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
                     @else
                         <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
@@ -48,6 +48,31 @@
                     <span>{{ $downloadProgress['humanTransferred'] }} / {{ $downloadProgress['humanTotal'] }}</span>
                     <span>{{ $downloadProgress['humanSpeed'] }}</span>
                 </div>
+            </div>
+        @elseif ($patchInstalled)
+            <div class="pt-1">
+                <button
+                    type="button"
+                    wire:click="relaunchApp"
+                    class="w-full py-1.5 px-2.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-98 rounded-lg flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer"
+                >
+                    <x-tabler-refresh class="w-3.5 h-3.5" />
+                    <span>Redémarrer l'application</span>
+                </button>
+            </div>
+        @elseif ($patchAvailable)
+            <div class="pt-1">
+                <button
+                    type="button"
+                    wire:click="downloadAndApplyPatch"
+                    wire:loading.attr="disabled"
+                    class="w-full py-1.5 px-2.5 text-xs font-semibold text-indigo-950 dark:text-indigo-200 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 rounded-lg flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                    <x-tabler-bolt class="w-3.5 h-3.5 text-indigo-500" wire:loading.remove wire:target="downloadAndApplyPatch" />
+                    <x-tabler-refresh class="w-3.5 h-3.5 text-indigo-500 animate-spin" wire:loading wire:target="downloadAndApplyPatch" />
+                    <span wire:loading.remove wire:target="downloadAndApplyPatch">Installer le patch v{{ $patchAvailable['version'] }} ({{ $patchAvailable['patch_size_human'] }})</span>
+                    <span wire:loading wire:target="downloadAndApplyPatch">Installation en cours...</span>
+                </button>
             </div>
         @elseif ($updateDownloaded)
             <div class="pt-1">
@@ -96,13 +121,13 @@
     >
         <button
             type="button"
-            wire:click="checkForUpdates"
+            wire:click="{{ $patchInstalled ? 'relaunchApp' : ($patchAvailable ? 'downloadAndApplyPatch' : ($updateDownloaded ? 'installUpdate' : 'checkForUpdates')) }}"
             wire:loading.attr="disabled"
-            title="LinksVault v{{ $currentVersion }} — {{ $downloadProgress ? 'Téléchargement '.$downloadProgress['percent'].'%' : 'Rechercher une mise à jour' }}"
+            title="LinksVault v{{ $currentVersion }} — {{ $downloadProgress ? 'Téléchargement '.$downloadProgress['percent'].'%' : ($patchInstalled ? 'Redémarrer' : ($patchAvailable ? 'Patch disponible' : 'Rechercher une mise à jour')) }}"
             class="relative inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
         >
-            <x-tabler-refresh class="w-4 h-4 {{ $downloadProgress ? 'animate-spin text-indigo-500' : '' }}" wire:loading.class="animate-spin text-indigo-500" wire:target="checkForUpdates" />
-            <span class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full {{ $downloadProgress ? 'bg-indigo-500 animate-ping' : ($updateDownloaded ? 'bg-emerald-400 animate-ping' : ($updateAvailable ? 'bg-amber-400' : 'bg-emerald-400')) }}"></span>
+            <x-tabler-refresh class="w-4 h-4 {{ $downloadProgress ? 'animate-spin text-indigo-500' : '' }}" wire:loading.class="animate-spin text-indigo-500" />
+            <span class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full {{ $downloadProgress ? 'bg-indigo-500 animate-ping' : ($patchInstalled || $updateDownloaded ? 'bg-emerald-400 animate-ping' : ($patchAvailable || $updateAvailable ? 'bg-amber-400' : 'bg-emerald-400')) }}"></span>
         </button>
     </div>
 </div>

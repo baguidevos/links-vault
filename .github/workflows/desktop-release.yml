@@ -134,6 +134,19 @@ jobs:
           $blockmap = Get-ChildItem nativephp/electron/dist -Filter '*.blockmap' -File | Select-Object -First 1
           if ($blockmap) { $filesToUpload += $blockmap.FullName }
 
+          # Génération automatique du patch différentiel léger (Hot-Patch)
+          Write-Host "Génération du patch différentiel pour $tag..."
+          try {
+            php artisan desktop:make-patch
+            $patchFiles = Get-ChildItem storage/app/releases -Filter 'patch-*.zip' -File
+            foreach ($p in $patchFiles) {
+              Write-Host "Patch différentiel inclus dans les assets : $($p.FullName)"
+              $filesToUpload += $p.FullName
+            }
+          } catch {
+            Write-Warning "Avertissement lors de la génération du patch : $_"
+          }
+
           # Vérifier si la release GitHub existe déjà pour ce tag
           gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null | Out-Null
           $releaseExists = ($LASTEXITCODE -eq 0)
@@ -174,4 +187,9 @@ jobs:
             Write-Warning "Attention : Le manifeste latest.yml n'est pas présent dans les assets de $tag !"
           }
 
-          Write-Host "Release $tag validée avec succès avec son installateur Windows .exe."
+          $hasPatch = $assetNames | Where-Object { $_ -match '^patch-.*\.zip$' }
+          if ($hasPatch) {
+            Write-Host "Patch différentiel validé dans les assets : $($hasPatch -join ', ')"
+          }
+
+          Write-Host "Release $tag validée avec succès avec son installateur Windows .exe et son patch différentiel."

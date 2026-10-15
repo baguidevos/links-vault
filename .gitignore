@@ -41,3 +41,7 @@ database/nativephp.sqlite*
 # Chrome extension build artifacts
 *.crx
 *.pem
+
+# Desktop patch archives
+/storage/app/releases/*
+/storage/app/patch_*

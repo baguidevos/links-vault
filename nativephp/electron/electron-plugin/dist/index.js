@@ -170,7 +170,19 @@ class NativePHP {
                     url: publicUrl,
                 });
             }
+            autoUpdater.autoInstallOnAppQuit = false;
             autoUpdater.checkForUpdatesAndNotify();
+            let _updateReady = false;
+            autoUpdater.on('update-downloaded', () => { _updateReady = true; });
+            const _origQAI = autoUpdater.quitAndInstall.bind(autoUpdater);
+            autoUpdater.quitAndInstall = (...args) => { _updateReady = false; _origQAI(...args); };
+            app.on('before-quit', (e) => {
+                if (_updateReady) {
+                    _updateReady = false;
+                    e.preventDefault();
+                    autoUpdater.quitAndInstall();
+                }
+            });
         }
     }
     startElectronApi() {

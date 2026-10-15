@@ -6,6 +6,7 @@ namespace App\Filament\Pages;
 
 use App\Models\SyncSetting;
 use App\Models\Team;
+use App\Services\DesktopHotPatchService;
 use App\Services\Sync\DesktopSyncService;
 use BackedEnum;
 use Carbon\Carbon;
@@ -86,11 +87,19 @@ class DesktopSyncSettings extends Page
 
     public ?string $updater_error = null;
 
+    public ?array $patch_available = null;
+
+    public bool $patch_installed = false;
+
+    public bool $is_downloading_patch = false;
+
     public function refreshDesktopProgress(): void
     {
         $this->download_progress = cache()->get('nativephp_download_progress');
         $this->update_downloaded = cache()->get('nativephp_update_downloaded');
         $this->update_available = cache()->get('nativephp_update_available');
+        $this->patch_available = cache()->get('nativephp_patch_available');
+        $this->patch_installed = (bool) cache()->get('nativephp_patch_installed', false);
         $this->updater_error = cache()->get('nativephp_updater_error');
     }
 
@@ -105,11 +114,13 @@ class DesktopSyncSettings extends Page
         $this->active_team_name = $tenant?->name;
         $this->current_server_url = config('app.url');
 
-        $this->desktop_app_version = (string) config('nativephp.version', '1.0.5');
+        $this->desktop_app_version = (string) (cache()->get('nativephp_installed_patch_version') ?: config('nativephp.version', '1.1.4'));
         $this->updater_provider = (string) config('nativephp.updater.default', 'github');
         $this->updater_enabled = (bool) config('nativephp.updater.enabled', true);
         $this->update_downloaded = cache()->get('nativephp_update_downloaded');
         $this->update_available = cache()->get('nativephp_update_available');
+        $this->patch_available = cache()->get('nativephp_patch_available');
+        $this->patch_installed = (bool) cache()->get('nativephp_patch_installed', false);
         $this->download_progress = cache()->get('nativephp_download_progress');
         $this->is_checking_updates = (bool) cache()->get('nativephp_checking_updates', false);
         $this->updater_error = cache()->get('nativephp_updater_error');
@@ -345,24 +356,47 @@ class DesktopSyncSettings extends Page
         ];
     }
 
-    public function checkForDesktopUpdates(): void
+    public function checkForDesktopUpdates(?DesktopHotPatchService $patchService = null): void
     {
         try {
             $this->is_checking_updates = true;
             cache()->put('nativephp_checking_updates', true, now()->addMinutes(2));
             cache()->forget('nativephp_updater_error');
 
+            $patchService ??= app(DesktopHotPatchService::class);
+
+            // 1. Recherche prioritaire d'un Hot-Patch léger
+            $patch = $patchService->checkForPatch($this->desktop_app_version);
+            if ($patch) {
+                $this->patch_available = $patch;
+                cache()->put('nativephp_patch_available', $patch, now()->addHours(6));
+
+                $now = now()->toIso8601String();
+                cache()->put('nativephp_last_checked_at', $now, now()->addDays(1));
+                $this->is_checking_updates = false;
+
+                Notification::make()
+                    ->title("Mise à jour rapide v{$patch['version']} disponible !")
+                    ->body("Un patch léger ({$patch['patch_size_human']}) ne contenant que les fichiers modifiés est prêt.")
+                    ->info()
+                    ->send();
+
+                $this->mount();
+
+                return;
+            }
+
             $isDesktop = static::isDesktop();
 
             if ($isDesktop && class_exists(AutoUpdater::class)) {
                 try {
                     AutoUpdater::checkForUpdates();
-                } catch (Throwable $e) {
+                } catch (Throwable) {
                     // Non bloquant en mode dev
                 }
             }
 
-            // Vérification instantanée auprès de GitHub Releases
+            // 2. Vérification auprès de GitHub Releases standard
             $response = Http::withHeaders([
                 'User-Agent' => 'LinksVault-App',
                 'Accept' => 'application/vnd.github+json',
@@ -404,7 +438,7 @@ class DesktopSyncSettings extends Page
             }
 
             $this->mount();
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             $this->is_checking_updates = false;
             Notification::make()
                 ->title('Vérification effectuée')
@@ -415,6 +449,52 @@ class DesktopSyncSettings extends Page
             $this->is_checking_updates = false;
             $this->mount();
         }
+    }
+
+    public function downloadAndApplyDesktopPatch(DesktopHotPatchService $patchService): void
+    {
+        if (! $this->patch_available) {
+            return;
+        }
+
+        $this->is_downloading_patch = true;
+
+        try {
+            $zipPath = $patchService->downloadPatch(
+                $this->patch_available['patch_url'],
+                $this->patch_available['version']
+            );
+
+            $result = $patchService->applyPatch($zipPath);
+
+            $this->desktop_app_version = $result['version'];
+            $this->patch_installed = true;
+            $this->patch_available = null;
+            cache()->put('nativephp_patch_installed', true, now()->addDays(7));
+            cache()->forget('nativephp_patch_available');
+
+            Notification::make()
+                ->title("Patch v{$result['version']} installé avec succès !")
+                ->body("{$result['files_count']} fichiers mis à jour. Redémarrez l'application pour appliquer les changements.")
+                ->success()
+                ->persistent()
+                ->send();
+        } catch (Throwable $e) {
+            Notification::make()
+                ->title('Erreur lors de l’application du patch')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        } finally {
+            $this->is_downloading_patch = false;
+            $this->mount();
+        }
+    }
+
+    public function relaunchDesktopApp(DesktopHotPatchService $patchService): void
+    {
+        cache()->forget('nativephp_patch_installed');
+        $patchService->relaunch();
     }
 
     public function installDesktopUpdate(): void

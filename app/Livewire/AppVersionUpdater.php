@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use App\Services\DesktopHotPatchService;
 use Carbon\Carbon;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
@@ -31,13 +32,23 @@ class AppVersionUpdater extends Component
 
     public ?string $updaterError = null;
 
+    public ?array $patchAvailable = null;
+
+    public bool $isDownloadingPatch = false;
+
+    public bool $patchInstalled = false;
+
     public function mount(): void
     {
-        $this->currentVersion = (string) config('nativephp.version', '1.0.5');
+        $cachedPatchVersion = Cache::get('nativephp_installed_patch_version');
+        $this->currentVersion = (string) ($cachedPatchVersion ?: config('nativephp.version', '1.1.4'));
+
         $this->updateDownloaded = Cache::get('nativephp_update_downloaded');
         $this->updateAvailable = Cache::get('nativephp_update_available');
         $this->downloadProgress = Cache::get('nativephp_download_progress');
         $this->updaterError = Cache::get('nativephp_updater_error');
+        $this->patchAvailable = Cache::get('nativephp_patch_available');
+        $this->patchInstalled = (bool) Cache::get('nativephp_patch_installed', false);
 
         $lastChecked = Cache::get('nativephp_last_checked_at');
         $this->lastCheckedAt = $lastChecked ? Carbon::parse($lastChecked)->diffForHumans() : null;
@@ -49,9 +60,11 @@ class AppVersionUpdater extends Component
         $this->updateDownloaded = Cache::get('nativephp_update_downloaded');
         $this->updateAvailable = Cache::get('nativephp_update_available');
         $this->updaterError = Cache::get('nativephp_updater_error');
+        $this->patchAvailable = Cache::get('nativephp_patch_available');
+        $this->patchInstalled = (bool) Cache::get('nativephp_patch_installed', false);
     }
 
-    public function checkForUpdates(): void
+    public function checkForUpdates(DesktopHotPatchService $patchService): void
     {
         $this->isChecking = true;
         Cache::put('nativephp_checking_updates', true, now()->addMinutes(2));
@@ -61,16 +74,37 @@ class AppVersionUpdater extends Component
             || request()->hasHeader('X-NativePHP-Secret')
             || str_contains((string) request()->userAgent(), 'Electron');
 
-        // 1. Si on est dans l'environnement Desktop empaqueté, déclencher l'AutoUpdater natif
+        // 1. Recherche prioritaire d'un Hot-Patch différentiel léger
+        $patch = $patchService->checkForPatch($this->currentVersion);
+        if ($patch) {
+            $this->patchAvailable = $patch;
+            $this->latestVersion = $patch['version'];
+            Cache::put('nativephp_patch_available', $patch, now()->addHours(6));
+
+            $now = now()->toIso8601String();
+            Cache::put('nativephp_last_checked_at', $now, now()->addDays(1));
+            $this->lastCheckedAt = Carbon::parse($now)->diffForHumans();
+            $this->isChecking = false;
+
+            Notification::make()
+                ->title("Mise à jour rapide v{$patch['version']} disponible !")
+                ->body("Un patch léger ({$patch['patch_size_human']}) ne contenant que les fichiers modifiés est prêt à être installé.")
+                ->info()
+                ->send();
+
+            return;
+        }
+
+        // 2. Si on est dans l'environnement Desktop empaqueté, déclencher l'AutoUpdater natif
         if ($isDesktop && class_exists(AutoUpdater::class)) {
             try {
                 AutoUpdater::checkForUpdates();
-            } catch (Throwable $e) {
+            } catch (Throwable) {
                 // Non-bloquant
             }
         }
 
-        // 2. Vérification auprès de GitHub Releases pour retour instantané
+        // 3. Vérification auprès de GitHub Releases pour détection standard (installeur complet)
         try {
             $response = Http::withHeaders([
                 'User-Agent' => 'LinksVault-App',
@@ -113,7 +147,7 @@ class AppVersionUpdater extends Component
                     ->info()
                     ->send();
             }
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             Notification::make()
                 ->title('Vérification effectuée')
                 ->body("Version actuelle : v{$this->currentVersion}.")
@@ -123,6 +157,54 @@ class AppVersionUpdater extends Component
             $this->isChecking = false;
             $this->mount();
         }
+    }
+
+    public function downloadAndApplyPatch(DesktopHotPatchService $patchService): void
+    {
+        if (! $this->patchAvailable) {
+            return;
+        }
+
+        $this->isDownloadingPatch = true;
+
+        try {
+            $patchUrl = $this->patchAvailable['patch_url'];
+            $version = $this->patchAvailable['version'];
+
+            // Téléchargement avec suivi de progression
+            $zipPath = $patchService->downloadPatch($patchUrl, $version);
+
+            // Application du patch
+            $result = $patchService->applyPatch($zipPath);
+
+            $this->currentVersion = $result['version'];
+            $this->patchInstalled = true;
+            $this->patchAvailable = null;
+            Cache::put('nativephp_patch_installed', true, now()->addDays(7));
+            Cache::forget('nativephp_patch_available');
+
+            Notification::make()
+                ->title("Patch v{$result['version']} installé avec succès !")
+                ->body("{$result['files_count']} fichiers mis à jour. Redémarrez l'application pour appliquer les changements.")
+                ->success()
+                ->persistent()
+                ->send();
+        } catch (Throwable $e) {
+            Notification::make()
+                ->title('Erreur lors de l’application du patch')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        } finally {
+            $this->isDownloadingPatch = false;
+            $this->mount();
+        }
+    }
+
+    public function relaunchApp(DesktopHotPatchService $patchService): void
+    {
+        Cache::forget('nativephp_patch_installed');
+        $patchService->relaunch();
     }
 
     public function installUpdate(): void

@@ -478,7 +478,51 @@
                         </span>
                     </div>
 
-                    @if ($update_downloaded)
+                    @if ($patch_installed)
+                        <div class="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-xl space-y-3">
+                            <div class="flex items-center gap-2 text-emerald-500 font-semibold text-xs">
+                                <x-tabler-sparkles class="w-4 h-4" />
+                                <span>Patch installé avec succès !</span>
+                            </div>
+                            <p class="text-xs text-gray-700 dark:text-gray-300">
+                                La mise à jour vers la version <strong>v{{ $desktop_app_version }}</strong> a été appliquée. Redémarrez pour finaliser.
+                            </p>
+                            <button 
+                                type="button"
+                                wire:click="relaunchDesktopApp"
+                                class="w-full py-2 px-3 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer"
+                            >
+                                <x-tabler-refresh class="w-4 h-4" />
+                                <span>Redémarrer l'application</span>
+                            </button>
+                        </div>
+                    @elseif ($patch_available)
+                        <div class="p-4 bg-indigo-500/15 border border-indigo-500/30 rounded-xl space-y-3">
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-2 text-indigo-500 font-semibold">
+                                    <x-tabler-bolt class="w-4 h-4" />
+                                    <span>Patch rapide v{{ $patch_available['version'] }}</span>
+                                </div>
+                                <span class="font-mono text-xs px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-semibold">
+                                    {{ $patch_available['patch_size_human'] }}
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                                Un patch différentiel contenant uniquement les fichiers modifiés est disponible. Téléchargement et installation instantanés.
+                            </p>
+                            <button 
+                                type="button"
+                                wire:click="downloadAndApplyDesktopPatch"
+                                wire:loading.attr="disabled"
+                                class="w-full py-2 px-3 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer disabled:opacity-50"
+                            >
+                                <x-tabler-cloud-download class="w-4 h-4" wire:loading.remove wire:target="downloadAndApplyDesktopPatch" />
+                                <x-tabler-refresh class="w-4 h-4 animate-spin" wire:loading wire:target="downloadAndApplyDesktopPatch" />
+                                <span wire:loading.remove wire:target="downloadAndApplyDesktopPatch">Télécharger & Appliquer le patch</span>
+                                <span wire:loading wire:target="downloadAndApplyDesktopPatch">Application en cours...</span>
+                            </button>
+                        </div>
+                    @elseif ($update_downloaded)
                         <div class="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-xl space-y-3">
                             <div class="flex items-center gap-2 text-emerald-500 font-semibold text-xs">
                                 <x-tabler-sparkles class="w-4 h-4" />
