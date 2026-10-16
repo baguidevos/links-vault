@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.1.7 — 2026-10-16
+
+> **Release v1.1.7** — Préservation intégrale des dossiers et de leurs liaisons lors des sauvegardes locales (.zip) et synchronisation Desktop/Web.
+
+### 📁 Dossiers & Sauvegardes
+- **Sauvegarde locale du coffre (`.zip`)** : Préservation complète de tous les dossiers dans `folders.json` (UUIDs, catégories, icônes, couleurs, visibilité, ordre de tri) et des identifiants `folder_id` / `folder_uuid` dans `links.json` en ignorant les scopes multi-tenant d'isolation.
+- **Restauration intelligente du coffre** : Résolution multi-critères des dossiers lors de la restauration d'une archive `.zip` (slug, nom, UUID, ID) afin de relier fidèlement chaque lien à son dossier d'origine.
+- **Synchronisation Desktop ↔ Web** : Préservation et association automatique des dossiers lors de la synchronisation bidirectionnelle des liens.
+
+---
+
 ## v1.1.6 — 2026-10-15
 
 > **Release v1.1.6** — Correctif de robustesse pour l'extraction du Hot-Patch sur Windows (`mkdir File exists`).
