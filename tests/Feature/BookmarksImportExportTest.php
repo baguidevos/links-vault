@@ -173,3 +173,45 @@ test('BookmarksExportService generates valid Netscape HTML and JSON exports', fu
     expect($csvExport)->toContain('https://openai.com')
         ->and($csvExport)->toContain('Articles IA');
 });
+
+test('BookmarksExportService exports empty folders and preserves them in JSON and HTML', function () {
+    $user = User::factory()->create();
+    $team = Team::create(['name' => 'Empty Folder Team', 'slug' => 'ef-team', 'is_personal' => true]);
+    $user->teams()->attach($team->id, ['role' => 'owner']);
+
+    $emptyFolder = Folder::create([
+        'user_id' => $user->id,
+        'team_id' => $team->id,
+        'name' => 'Dossier En Attente',
+        'slug' => 'dossier-en-attente',
+        'color' => '#10b981',
+        'icon' => 'folder-star',
+        'description' => 'Un dossier temporairement sans liens',
+    ]);
+
+    /** @var BookmarksExportService $exporter */
+    $exporter = app(BookmarksExportService::class);
+
+    $html = $exporter->exportToHtml($user, $team->id);
+    expect($html)->toContain('Dossier En Attente');
+
+    $json = $exporter->exportToJson($user, $team->id);
+    expect($json)->toContain('Dossier En Attente')
+        ->and($json)->toContain('#10b981')
+        ->and($json)->toContain('Un dossier temporairement sans liens');
+
+    // Importer ce JSON dans une autre équipe et s'assurer que le dossier vide est recréé
+    $team2 = Team::create(['name' => 'Recipient Team', 'slug' => 'recip-team', 'is_personal' => true]);
+    $user->teams()->attach($team2->id, ['role' => 'owner']);
+
+    /** @var BookmarksImportService $importer */
+    $importer = app(BookmarksImportService::class);
+    $result = $importer->importFromJson($json, $user, $team2->id);
+
+    expect($result['folders_created'])->toBe(1);
+
+    $importedFolder = Folder::where('team_id', $team2->id)->where('slug', 'dossier-en-attente')->first();
+    expect($importedFolder)->not->toBeNull()
+        ->and($importedFolder->name)->toBe('Dossier En Attente')
+        ->and($importedFolder->color)->toBe('#10b981');
+});

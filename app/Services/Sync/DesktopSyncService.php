@@ -159,10 +159,17 @@ class DesktopSyncService
      */
     protected function buildPushPayload(Team $team, ?Carbon $lastSyncedAt): array
     {
-        $foldersQuery = Folder::where('team_id', $team->id);
-        $categoriesQuery = Category::where('team_id', $team->id);
-        $tagsQuery = Tag::where('team_id', $team->id);
-        $linksQuery = Link::where('team_id', $team->id)->with(['folder', 'category', 'tags']);
+        // Rattacher les éventuelles entités locales orphelines créées sans team_id à l'équipe active
+        Folder::withoutGlobalScopes()->whereNull('team_id')->update(['team_id' => $team->id]);
+        Category::withoutGlobalScopes()->whereNull('team_id')->update(['team_id' => $team->id]);
+        Tag::withoutGlobalScopes()->whereNull('team_id')->update(['team_id' => $team->id]);
+        Link::withoutGlobalScopes()->whereNull('team_id')->update(['team_id' => $team->id]);
+        SyncTombstone::whereNull('team_id')->update(['team_id' => $team->id]);
+
+        $foldersQuery = Folder::withoutGlobalScopes()->where('team_id', $team->id);
+        $categoriesQuery = Category::withoutGlobalScopes()->where('team_id', $team->id);
+        $tagsQuery = Tag::withoutGlobalScopes()->where('team_id', $team->id);
+        $linksQuery = Link::withoutGlobalScopes()->where('team_id', $team->id)->with(['folder', 'category', 'tags']);
         $tombstonesQuery = SyncTombstone::where('team_id', $team->id);
 
         if ($lastSyncedAt) {
@@ -177,7 +184,7 @@ class DesktopSyncService
             'team_uuid' => $team->uuid,
             'last_synced_at' => $lastSyncedAt?->toIso8601String(),
             'entities' => [
-                'folders' => $foldersQuery->get()->map(fn (Folder $f) => [
+                'folders' => $foldersQuery->with('category')->get()->map(fn (Folder $f) => [
                     'uuid' => $f->uuid,
                     'name' => $f->name,
                     'slug' => $f->slug,
@@ -186,6 +193,7 @@ class DesktopSyncService
                     'description' => $f->description,
                     'visibility' => $f->visibility?->value ?? $f->visibility,
                     'sort_order' => $f->sort_order,
+                    'category_uuid' => $f->category?->uuid,
                     'updated_at' => $f->updated_at?->toIso8601String(),
                 ])->values()->all(),
 
@@ -298,7 +306,7 @@ class DesktopSyncService
         }
 
         $incomingUpdatedAt = isset($data['updated_at']) ? Carbon::parse($data['updated_at']) : now();
-        $category = Category::where('team_id', $team->id)->where('uuid', $uuid)->first();
+        $category = Category::withoutGlobalScopes()->where('team_id', $team->id)->where('uuid', $uuid)->first();
 
         if ($category) {
             if ($incomingUpdatedAt->lt($category->updated_at)) {
@@ -323,7 +331,7 @@ class DesktopSyncService
             'user_id' => $user->id,
             'name' => $data['name'] ?? 'Catégorie',
             'slug' => $data['slug'] ?? Str::slug($data['name'] ?? 'cat'),
-            'color' => $data['color'] ?? null,
+            'color' => $data['color'] ?? '#6B7280',
             'icon' => $data['icon'] ?? null,
             'description' => $data['description'] ?? null,
             'sort_order' => $data['sort_order'] ?? 0,
@@ -340,7 +348,16 @@ class DesktopSyncService
         }
 
         $incomingUpdatedAt = isset($data['updated_at']) ? Carbon::parse($data['updated_at']) : now();
-        $folder = Folder::where('team_id', $team->id)->where('uuid', $uuid)->first();
+        $folder = Folder::withoutGlobalScopes()->where('team_id', $team->id)->where('uuid', $uuid)->first();
+        if (! $folder && ! empty($data['slug'])) {
+            $folder = Folder::withoutGlobalScopes()->where('team_id', $team->id)->where('slug', $data['slug'])->first();
+        }
+
+        $categoryId = null;
+        if (! empty($data['category_uuid'])) {
+            $categoryId = Category::withoutGlobalScopes()->where('team_id', $team->id)->where('uuid', $data['category_uuid'])->value('id')
+                ?: Category::withoutGlobalScopes()->where('uuid', $data['category_uuid'])->value('id');
+        }
 
         if ($folder) {
             if ($incomingUpdatedAt->lt($folder->updated_at)) {
@@ -348,8 +365,10 @@ class DesktopSyncService
             }
 
             $folder->update([
+                'uuid' => $uuid,
                 'name' => $data['name'] ?? $folder->name,
                 'slug' => $data['slug'] ?? $folder->slug,
+                'category_id' => array_key_exists('category_uuid', $data) ? $categoryId : $folder->category_id,
                 'color' => $data['color'] ?? $folder->color,
                 'icon' => $data['icon'] ?? $folder->icon,
                 'description' => $data['description'] ?? $folder->description,
@@ -364,6 +383,7 @@ class DesktopSyncService
             'uuid' => $uuid,
             'team_id' => $team->id,
             'user_id' => $user->id,
+            'category_id' => $categoryId,
             'name' => $data['name'] ?? 'Dossier',
             'slug' => $data['slug'] ?? Str::slug($data['name'] ?? 'dossier'),
             'color' => $data['color'] ?? null,
@@ -387,11 +407,11 @@ class DesktopSyncService
 
         $tag = null;
         if ($uuid) {
-            $tag = Tag::where('team_id', $team->id)->where('uuid', $uuid)->first();
+            $tag = Tag::withoutGlobalScopes()->where('team_id', $team->id)->where('uuid', $uuid)->first();
         }
 
         if (! $tag) {
-            $tag = Tag::where('team_id', $team->id)->where('name', $name)->first();
+            $tag = Tag::withoutGlobalScopes()->where('team_id', $team->id)->where('name', $name)->first();
         }
 
         if ($tag) {
@@ -427,22 +447,24 @@ class DesktopSyncService
         $link = null;
 
         if ($uuid) {
-            $link = Link::where('team_id', $team->id)->where('uuid', $uuid)->first();
+            $link = Link::withoutGlobalScopes()->where('team_id', $team->id)->where('uuid', $uuid)->first();
         }
 
         $urlHash = hash('sha256', $url);
         if (! $link) {
-            $link = Link::where('team_id', $team->id)->where('url_hash', $urlHash)->first();
+            $link = Link::withoutGlobalScopes()->where('team_id', $team->id)->where('url_hash', $urlHash)->first();
         }
 
         $folderId = null;
         if (! empty($data['folder_uuid'])) {
-            $folderId = Folder::where('team_id', $team->id)->where('uuid', $data['folder_uuid'])->value('id');
+            $folderId = Folder::withoutGlobalScopes()->where('team_id', $team->id)->where('uuid', $data['folder_uuid'])->value('id')
+                ?: Folder::withoutGlobalScopes()->where('uuid', $data['folder_uuid'])->value('id');
         }
 
         $categoryId = null;
         if (! empty($data['category_uuid'])) {
-            $categoryId = Category::where('team_id', $team->id)->where('uuid', $data['category_uuid'])->value('id');
+            $categoryId = Category::withoutGlobalScopes()->where('team_id', $team->id)->where('uuid', $data['category_uuid'])->value('id')
+                ?: Category::withoutGlobalScopes()->where('uuid', $data['category_uuid'])->value('id');
         }
 
         if ($link) {
@@ -455,8 +477,8 @@ class DesktopSyncService
                 'description' => $data['description'] ?? $link->description,
                 'objective' => $data['objective'] ?? $link->objective,
                 'content_type' => $data['content_type'] ?? $link->content_type,
-                'folder_id' => $folderId ?? $link->folder_id,
-                'category_id' => $categoryId ?? $link->category_id,
+                'folder_id' => array_key_exists('folder_uuid', $data) ? $folderId : $link->folder_id,
+                'category_id' => array_key_exists('category_uuid', $data) ? $categoryId : $link->category_id,
                 'is_favorite' => isset($data['is_favorite']) ? (bool) $data['is_favorite'] : $link->is_favorite,
                 'is_archived' => isset($data['is_archived']) ? (bool) $data['is_archived'] : $link->is_archived,
                 'ai_summary' => $data['ai_summary'] ?? $link->ai_summary,
@@ -542,7 +564,7 @@ class DesktopSyncService
             return false;
         }
 
-        $record = $modelClass::where('team_id', $team->id)->where('uuid', $uuid)->first();
+        $record = $modelClass::withoutGlobalScopes()->where('team_id', $team->id)->where('uuid', $uuid)->first();
         if ($record) {
             $record->delete();
 

@@ -290,6 +290,39 @@ class BookmarksImportService
 
         $folderCache = [];
 
+        // Pré-création ou mapping des dossiers définis explicitement dans le JSON
+        if (isset($data['folders']) && is_array($data['folders'])) {
+            foreach ($data['folders'] as $folderItem) {
+                if (! is_array($folderItem) || empty($folderItem['name'])) {
+                    continue;
+                }
+
+                $fName = trim((string) $folderItem['name']);
+                $fSlug = ! empty($folderItem['slug']) ? Str::slug($folderItem['slug']) : Str::slug($fName);
+
+                $folder = Folder::firstOrCreate([
+                    'team_id' => $teamId,
+                    'slug' => $fSlug,
+                ], [
+                    'user_id' => $user->id,
+                    'name' => $fName,
+                    'color' => $folderItem['color'] ?? null,
+                    'icon' => $folderItem['icon'] ?? null,
+                    'description' => $folderItem['description'] ?? null,
+                    'sort_order' => $folderItem['sort_order'] ?? 0,
+                ]);
+
+                if ($folder->wasRecentlyCreated) {
+                    $foldersCreated++;
+                }
+
+                $folderCache[$fName] = $folder->id;
+                if (! empty($folderItem['uuid'])) {
+                    $folderCache[$folderItem['uuid']] = $folder->id;
+                }
+            }
+        }
+
         foreach ($items as $item) {
             if (! is_array($item) || empty($item['url'])) {
                 continue;
@@ -311,9 +344,12 @@ class BookmarksImportService
             $title = ! empty($item['title']) ? trim((string) $item['title']) : $url;
             $description = ! empty($item['description']) ? trim((string) $item['description']) : null;
             $folderName = ! empty($item['folder']) ? trim((string) $item['folder']) : null;
+            $folderUuid = ! empty($item['folder_uuid']) ? trim((string) $item['folder_uuid']) : null;
             $folderId = $defaultFolderId;
 
-            if ($folderName) {
+            if ($folderUuid && isset($folderCache[$folderUuid])) {
+                $folderId = $folderCache[$folderUuid];
+            } elseif ($folderName) {
                 if (! isset($folderCache[$folderName])) {
                     $folderSlug = Str::slug($folderName);
                     $folder = Folder::firstOrCreate([
@@ -373,6 +409,7 @@ class BookmarksImportService
 
         return [
             'imported_count' => $importedCount,
+            'links_created' => $importedCount,
             'skipped_count' => $skippedCount,
             'folders_created' => $foldersCreated,
             'errors' => $errors,

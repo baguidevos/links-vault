@@ -484,3 +484,106 @@ test('it automatically falls back and disables SSL verification when cURL 60 SSL
     expect($settings->verify_ssl)->toBeFalse()
         ->and($settings->sync_status)->toBe('idle');
 });
+
+test('it syncs folder category_uuid bidirectionally and updates folder category', function () {
+    $user = User::factory()->create();
+    $team = Team::create(['name' => 'Folder Category Team', 'slug' => 'fc-team', 'is_personal' => true]);
+    $user->teams()->attach($team->id, ['role' => 'owner']);
+    $user->update(['current_team_id' => $team->id]);
+
+    $categoryUuid = (string) Str::uuid();
+    $folderUuid = (string) Str::uuid();
+
+    // Push avec un dossier lié à une catégorie
+    $payload = [
+        'team_uuid' => $team->uuid,
+        'entities' => [
+            'categories' => [
+                [
+                    'uuid' => $categoryUuid,
+                    'name' => 'Design & UI',
+                    'slug' => 'design-ui',
+                    'updated_at' => now()->toIso8601String(),
+                ],
+            ],
+            'folders' => [
+                [
+                    'uuid' => $folderUuid,
+                    'name' => 'Inspirations',
+                    'slug' => 'inspirations',
+                    'category_uuid' => $categoryUuid,
+                    'updated_at' => now()->toIso8601String(),
+                ],
+            ],
+            'links' => [],
+            'tags' => [],
+            'deleted' => [],
+        ],
+    ];
+
+    $response = $this->actingAs($user, 'sanctum')->postJson(route('api.sync.push'), $payload);
+    $response->assertOk();
+
+    $category = Category::where('uuid', $categoryUuid)->first();
+    $folder = Folder::where('uuid', $folderUuid)->first();
+
+    expect($folder)->not->toBeNull()
+        ->and($folder->category_id)->toBe($category->id);
+
+    // Pull vérifie que category_uuid est bien renvoyé
+    $pullResponse = $this->actingAs($user, 'sanctum')->getJson(route('api.sync.pull', ['team_uuid' => $team->uuid]));
+    $pullResponse->assertOk();
+    $pulledFolder = collect($pullResponse->json('entities.folders'))->firstWhere('uuid', $folderUuid);
+
+    expect($pulledFolder)->not->toBeNull()
+        ->and($pulledFolder['category_uuid'])->toBe($categoryUuid);
+});
+
+test('it properly detaches link from folder when folder_uuid is null during sync', function () {
+    $user = User::factory()->create();
+    $team = Team::create(['name' => 'Detach Team', 'slug' => 'detach-team', 'is_personal' => true]);
+    $user->teams()->attach($team->id, ['role' => 'owner']);
+    $user->update(['current_team_id' => $team->id]);
+
+    $folder = Folder::create([
+        'user_id' => $user->id,
+        'team_id' => $team->id,
+        'name' => 'Dossier Initial',
+        'slug' => 'dossier-initial',
+    ]);
+
+    $link = Link::create([
+        'user_id' => $user->id,
+        'team_id' => $team->id,
+        'folder_id' => $folder->id,
+        'url' => 'https://example.com/item',
+        'url_hash' => hash('sha256', 'https://example.com/item'),
+        'title' => 'Lien dans dossier',
+    ]);
+
+    // Push avec folder_uuid = null (l'utilisateur a sorti le lien de son dossier)
+    $payload = [
+        'team_uuid' => $team->uuid,
+        'entities' => [
+            'folders' => [],
+            'categories' => [],
+            'tags' => [],
+            'links' => [
+                [
+                    'uuid' => $link->uuid,
+                    'url' => 'https://example.com/item',
+                    'title' => 'Lien dans dossier',
+                    'folder_uuid' => null,
+                    'updated_at' => now()->addMinutes(2)->toIso8601String(),
+                ],
+            ],
+            'deleted' => [],
+        ],
+    ];
+
+    $response = $this->actingAs($user, 'sanctum')->postJson(route('api.sync.push'), $payload);
+    $response->assertOk();
+
+    $link->refresh();
+    expect($link->folder_id)->toBeNull();
+});
