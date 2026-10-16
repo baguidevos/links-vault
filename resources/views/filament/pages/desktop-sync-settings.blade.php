@@ -596,9 +596,9 @@
                                     type="button"
                                     wire:click="checkForDesktopUpdates"
                                     wire:loading.attr="disabled"
-                                    class="w-full py-2 px-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-lg flex items-center justify-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
+                                    class="group w-full py-2 px-3 text-xs font-semibold text-sky-600 dark:text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 hover:border-sky-500/40 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                                 >
-                                    <x-tabler-refresh class="w-3.5 h-3.5" wire:loading.class="animate-spin" wire:target="checkForDesktopUpdates" />
+                                    <x-tabler-refresh class="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" wire:loading.class="animate-spin !rotate-0" wire:target="checkForDesktopUpdates" />
                                     <span wire:loading.remove wire:target="checkForDesktopUpdates">Rechercher une mise à jour</span>
                                     <span wire:loading wire:target="checkForDesktopUpdates">Vérification en cours...</span>
                                 </button>

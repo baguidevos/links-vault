@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.8 — 2026-10-16
+
+> **Release v1.1.8** — Modernisation esthétique du composant de mise à jour dans la barre latérale et élargissement des sources de compilation Tailwind CSS.
+
+### 🎨 Interface & Design
+- **Composant de mise à jour (Sidebar)** : Design épuré effet glassmorphism (`backdrop-blur-md`, coins adoucis `rounded-2xl`, halo lumineux sur l'indicateur de statut).
+- **Badge et couleurs de marque** : Alignement du badge de version et des accents sur la palette officielle de LinksVault (`sky` / cyan).
+- **Micro-animation interactive** : Rotation fluide à 180° de l'icône d'actualisation au survol du bouton « Rechercher une mise à jour ».
+- **Compilation Tailwind CSS** : Élargissement de la directive `@source` dans le thème Filament pour scanner l'ensemble des vues de `resources/views/**/*`.
+
+---
+
 ## v1.1.7 — 2026-10-16
 
 > **Release v1.1.7** — Préservation intégrale des dossiers et de leurs liaisons lors des sauvegardes locales (.zip) et synchronisation Desktop/Web.

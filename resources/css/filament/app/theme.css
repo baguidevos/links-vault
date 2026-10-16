@@ -1,7 +1,7 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
 
 @source '../../../../app/Filament/**/*';
-@source '../../../../resources/views/filament/**/*';
+@source '../../../../resources/views/**/*';
 
 /* Amélioration de la réactivité des en-têtes Filament sur petits/moyens écrans */
 .fi-page-header {
