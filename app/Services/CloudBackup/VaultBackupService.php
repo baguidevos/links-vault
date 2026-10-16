@@ -122,14 +122,58 @@ class VaultBackupService
             throw new \RuntimeException('Impossible de créer le fichier d\'archive ZIP temporaire.');
         }
 
+        $user = $user ?? (method_exists($team, 'owner') ? $team->owner() : null);
+
         // 1. Liens & Relations
-        $links = Link::where('team_id', $team->id)
-            ->with(['folder', 'category', 'tags'])
+        $links = Link::withoutGlobalScopes()
+            ->where(function ($q) use ($team, $user) {
+                $q->where('team_id', $team->id);
+                if ($user) {
+                    $q->orWhere(function ($sq) use ($user) {
+                        $sq->whereNull('team_id')->where('user_id', $user->id);
+                    });
+                }
+            })
+            ->with([
+                'folder' => fn ($q) => $q->withoutGlobalScopes(),
+                'category' => fn ($q) => $q->withoutGlobalScopes(),
+                'tags' => fn ($q) => $q->withoutGlobalScopes(),
+            ])
             ->get();
 
-        $folders = Folder::where('team_id', $team->id)->get();
-        $categories = Category::where('team_id', $team->id)->get();
-        $tags = Tag::where('team_id', $team->id)->get();
+        $folders = Folder::withoutGlobalScopes()
+            ->where(function ($q) use ($team, $user) {
+                $q->where('team_id', $team->id);
+                if ($user) {
+                    $q->orWhere(function ($sq) use ($user) {
+                        $sq->whereNull('team_id')->where('user_id', $user->id);
+                    });
+                }
+            })
+            ->with(['category' => fn ($q) => $q->withoutGlobalScopes()])
+            ->get();
+
+        $categories = Category::withoutGlobalScopes()
+            ->where(function ($q) use ($team, $user) {
+                $q->where('team_id', $team->id);
+                if ($user) {
+                    $q->orWhere(function ($sq) use ($user) {
+                        $sq->whereNull('team_id')->where('user_id', $user->id);
+                    });
+                }
+            })
+            ->get();
+
+        $tags = Tag::withoutGlobalScopes()
+            ->where(function ($q) use ($team, $user) {
+                $q->where('team_id', $team->id);
+                if ($user) {
+                    $q->orWhere(function ($sq) use ($user) {
+                        $sq->whereNull('team_id')->where('user_id', $user->id);
+                    });
+                }
+            })
+            ->get();
 
         // 2. Manifest
         $manifest = [
@@ -169,6 +213,7 @@ class VaultBackupService
         $linksData = $links->map(function (Link $link) {
             return [
                 'id' => $link->id,
+                'uuid' => $link->uuid,
                 'url' => $link->url,
                 'title' => $link->title,
                 'description' => $link->description,
@@ -181,8 +226,22 @@ class VaultBackupService
                 'favicon_url' => $link->favicon_url,
                 'thumbnail_url' => $link->thumbnail_url,
                 'metadata' => $link->getSafeMetadata(),
-                'folder' => $link->folder ? ['id' => $link->folder->id, 'name' => $link->folder->name, 'slug' => $link->folder->slug] : null,
-                'category' => $link->category ? ['id' => $link->category->id, 'name' => $link->category->name, 'slug' => $link->category->slug] : null,
+                'folder_id' => $link->folder_id,
+                'folder_uuid' => $link->folder?->uuid,
+                'folder' => $link->folder ? [
+                    'id' => $link->folder->id,
+                    'uuid' => $link->folder->uuid,
+                    'name' => $link->folder->name,
+                    'slug' => $link->folder->slug,
+                ] : null,
+                'category_id' => $link->category_id,
+                'category_uuid' => $link->category?->uuid,
+                'category' => $link->category ? [
+                    'id' => $link->category->id,
+                    'uuid' => $link->category->uuid,
+                    'name' => $link->category->name,
+                    'slug' => $link->category->slug,
+                ] : null,
                 'tags' => ($link->relationLoaded('tags') && $link->getRelation('tags') instanceof Collection)
                     ? $link->getRelation('tags')->pluck('name')->filter()->values()->toArray()
                     : (is_string($link->tags) && filled($link->tags) ? array_values(array_filter(array_map('trim', explode(',', $link->tags)))) : []),
@@ -202,7 +261,29 @@ class VaultBackupService
         $zip->addFromString('links.csv', $csvContent);
 
         // 6. Dossiers, Catégories, Tags
-        $zip->addFromString('folders.json', json_encode($folders->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $foldersData = $folders->map(fn (Folder $f) => [
+            'id' => $f->id,
+            'uuid' => $f->uuid,
+            'team_id' => $f->team_id,
+            'user_id' => $f->user_id,
+            'category_id' => $f->category_id,
+            'category' => $f->category ? [
+                'id' => $f->category->id,
+                'slug' => $f->category->slug,
+                'name' => $f->category->name,
+            ] : null,
+            'name' => $f->name,
+            'slug' => $f->slug,
+            'color' => $f->color,
+            'icon' => $f->icon,
+            'description' => $f->description,
+            'visibility' => $f->visibility instanceof \BackedEnum ? $f->visibility->value : (string) $f->visibility,
+            'sort_order' => $f->sort_order,
+            'created_at' => $f->created_at?->toIso8601String(),
+            'updated_at' => $f->updated_at?->toIso8601String(),
+        ])->toArray();
+
+        $zip->addFromString('folders.json', json_encode($foldersData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         $zip->addFromString('categories.json', json_encode($categories->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         $zip->addFromString('tags.json', json_encode($tags->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
