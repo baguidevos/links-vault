@@ -70,6 +70,7 @@ jobs:
         shell: pwsh
         run: |
           Copy-Item .env.example .env
+          (Get-Content .env) -replace '^APP_NAME=.*$', "APP_NAME=LinksVault" | Set-Content .env
           $tag = "${{ github.ref_name }}"
           if ($tag -match '^v?(\d+\.\d+\.\d+.*)$') {
             $version = $Matches[1]
@@ -93,7 +94,10 @@ jobs:
 
       - name: Build Desktop (Windows)
         env:
+          APP_NAME: 'LinksVault'
           APP_ENV: production
+          NATIVEPHP_APP_NAME: 'LinksVault'
+          NATIVEPHP_APP_FILENAME: 'linksvault'
           NATIVEPHP_UPDATER_ENABLED: 'true'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: php artisan native:build win x64 --no-interaction
@@ -110,9 +114,16 @@ jobs:
             throw "Dossier nativephp/electron/dist introuvable. Le build electron n'a pas produit de dossier de sortie."
           }
 
-          $setup = Get-ChildItem nativephp/electron/dist -Filter '*-setup.exe' -File | Select-Object -First 1
+          $setup = Get-ChildItem nativephp/electron/dist -Filter 'LinksVault-*-setup.exe' -File | Select-Object -First 1
+          if ($null -eq $setup) {
+            $setup = Get-ChildItem nativephp/electron/dist -Filter '*-setup.exe' -File | Select-Object -First 1
+          }
           if ($null -eq $setup) {
             throw "Installateur Windows introuvable dans nativephp/electron/dist."
+          }
+
+          if ($setup.Name -match '^Laravel-') {
+            throw "ERREUR DE NOMMAGE : L'installateur Windows a été généré sous le nom '$($setup.Name)' au lieu de 'LinksVault-$version-setup.exe'. Vérifiez APP_NAME."
           }
 
           $packageDirectory = Join-Path $env:RUNNER_TEMP 'linksvault-windows-repair'
@@ -153,6 +164,20 @@ jobs:
 
           if ($releaseExists) {
             Write-Host "Mise à jour de la release existante $tag..."
+            try {
+              $existingAssetsRaw = gh release view $tag --repo $env:GITHUB_REPOSITORY --json assets 2>$null
+              if ($existingAssetsRaw) {
+                $existingAssets = ($existingAssetsRaw | ConvertFrom-Json).assets
+                foreach ($asset in $existingAssets) {
+                  if ($asset.name -match '^Laravel-') {
+                    Write-Host "Suppression de l'ancien asset mal nommé : $($asset.name)..."
+                    gh release delete-asset $tag $asset.name --repo $env:GITHUB_REPOSITORY -y 2>$null | Out-Null
+                  }
+                }
+              }
+            } catch {
+              Write-Warning "Impossible de nettoyer les anciens assets : $_"
+            }
             gh release upload $tag $filesToUpload --repo $env:GITHUB_REPOSITORY --clobber
           } else {
             Write-Host "Création de la release $tag..."

@@ -8,6 +8,7 @@ router.post('/quit', (req, res) => {
 });
 
 router.post('/relaunch', () => {
+    (global as any).__isRelaunching = true;
     app.relaunch();
     app.quit();
 });

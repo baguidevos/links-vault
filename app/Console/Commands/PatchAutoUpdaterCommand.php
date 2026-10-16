@@ -113,7 +113,7 @@ class PatchAutoUpdaterCommand extends Command
             const _origQAI = autoUpdater.quitAndInstall.bind(autoUpdater);
             autoUpdater.quitAndInstall = (...args) => { _updateReady = false; _origQAI(...args); };
             app.on('before-quit', (e) => {
-                if (_updateReady) {
+                if (_updateReady && !global.__isRelaunching) {
                     _updateReady = false;
                     e.preventDefault();
                     autoUpdater.quitAndInstall();

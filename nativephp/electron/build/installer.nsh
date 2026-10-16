@@ -71,6 +71,9 @@
 
 !macro customInstall
     DetailPrint "Finalisation de l'installation et configuration des raccourcis..."
+    ${if} ${Silent}
+        !insertmacro doStartApp
+    ${endif}
 !macroend
 
 ; During updates, auto-launch the app and skip the finish page entirely so

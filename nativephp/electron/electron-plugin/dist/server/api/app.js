@@ -6,6 +6,7 @@ router.post('/quit', (req, res) => {
     res.sendStatus(200);
 });
 router.post('/relaunch', () => {
+    global.__isRelaunching = true;
     app.relaunch();
     app.quit();
 });

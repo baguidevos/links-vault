@@ -3,10 +3,12 @@ import { join } from 'path';
 
 const appUrl = process.env.APP_URL;
 const appId = process.env.NATIVEPHP_APP_ID;
-const appName = process.env.NATIVEPHP_APP_NAME;
+const rawAppName = process.env.NATIVEPHP_APP_NAME;
+const appName = (rawAppName && rawAppName !== 'Laravel') ? rawAppName : 'LinksVault';
 const isBuilding = process.env.NATIVEPHP_BUILDING;
 const appAuthor = process.env.NATIVEPHP_APP_AUTHOR;
-const fileName = process.env.NATIVEPHP_APP_FILENAME;
+const rawFileName = process.env.NATIVEPHP_APP_FILENAME;
+const fileName = (rawFileName && rawFileName !== 'laravel') ? rawFileName : 'linksvault';
 const appVersion = process.env.NATIVEPHP_APP_VERSION;
 const appCopyright = process.env.NATIVEPHP_APP_COPYRIGHT;
 const deepLinkProtocol = process.env.NATIVEPHP_DEEPLINK_SCHEME;
